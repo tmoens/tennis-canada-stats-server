@@ -1,0 +1,48 @@
+1) look at the README
+
+Server to handle requests and API for Tennis Canada for tasks relating to
+play data. (Players, tournaments, matches mostly)
+
+-- Production Mode -----------------
+Before you run in production mode, please set the environment variable NODE_ENV
+> set NODE_ENV=production
+> npm run start:prod
+I generally have two terminals (Production and Development) with the appropriate environments
+
+Dependencies.
+
+-- kue ------------
+The app uses kue to queue long running jobs like generating UTR reports.
+To look at the kue queue go into a shell and run
+node {path_to}/node_modules/kue/bin/kue-dashboard -p {some_port}
+then point your browser at localhost:{some_port};
+
+-- redis ----------
+Kue uses a redis in-memory database.  So there has to be one. See
+https://github.com/ServiceStack/redis-windows
+
+-- typeorm --------
+We use typeorm as our orm.  There are problems.  I could not get migrations to work
+properly, so database changes have to be done in both the code and on the db at
+the same time.
+
+During development when you can turf the whole DB and regenerate it, you can go to
+the ormconfig.js file and add the line "synchronize": true, but you have to
+delete it right away again after the server runs or else it will complain
+that the tables already exist.
+
+I suspect this is all related to using the @nest/typeorm package.
+
+-- log4js ----------
+Very good.  Some module does logger = getLogger('some logger name') then
+logger.some_level("some message").
+
+Then the log4js_config.json file allows you to set up how you want the
+logs handled.  That is, which files to stick logs in from which level.
+
+
+npm run {whatever} // the options for whatever are in package.json
+
+-- TODO ---------------
+I added a library "dom" to the tsconfig.json file which solves a compile problem
+BUT does not belong here in a node environment.

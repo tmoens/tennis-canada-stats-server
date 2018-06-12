@@ -1,0 +1,31 @@
+{
+  "appenders": {
+    "out": {
+      "type": "stdout"
+    },
+    "vrimport": {
+      "type": "dateFile",
+      "filename": "log/vrimport",
+      "pattern": "-yyyy-MM-dd"
+    },
+    "vrapi": {
+      "type":"dateFile",
+      "filename":"log/vrapi",
+      "pattern": "-yyyy-MM-dd"
+    }
+  },
+  "categories": {
+    "default": {
+      "appenders": [
+        "out",
+        "vrimport"
+      ],
+      "level": "info"
+    },
+    "vrapi": {
+      "appenders": [
+        "vrapi"
+      ], "level": "info"
+    }
+  }
+}

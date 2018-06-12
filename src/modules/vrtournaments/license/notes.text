@@ -1,0 +1,8 @@
+A license represents a VR license which can be used to create and run a tournament
+with VR's tournament planner.
+
+When a tournament is pulled in through the VRAPI it always contains the name of the
+license that was used to last upload the tournament.
+
+If the license is already known, fine.  If not, it is created with a province of "TBD"
+which is later adjusted by an administrative user through a small web application.
