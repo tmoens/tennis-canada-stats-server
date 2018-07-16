@@ -28,19 +28,13 @@ export class VRRankingsTypeService {
     return await this.repository.find();
   }
 
-  async findByKey(typeCode:string): Promise<VRRankingsType | null> {
-    return await this.repository.findOne(typeCode);
-  }
-
   // update the ts_stats_server database rankings.
   // The rankings type is the top of the food chain,
   // go load publications for each ranking type
   async importVRRankingsFromVR() {
     this.statsService.resetAll();
     // go get the the known rankings types
-    let rankingType:VRRankingsType;
     let rankingTypes:VRRankingsType[] = await this.repository.find({relations: ["vrRankingsCategories"]});
-
     for (let i = 0; i < rankingTypes.length; i++) {
       await this.publicationService.importVRRankingsPublicationFromVR(rankingTypes[i]);
       this.statsService.bump(UPDATE_COUNT);

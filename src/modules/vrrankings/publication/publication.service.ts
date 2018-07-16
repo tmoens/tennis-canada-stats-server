@@ -6,7 +6,8 @@ import {VRAPIService} from "../../VRAPI/vrapi.service";
 import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {VRRankingsType} from "../type/type.entity";
-import {VRRankingsCategoryService} from "../category/category.service";
+import {VRRankingsCategory} from "../category/category.entity";
+import {VRRankingsItemService} from "../item/item.service";
 
 const CREATION_COUNT = "publication_creation";
 const UPDATE_COUNT = "publication_update";
@@ -21,7 +22,7 @@ export class VRRankingsPublicationService {
     private readonly repository: Repository<VRRankingsPublication>,
     private readonly statsService: StatsService,
     private readonly vrapi: VRAPIService,
-    private readonly categoryService: VRRankingsCategoryService,
+    private readonly vrRankingsItemService: VRRankingsItemService,
   ) {}
 
   async findAll(): Promise<VRRankingsPublication[]> {
@@ -34,18 +35,26 @@ export class VRRankingsPublicationService {
 
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
   async importVRRankingsPublicationFromVR(rankingType:VRRankingsType) {
-    let publication: VRRankingsPublication;
-
     // Ask the API for a list of vr rankings publications for this type of ranking
-    // The API responds with an array an objects containing only one item called
-    // RankingPublication which is an array of vr rankings publication records
-    // specific to this type of ranking.
-    let apiPublications = await this.vrapi.get("Ranking/" + rankingType.typeCode + "/Publication");
-    apiPublications = apiPublications.RankingPublication;
-    logger.info(apiPublications.length + " publications found for " + rankingType.typeName);
+    let list = await this.vrapi.get(
+      "Ranking/" + rankingType.typeCode + "/Publication");
 
-    for (let i = 0; i < apiPublications.length; i++) {
-      let apiPublication = apiPublications[i];
+    // Because the xml2js parser is configured not to convert every single
+    // child node into an array (explicitArray: false), it only creates an
+    // array of RankingPublication s if there is more than one.
+    // We want an array regardless of whether the rankings list has 0, 1 or more items
+    if (null == list.RankingPublication) {
+      list = [];
+    } else if (Array.isArray(list.RankingPublication)) {
+      list = list.RankingPublication;
+    } else {
+      list = [list.RankingPublication];
+    }
+
+    logger.info(list.length + " publications found for " + rankingType.typeName);
+
+    for (let i = 0; i < list.length; i++) {
+      let apiPublication = list[i];
       let pubDate:Date = new Date(apiPublication.PublicationDate);
 
       // go see if we already have a record of the vrrankingspublicationId.
@@ -54,15 +63,24 @@ export class VRRankingsPublicationService {
         this.repository.findOne({publicationCode: apiPublication.Code});
       if (null == publication) {
         logger.info("Loading rankings publication: " + apiPublication.Name);
-        await this.createVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
+        await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
         this.statsService.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (publication.isOutOfDate(apiPublication.PublicationDate)) {
         logger.info("Updating rankings publication: " + apiPublication.Name);
-        await this.repository.remove(publication);
-        await this.createVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
+        // There will be many publication objects for a single VR rankings publication
+        // Because VR has one publication per rankings type
+        // (adult/senior/junior/wheelchair) per week,
+        // but we break it down to one publication per category per week
+        // (4.5 Men's singles/ U16 Girls doubles etc)
+        let outdatedPublications: VRRankingsPublication[] =
+          await this.repository.find({publicationCode: apiPublication.Code});
+        for (let j = 0; j < outdatedPublications.length; j++) {
+          await this.repository.remove(outdatedPublications[j]);
+        }
+        await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
         this.statsService.bump(UPDATE_COUNT);
       }
 
@@ -75,12 +93,26 @@ export class VRRankingsPublicationService {
     }
   }
 
-  async createVRRankingsPublicationFromVRAPI(rankingType:VRRankingsType,apiPublication: any): Promise<boolean> {
+  async loadVRRankingsPublicationFromVRAPI(rankingType:VRRankingsType,apiPublication: any): Promise<boolean> {
     let p = new VRRankingsPublication();
-    p.buildFromVRAPIObj(rankingType, apiPublication);
-    await this.repository.save(p);
-    await this.categoryService.importVRRankingsCategoriesFromVR(rankingType, p);
+
+    // We are going to build a separate publication object for each rankings
+    // category in the rankings type.
+    let categories:VRRankingsCategory[] = await rankingType.vrRankingsCategories;
+    let category:VRRankingsCategory;
+    for (let i=0 ; i < categories.length; i++) {
+      category = categories[i];
+      if (category.loadMe) {
+        p = new VRRankingsPublication();
+        p.buildFromVRAPIObj(apiPublication);
+        p.rankingsCategory = category;
+        await this.repository.save(p);
+        logger.info("\tLoading category: " + category.categoryId);
+        await this.vrRankingsItemService.importVRRankingsListFromVR(p);
+      }
+    }
     return true;
   }
 }
+
 

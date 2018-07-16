@@ -8,6 +8,9 @@ import {SlowJobController} from "./slow_job.controller";
   ],
   controllers: [
     SlowJobController,
+  ],
+  exports: [
+    SlowJobService,
   ]
 })
 export class SlowJobModule{}

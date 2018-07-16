@@ -1,5 +1,7 @@
-import {Index,Entity, Column, ManyToOne, JoinColumn} from "typeorm";
+import {Index, Entity, Column, ManyToOne, JoinColumn, OneToMany} from "typeorm";
 import {VRRankingsType} from "../type/type.entity";
+import {Draw} from "../../vrtournaments/draw/draw.entity";
+import {VRRankingsPublication} from "../publication/publication.entity";
 
 @Entity("VRRankingsCategory")
 @Index("categoryId",["categoryId",],{unique:true})
@@ -21,6 +23,12 @@ export class VRRankingsCategory {
   @JoinColumn({ name:'typeCode'})
   vrRankingsType:VRRankingsType;
 
+  // expose the typeCode without having to load the whole VRRankingsType object
+  @Column("varchar",{
+    length:255
+  })
+  typeCode:string;
+
   @Column("varchar",{
     unique: true,
     length:10,
@@ -39,6 +47,9 @@ export class VRRankingsCategory {
     comment: "Do we download these rankings for Tennis Canada stats history?"
   })
   loadMe:boolean;
+
+  @OneToMany(type => VRRankingsPublication, publications => publications.rankingsCategory, {onDelete: 'CASCADE'})
+  publications: VRRankingsPublication[];
 
   constructor(code:string, rt:VRRankingsType, id:string, name:string, load:boolean) {
     this.categoryCode = code;

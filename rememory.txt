@@ -12,7 +12,8 @@ I generally have two terminals (Production and Development) with the appropriate
 Dependencies.
 
 -- kue ------------
-The app uses kue to queue long running jobs like generating UTR reports.
+The app uses kue to queue long running jobs like generating UTR reports
+or loading up VRPersons.
 To look at the kue queue go into a shell and run
 node {path_to}/node_modules/kue/bin/kue-dashboard -p {some_port}
 then point your browser at localhost:{some_port};
@@ -20,6 +21,9 @@ then point your browser at localhost:{some_port};
 -- redis ----------
 Kue uses a redis in-memory database.  So there has to be one. See
 https://github.com/ServiceStack/redis-windows
+
+There is also a RedisReact program to allow you to browse the redis database.
+It is in my downloads for now.  Probably don't ever need it.
 
 -- typeorm --------
 We use typeorm as our orm.  There are problems.  I could not get migrations to work

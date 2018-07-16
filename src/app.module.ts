@@ -16,6 +16,7 @@ import {VRRankingsCategoryModule} from "./modules/vrrankings/category/category.m
 import {VRRankingsPublicationModule} from "./modules/vrrankings/publication/publication.module";
 import {MatchPlayerModule} from "./modules/vrtournaments/match_player/match_player.module";
 import {TennisAssociationModule} from "./modules/tennis_association/tennis_association.module";
+import {SlowJobModule} from "./modules/slow_job/slow_job.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import {TennisAssociationModule} from "./modules/tennis_association/tennis_assoc
     MatchModule,
     MatchPlayerModule,
     PlayerModule,
+    SlowJobModule,
     StatsModule,
     TennisAssociationModule,
     TournamentModule,

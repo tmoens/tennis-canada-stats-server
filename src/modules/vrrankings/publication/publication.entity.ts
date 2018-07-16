@@ -1,23 +1,35 @@
-import {Index,Entity, PrimaryGeneratedColumn, Column, CreateDateColumn} from "typeorm";
-import {License} from "../../vrtournaments/license/license.entity";
-import {VRRankingsType} from "../type/type.entity";
+import {Index, Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne} from "typeorm";
+import {VRRankingsCategory} from "../category/category.entity";
+
+/**
+ * NOTE
+ * To VR, a publication is per type of ranking (adult/junior/senior/wheelchair)
+ * We create a separate publication object for each category within the type of ranking.
+ * This makes the retrieval of a particular ranking list
+ * (e.g. 2015 week 2 under 16 girls doubles) much more efficient.
+ *
+ */
 
 @Entity("VRRankingsPublication")
 @Index("publicationCode",["publicationCode",])
 export class VRRankingsPublication {
 
-  @Column("varchar",{
-    length:40,
-    primary:true,
-    comment: "The unique code for this publication."
-  })
-  publicationCode:string;
+  @PrimaryGeneratedColumn()
+  publicationId:number;
 
   @Column("varchar",{
     length:255,
-    comment:"The VR code for the rankings group (Adult/Junior/Senior/Wheelchair)."
+    comment: "The code for the VR publication. Shared by all the categories in a specific VR publication."
   })
-  typeCode:string;
+  publicationCode:string;
+
+  @ManyToOne(type => VRRankingsCategory, rankingsCategory => rankingsCategory.publications, {
+    nullable: false,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  })
+  @JoinColumn({name: "categoryCode"})
+  rankingsCategory: VRRankingsCategory;
 
   @Column()
   year:number;
@@ -46,11 +58,10 @@ export class VRRankingsPublication {
   }
 
   // Given a publication object from the VR API, fill in our own fields
-  buildFromVRAPIObj(rankingType: VRRankingsType, apiPublication:any) {
+  buildFromVRAPIObj(apiPublication:any) {
     this.publicationCode = apiPublication.Code;
     this.year = parseInt(apiPublication.Year);
     this.week = parseInt(apiPublication.Week);
     this.publicationDate = new Date(apiPublication.PublicationDate);
-    this.typeCode = rankingType.typeCode;
   }
 }

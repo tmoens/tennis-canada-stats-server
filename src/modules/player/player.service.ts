@@ -7,15 +7,19 @@ import {StatsService} from "../stats/stats.service";
 import {getLogger} from "log4js";
 import {MatchPlayerService} from "../vrtournaments/match_player/match_player.service";
 import {VRRankingsItemService} from "../vrrankings/item/item.service";
+import {JobState, JobStats} from "../../utils/jobstats";
+import {readFile} from "fs";
+import csv = require("csvtojson");
+
 
 const CREATION_COUNT = "player_creation";
 const UNKNOWN_CREATION_COUNT = "player_unknown_creation";
-const EXISTS_COUNT = "player_exists";
-const UNKNOWN = "unknown";
 const logger = getLogger("playerService");
+
 
 @Injectable()
 export class PlayerService {
+  personImportJobStats:JobStats;
   private playerZero: Player;
   constructor(
     @InjectRepository(Player)
@@ -27,7 +31,9 @@ export class PlayerService {
     @Inject(forwardRef(() => VRRankingsItemService))
     private readonly vrRankingsItemService: VRRankingsItemService,
 
-  ) {}
+  ) {
+
+  }
 
   async findAll(): Promise<Player[]> {
     return await this.repository.find();
@@ -60,10 +66,16 @@ export class PlayerService {
   // cycles. a->b, b->c, c->a would be deadly.
   // But that job is handled when we add a renumbering.
   async findRenumberedPlayer(playerId):Promise<Player|null> {
-    let p:Player = await this.findPlayer(playerId);
-    if (null == p) return null;
-    if (null == p.renumberedToPlayerId) return p;
-    return this.findRenumberedPlayer(p.renumberedToPlayerId);
+    try {
+      let p: Player = await this.findPlayer(playerId);
+      if (null == p) return null;
+      if (null == p.renumberedToPlayerId) return p;
+      return this.findRenumberedPlayer(p.renumberedToPlayerId);
+    }
+    catch (e) {
+      logger.error("Error 18897300: failure findRenumberedPlayer: " + playerId);
+      return null;
+    }
   }
 
   async findPlayerOrTryToCreate(playerId:any, source?:string):Promise<Player|null> {
@@ -86,8 +98,7 @@ export class PlayerService {
     // Note that the "unknown player" is very different from "no Player" like in a Bye
     // situation.
     if (!this.validatePlayerId(config.playerId)) {
-      logger.warn("Unable to find or create a player for " +
-        JSON.stringify(config), ". Using the stand-in player zero instead.");
+      logger.error("74546100 Failed to findPlayerOrFacsimile invalid playerId: " + JSON.stringify(config));
       return this.getPlayerZero();
     }
 
@@ -108,7 +119,9 @@ export class PlayerService {
     if (p! = null) return p;
 
     // and in the logically unreachable code department
-    logger.error("Programming Error 2799810923 failed to find or create a player");
+    // TODO 2018-06-13 which was of course reached immediately when loading vrRankingsItem
+    // and failing becuase of duplicate Ids
+    logger.error("2799810923 failed to findPlayerOrFacsimile with configuration: " + JSON.stringify(config));
     return this.getPlayerZero();
   }
 
@@ -123,7 +136,11 @@ export class PlayerService {
     let p = new Player();
     p.buildFromVRAPIObj(apiPlayer.Player);
     p.source = "VR Player API/" + source;
-    p = await this.repository.save(p);
+    try {
+      p = await this.repository.save(p);
+    } catch (e) {
+      logger.error("89072317 loadPlayerFromVRAPI failed to save ")
+    }
     this.statsService.bump(CREATION_COUNT);
     return p;
   }
@@ -133,7 +150,6 @@ export class PlayerService {
       return null;
     }
     let p:Player = new Player();
-    p = new Player();
     p.playerId = config.playerId;
     p.firstName = (config.firstName) ? config.firstName : "UnknownFN";
     p.lastName = (config.lastName) ? config.lastName : "UnknownFN";
@@ -142,6 +158,7 @@ export class PlayerService {
     } else {
       p.source = config.source + " (on spec)";
     }
+    this.statsService.bump(UNKNOWN_CREATION_COUNT);
     return await this.repository.save(p);
   }
 
@@ -224,7 +241,7 @@ export class PlayerService {
     }
 
     // The player you are trying to renumber TO must be known.
-    // Lets look up the TO player, but chase down its renumbering first.
+    // Lets look up the TO player.
     let toPlayer: Player = await this.findPlayerOrTryToCreate(toPlayerId, "*toPlayer* in renumbering");
     if (null == toPlayer) {
       // toId is not in the database and not available in the VRAPI.
@@ -239,16 +256,18 @@ export class PlayerService {
       });
     }
 
-    // Here is where we eradicate attempts to create renumbering loops.
-    // We chased the renumbeing loop on the TO id.
-    // if it ended at the FROM id, it was an attempt to create a loop.
-    // e.g if existing renumberings were a->b, b->c, c->d
-    // and we were asked to renumber FROM d TO a
-    // it would be disallowed because a renumbers to d and so
-    // we disallow d to a.  Likewise if we try to renumber FROM d TO b
-    // it will also be disallowed because b renumbers to d.
-    // Note that the cases of c->a, b->a and c->b are all teken care of by the
-    // fact that you cannot renumber one id to two differnt Ids (above)
+    // Here is where we prevent attempts to create renumbering loops.
+    // We chase the renumbering of the TO id.
+    // If eventually renumbers to the FROM id, it was an attempt to create a loop.
+    // e.g. if existing renumberings were a->b, b->c, c->d
+    // and we were asked to renumber FROM d TO a,
+    // it would be disallowed because a renumbers to d.
+    // Likewise if we try to renumber FROM d TO b
+    // will also be disallowed because b renumbers to d.
+    // Same for c to d and also d to d (the shortest loop of them all).
+    // Note that the erroneous renumbering requests of c->a, b->a and c->b
+    // are already taken care of by the fact that you cannot renumber one id
+    // to two different Ids (above)
     let renumberedToPlayer: Player = await this.findRenumberedPlayer(toPlayerId);
     if (renumberedToPlayer.playerId == fromPlayerId) {
       response = "Attempt to renumber from " +
@@ -257,7 +276,7 @@ export class PlayerService {
       return response;
     }
 
-    // Now just add the renumbering.
+    // Now just add the renumbering to the player record.
     fromPlayer.renumberedToPlayer = toPlayer;
     this.repository.save(fromPlayer);
 
@@ -268,7 +287,75 @@ export class PlayerService {
     await this.matchPlayerService.renumberPlayer(fromPlayer, toPlayer);
     await this.vrRankingsItemService.renumberPlayer(fromPlayer, toPlayer);
   }
+
+
+  // This does the work of importing a VR "All Persons" report.
+  // Note:  We previously did this with xlsx js but loading the large
+  // xlsx file was taking over a minute and blocking the whole node server.
+  // Furthermore the xlsx library doies not allow a streaming read so we
+  // reverted to .csv which takes about 5 seconds to load about 8MB of player data.
+  async importVRPersons(file) {
+    this.personImportJobStats = new JobStats('Import players from VR "All Persons" admin report.');
+    this.personImportJobStats.status = JobState.IN_PROGRESS;
+    this.personImportJobStats.currentActivity = `Loding file (size: ${file.size}).`;
+
+    const players: any[] = await csv().fromFile(file.path );
+
+    console.log(JSON.stringify(players));
+    // TODO check header field names
+
+    this.personImportJobStats.toDo = players.length;
+    let player:Player;
+    let address: string[];
+    for (let i = 0; i < players.length; i++) {
+      let playerData = players[i];
+      player = await this.findPlayer(playerData.memberid);
+      if (null == player) {
+        player = new Player();
+        player.playerId = playerData.memberid;
+        player.source = "VR All Persons Report";
+        this.personImportJobStats.bump('player created');
+      }
+      this.personImportJobStats.currentActivity = `Loading player ${player.playerId}).`;
+      // This is the order in which the fields appear in the excel spreadsheet.
+      // skip playerData.code
+      player.lastName = playerData.lastname;
+      // skip playerData.lastname2
+      // skip playerData.middlename
+      player.firstName = playerData.firstname;
+      address = [];
+      address.push(playerData.address);
+      if (null != playerData.address2) address.push(playerData.address2);
+      if (null != playerData.address3) address.push(playerData.address3);
+      player.address = address.join(" ");
+      player.postalCode = playerData.postalcode;
+      player.city = playerData.city;
+      player.province = playerData.state;
+      player.gender = playerData.gender;
+      player.DOB = playerData.dob;
+      player.phone = playerData.phone;
+      player.phone2 = playerData.phone2;
+      player.mobile = playerData.mobile;
+      // skip playerData.fax
+      // skip playerData.fax2
+      player.email = playerData.email;
+      // skip playerData.website
+      try {
+        await this.repository.save(player);
+        this.personImportJobStats.bump('player saved');
+      }
+      catch (e) {
+        logger.error("656120901 Failed to save/update player during import.\n" +
+          JSON.stringify(playerData));
+        this.personImportJobStats.bump('player save errors');
+      }
+      this.personImportJobStats.bump('done');
+      if (0 == i%100) console.log(i +"\n");
+    }
+  }
 }
+
+
 
 export interface PlayerConfig {
   playerId:any;

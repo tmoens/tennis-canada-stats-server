@@ -27,22 +27,6 @@ export class VRRankingsCategoryService {
     return await this.repository.find();
   }
 
-  // Not really updating the rankings categories in a rankings type - those are fixed.
-  // Actually asking to load all the ranking data for all the categories
-  // in a given publication run.
-  async importVRRankingsCategoriesFromVR(rt:VRRankingsType, publication:VRRankingsPublication): Promise<boolean> {
-    let categories:VRRankingsCategory[] = await rt.vrRankingsCategories;
-    let category:VRRankingsCategory;
-    for (let i=0 ; i < categories.length; i++) {
-      category = categories[i];
-      if (category.loadMe) {
-        logger.info("\tLoading category: " + category.categoryId);
-        await this.rankItemService.importVRRankingsListFromVR(publication, category);
-      }
-    }
-    return true;
-  }
-
   // This is done only when starting with a fresh database
   // in practical terms it just helps during development and is
   // never called when the system is live.

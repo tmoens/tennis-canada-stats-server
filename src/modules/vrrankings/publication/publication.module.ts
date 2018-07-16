@@ -6,6 +6,7 @@ import { VRRankingsPublication } from './publication.entity';
 import {VRAPIModule} from "../../VRAPI/vrapi.module";
 import {StatsModule} from "../../stats/stats.module";
 import {VRRankingsCategoryModule} from "../category/category.module";
+import {VRRankingsItemModule} from "../item/item.module";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import {VRRankingsCategoryModule} from "../category/category.module";
     VRAPIModule,
     StatsModule,
     VRRankingsCategoryModule,
+    VRRankingsItemModule,
   ],
   providers: [
     VRRankingsPublicationService

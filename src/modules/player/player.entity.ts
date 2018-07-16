@@ -50,24 +50,6 @@ export class Player {
 
   @Column("varchar",{
     nullable:true,
-    length:50
-  })
-  membershipType:string;
-
-  @Column("tinyint",{
-    default:0,
-    name:"active"
-  })
-  active:number;
-
-  @Column("date",{
-    nullable:true,
-    name:"expiry"
-  })
-  expiry:string;
-
-  @Column("varchar",{
-    nullable:true,
     length:100
   })
   email:string;
@@ -119,7 +101,6 @@ export class Player {
     this.playerId = apiObj.MemberID;
     this.firstName = apiObj.Firstname;
     this.lastName = apiObj.Lastname;
-    this.active = apiObj.Active;
     this.DOB = apiObj.DateOfBirth.substring(0,10);
   }
 }

@@ -6,7 +6,6 @@ import {VRAPIService} from "../../VRAPI/vrapi.service";
 import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {VRRankingsPublication} from "../publication/publication.entity";
-import {VRRankingsCategory} from "../category/category.entity";
 import {isArray} from "util";
 import {PlayerService} from "../../player/player.service";
 import {Player} from "../../player/player.entity";
@@ -31,12 +30,11 @@ export class VRRankingsItemService {
   }
 
   async importVRRankingsListFromVR(
-    publication:VRRankingsPublication,
-    category: VRRankingsCategory): Promise<boolean> {
+    publication:VRRankingsPublication): Promise<boolean> {
     let list = await this.vrapi.get(
-      "Ranking/" + publication.typeCode +
+      "Ranking/" + publication.rankingsCategory.typeCode +
       "/Publication/" + publication.publicationCode +
-      "/Category/" + category.categoryCode);
+      "/Category/" + publication.rankingsCategory.categoryCode);
 
     // Because the xml2js parser is configured not to convert every single
     // child node into an array (explicitArray: false), it only creates an
@@ -44,7 +42,7 @@ export class VRRankingsItemService {
     // We want an array regardless of whether the rankings list has 0, 1 or more items
     if (null == list.RankingPublicationPoints) {
       list = [];
-    } else if (isArray(list.RankingPublicationPoints)) {
+    } else if (Array.isArray(list.RankingPublicationPoints)) {
       list = list.RankingPublicationPoints;
     } else {
       list = [list.RankingPublicationPoints];
@@ -56,7 +54,6 @@ export class VRRankingsItemService {
     for (let i = 0; i < list.length; i++) {
       apiListItem = list[i];
       let item: VRRankingsItem = new VRRankingsItem();
-      item.category = category;
       item.publication = publication;
       // make sure any player on the rankings list is known
 
@@ -67,7 +64,12 @@ export class VRRankingsItemService {
         source: "VR RankingList item"});
       item.rank = parseInt(apiListItem.Rank);
       item.points = parseFloat(apiListItem.Points);
-      await this.repository.save(item);
+      try {
+        await this.repository.save(item);
+      }
+      catch (e) {
+        logger.error("281312450 saving rankings item: " + JSON.stringify(item));
+      }
     }
     return true;
   }

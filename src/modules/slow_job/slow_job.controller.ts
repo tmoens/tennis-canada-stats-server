@@ -1,20 +1,28 @@
-import {Controller, Get} from '@nestjs/common';
-import {SlowJobService} from "./slow_job.service";
+import {Controller, Get, Param} from '@nestjs/common';
+import {SlowJobData, SlowJobService} from "./slow_job.service";
+
 
 @Controller('slowjob')
 export class SlowJobController {
   constructor(
-    private readonly queue: SlowJobService
+    private readonly slowJobService: SlowJobService
   ) {}
 
-  @Get("/UTRReport")
-  handleUTRReport(): number {
-    return this.queue.queueJob("UTRReport",'{"from": "hick"}');
+  @Get("/status/:id")
+  async getSlowJobStatus(@Param() params): Promise<any>{
+    return await this.slowJobService.getSlowJobStatus(params.id);
   }
 
-  @Get("/vrimport")
-  handleVRImport(): number {
-    return this.queue.queueJob("VR Importer",'{"a": "a"}');
+
+  @Get("/foo")
+  async foo(): Promise<number> {
+    let x:SlowJobData;
+    x.name = "myname";
+    x.toDoTask = "what I am supposed to do";
+    x.currentActivity = "what I am busy doing";
+    x.toDoCount = 43;
+    x.doneCount = 4;
+    return await this.slowJobService.queueJob(x);
   }
 
   @Get()

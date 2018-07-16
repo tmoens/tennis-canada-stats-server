@@ -1,10 +1,12 @@
-import {Controller, Get, Param} from '@nestjs/common';
+import {Controller, FileInterceptor, Get, Param, Post, UploadedFile, UseInterceptors} from '@nestjs/common';
 import { PlayerService } from './player.service';
 import { Player } from './player.entity';
 
 @Controller('Player')
 export class PlayerController {
-  constructor(private readonly playerService: PlayerService) {}
+  constructor(
+    private readonly playerService: PlayerService) {
+  }
 
 
   @Get()
@@ -19,4 +21,19 @@ export class PlayerController {
       'testFFN', 'testTFN','test.FLN', 'testTLN', '2018-01-01');
 
   }
+
+  @Get('status/importVRPersons')
+  importVRPersonsStatus(): any {
+    return this.playerService.personImportJobStats;
+  }
+
+  @Post('importVRPersonsCSV')
+  @UseInterceptors(FileInterceptor('file',
+    {dest: 'uploads/players/VRPersons'}))
+  importVRPersonsCSV(@UploadedFile() file):any {
+    console.log(JSON.stringify(file));
+    this.playerService.importVRPersons(file);
+    return;
+  }
+
 }
