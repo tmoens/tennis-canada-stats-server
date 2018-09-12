@@ -1,7 +1,6 @@
 import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from "typeorm";
 import {Event} from "../event/event.entity";
 import {Draw} from "../draw/draw.entity";
-import {isArray} from "util";
 import {MatchPlayer} from "../match_player/match_player.entity";
 
 @Entity("Match")
@@ -84,7 +83,7 @@ export class Match {
           // The sets will come back as an array only if there are two or more
           // so we need to fix that up a bit.
           let sets: any[];
-          if (isArray(apiMatch.Sets.Set)) {
+          if (Array.isArray(apiMatch.Sets.Set)) {
             sets = apiMatch.Sets.Set;
           } else {
             sets = [apiMatch.Sets.Set];

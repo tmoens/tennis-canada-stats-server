@@ -102,5 +102,7 @@ export class Player {
     this.firstName = apiObj.Firstname;
     this.lastName = apiObj.Lastname;
     this.DOB = apiObj.DateOfBirth.substring(0,10);
+    if (apiObj.GenderID == 1) this.gender = "M";
+    if (apiObj.GenderID == 2) this.gender = "F";
   }
 }

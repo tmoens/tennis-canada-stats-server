@@ -6,16 +6,14 @@ import {License, LicenseDTO} from "./license.entity";
 import {WorkBook, Properties, writeFile, utils, WorkSheet} from 'xlsx';
 import {INITIAL_LICENSES} from "./initial_licenses";
 
-
 const logger = getLogger("licenseService");
 
 @Injectable()
 export class LicenseService {
-  constructor(@InjectRepository(License)
-              private readonly repository: Repository<License>)
-  {
+  constructor(
+    @InjectRepository(License) private readonly repository: Repository<License>,
+    ) {}
 
-  }
   async findAll(): Promise<License[]> {
     return await this.repository.find();
   }

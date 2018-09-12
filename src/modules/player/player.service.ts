@@ -1,19 +1,15 @@
-import {forwardRef, Inject, Injectable} from '@nestjs/common';
+import {forwardRef, HttpException, HttpStatus, Inject, Injectable} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Player } from './player.entity'
 import {VRAPIService} from "../VRAPI/vrapi.service";
-import {StatsService} from "../stats/stats.service";
 import {getLogger} from "log4js";
 import {MatchPlayerService} from "../vrtournaments/match_player/match_player.service";
 import {VRRankingsItemService} from "../vrrankings/item/item.service";
 import {JobState, JobStats} from "../../utils/jobstats";
-import {readFile} from "fs";
 import csv = require("csvtojson");
 
 
-const CREATION_COUNT = "player_creation";
-const UNKNOWN_CREATION_COUNT = "player_unknown_creation";
 const logger = getLogger("playerService");
 
 
@@ -24,7 +20,6 @@ export class PlayerService {
   constructor(
     @InjectRepository(Player)
     private readonly repository: Repository<Player>,
-    private readonly statsService: StatsService,
     private readonly vrapi: VRAPIService,
     @Inject(forwardRef(() => MatchPlayerService))
     private readonly matchPlayerService: MatchPlayerService,
@@ -32,7 +27,7 @@ export class PlayerService {
     private readonly vrRankingsItemService: VRRankingsItemService,
 
   ) {
-
+    this.personImportJobStats = new JobStats('playerImport');
   }
 
   async findAll(): Promise<Player[]> {
@@ -53,6 +48,7 @@ export class PlayerService {
     this.playerZero.firstName = "UnknownFN";
     this.playerZero.lastName = "UnknownLN";
     await this.repository.save(this.playerZero);
+    this.playerZero = await this.findPlayer(0);
     return this.playerZero;
   }
 
@@ -79,9 +75,6 @@ export class PlayerService {
   }
 
   async findPlayerOrTryToCreate(playerId:any, source?:string):Promise<Player|null> {
-    if (!this.validatePlayerId(playerId)) {
-      return null;
-    }
     let p:Player = await this.findPlayer(playerId);
     if (null == p) {
       // not found, so let's try loading from the VRAPI
@@ -98,7 +91,7 @@ export class PlayerService {
     // Note that the "unknown player" is very different from "no Player" like in a Bye
     // situation.
     if (!this.validatePlayerId(config.playerId)) {
-      logger.error("74546100 Failed to findPlayerOrFacsimile invalid playerId: " + JSON.stringify(config));
+      logger.warn("74546100 Failed to findPlayerOrFacsimile invalid playerId. Here is the player data: " + JSON.stringify(config));
       return this.getPlayerZero();
     }
 
@@ -111,7 +104,9 @@ export class PlayerService {
     // Failing that, we will go check the VR API to see if VR knows about the player
     // and if so we will call it into existence and return it.
     p = await this.loadPlayerFromVRAPI(config.playerId, config.source);
-    if (p != null) return p;
+    if (p != null) {
+      return p;
+    }
 
     // Failing that, we will try and make one up with whatever scraps of info
     // the client gives us
@@ -139,9 +134,17 @@ export class PlayerService {
     try {
       p = await this.repository.save(p);
     } catch (e) {
-      logger.error("89072317 loadPlayerFromVRAPI failed to save ")
+      // TODO This keeps getting hit when loading rankings - duplicate key
+      // It is a bit of a mystery because we only go load a player from
+      // the vrapi if the player is not already in the database.
+      // so there is a timing issue.
+      // Note:  When the problem happens, there are two consecutive VRAPI calls for the same player.
+      logger.error("89072317 loadPlayerFromVRAPI failed to save " + p.playerId);
     }
-    this.statsService.bump(CREATION_COUNT);
+    // after you save(), if you do not find() again before you save() again
+    // you get a duplicate id error.  I do not understand why this is, but it is.
+    // Since the client may well save() the returned value better do a find.
+    p = await this.findPlayer(p.playerId);
     return p;
   }
 
@@ -158,22 +161,30 @@ export class PlayerService {
     } else {
       p.source = config.source + " (on spec)";
     }
-    this.statsService.bump(UNKNOWN_CREATION_COUNT);
-    return await this.repository.save(p);
+    await this.repository.save(p);
+    // after you save(), if you do not find() again before you save() again
+    // you get a duplicate id error.  I do not understand why this is, but it is.
+    // Since the client may well save() the returned value better do a find.
+    p = await this.findPlayer(p.playerId);
+    return p;
   }
 
-  validatePlayerId(playerId:any):boolean {
+  validatePlayerId(playerId:number):boolean {
+    let message: string = null;
     if (null == playerId ) {
-      logger.warn("Undefined player ID");
+      message ="Undefined player ID";
+      logger.warn(message);
       return false;
     }
     if (isNaN(Number(playerId))) {
-      logger.warn("Non numeric playerId: " + playerId);
+      message = "Non numeric playerId: " + playerId;
+      logger.warn(message);
       return false;
     }
     let pid  = Number(playerId);
     if (10000000 > pid || 99999999 < pid) {
-      logger.warn("Player ID out of range: " + playerId);
+      message = "Player ID out of range: " + playerId;
+      logger.warn(message);
       return false;
     }
     return true;
@@ -197,66 +208,79 @@ export class PlayerService {
   //    which requires that we keep track of all renumberings ever given to us.
   // It is also necessary to make sure we do not allow circular renumberings.
   // Renumber a player.
-  async renumberPlayer(
-    fromPlayerId:number, toPlayerId:number,
-    fromFirstName:string, toFirstName:string,
-    fromLastName:string, toLastName:string,
-    mergeDate:string): Promise<string | null> {
-    let response: string = "";
+  async renumberPlayer( pmr: PlayerMergeRecord ): Promise<string[]> {
+    let message:string;
+    let response: string[] = [];
 
-    if (!this.validatePlayerId(fromPlayerId)) {
-      response = "Attempt to renumber FROM bad playerId: " + fromPlayerId;
-      logger.error(response);
+    message = `Request to renumber player from: ${pmr.fromPlayerId} (${pmr.fromFirstName} ${pmr.fromLastName}) to: ${pmr.toPlayerId} (${pmr.toFirstName} ${pmr.toLastName})`;
+    response.push(message);
+    logger.info(message);
+
+
+    if (!this.validatePlayerId(pmr.fromPlayerId)) {
+      message = `Error: attempt to renumber FROM bad playerId: ${pmr.fromPlayerId}`;
+      response.push(message);
+      logger.error(message);
       return response;
     }
 
-    if (!this.validatePlayerId(fromPlayerId)) {
-      response = "Attempt to renumber TO a bad playerId: " + toPlayerId;
-      logger.error(response);
+    if (!this.validatePlayerId(pmr.toPlayerId)) {
+      message = `Error: attempt to renumber TO a bad playerId: ${pmr.toPlayerId}`;
+      response.push(message);
+      logger.error(message);
       return response;
     }
 
     // Let's find (or create) the player we are trying to renumber.
-    let fromPlayer: Player = await this.findPlayerOrTryToCreate(fromPlayerId, "*fromPlayer* in renumbering");
+    let fromPlayer: Player =
+      await this.findPlayerOrTryToCreate(pmr.fromPlayerId, "*fromPlayer* in renumbering");
     if (null == fromPlayer) {
       // fromId is not in the database and not available in the VRAPI.
       // Still we cannot give up because it is possible that we may
       // receive data about this player through the API in the future.
       // So we have to go ahead and create the player on spec.
       fromPlayer = await this.createPlayerOnSpec({
-        playerId: fromPlayerId,
-        firstName: fromFirstName,
-        lastName: fromLastName,
+        playerId: pmr.fromPlayerId,
+        firstName: pmr.fromFirstName,
+        lastName: pmr.fromLastName,
         source: "*fromPlayer* in renumbering"
       });
+      response.push(`*fromPlayerId* ${pmr.fromPlayerId} not found in database or VR API, created automatically.`);
+    } else if (fromPlayer.renumberedToPlayerId == pmr.toPlayerId) {
+      message = "Already done";
+      response.push(message);
+      // not log worthy.
+      return response;
     } else {
-      // check - you cannot renumber the same player to two different things.
+      // you cannot renumber the same player to two different things.
       if (null != fromPlayer.renumberedToPlayerId) {
-        response = "Attempt to renumber from " +
-          fromPlayerId + " to " + toPlayerId + " but " + fromPlayerId +
+        message = "Error: attempt to renumber from " +
+          pmr.fromPlayerId + " to " + pmr.toPlayerId + " but " + pmr.fromPlayerId +
           " is already renumbered to " + fromPlayer.renumberedToPlayerId;
-        logger.error(response);
+        response.push(message);
+        logger.error(message);
         return response;
       }
     }
 
-    // The player you are trying to renumber TO must be known.
+    // The player you are trying to renumber TO must also be known.
     // Lets look up the TO player.
-    let toPlayer: Player = await this.findPlayerOrTryToCreate(toPlayerId, "*toPlayer* in renumbering");
+    let toPlayer: Player = await this.findPlayerOrTryToCreate(pmr.toPlayerId, "*toPlayer* in renumbering");
     if (null == toPlayer) {
       // toId is not in the database and not available in the VRAPI.
       // Still we cannot give up because it is possible that we may
       // receive data about this player through the API in the future.
       // So we have to go ahead and create the player on spec.
       toPlayer = await this.createPlayerOnSpec({
-        playerId: toPlayerId,
-        firstName: toFirstName,
-        lastName: toLastName,
+        playerId: pmr.toPlayerId,
+        firstName: pmr.toFirstName,
+        lastName: pmr.toLastName,
         source: "*toPlayer* in renumbering"
       });
+      response.push(`*toPlayerId* ${pmr.toPlayerId} not found in database or VR API, created automatically.`);
     }
 
-    // Here is where we prevent attempts to create renumbering loops.
+    // Here is where we prevent renumbering loops.
     // We chase the renumbering of the TO id.
     // If eventually renumbers to the FROM id, it was an attempt to create a loop.
     // e.g. if existing renumberings were a->b, b->c, c->d
@@ -268,43 +292,47 @@ export class PlayerService {
     // Note that the erroneous renumbering requests of c->a, b->a and c->b
     // are already taken care of by the fact that you cannot renumber one id
     // to two different Ids (above)
-    let renumberedToPlayer: Player = await this.findRenumberedPlayer(toPlayerId);
-    if (renumberedToPlayer.playerId == fromPlayerId) {
-      response = "Attempt to renumber from " +
-        fromPlayerId + " to " + toPlayerId + " but the reverse mapping already " +
+    let renumberedToPlayer: Player = await this.findRenumberedPlayer(pmr.toPlayerId);
+    if (renumberedToPlayer.playerId == pmr.fromPlayerId) {
+      message = "Error: attempt to renumber from " +
+        pmr.fromPlayerId + " to " + pmr.toPlayerId + " but the reverse mapping already " +
         "exists (directly or indirectly)";
+      response.push(message);
+      logger.error(message);
       return response;
     }
 
-    // Now just add the renumbering to the player record.
+    // All the hoops have been jumped, so now we do the renumbering.
+    response.push(`Renumbering from ${pmr.fromPlayerId} (${fromPlayer.firstName} ${fromPlayer.lastName})
+      to ${pmr.toPlayerId} (${toPlayer.firstName} ${toPlayer.lastName})`);
+
+    // Now just add the renumbering to the *FROM* player record.
     fromPlayer.renumberedToPlayer = toPlayer;
-    this.repository.save(fromPlayer);
+    await this.repository.save(fromPlayer);
 
     // Now we have to do the actual renumbering of historical data
     // in the database. PlayerIDs can show up in two places:
     // - any time a player has played a match (MatchPlayer)
     // - any time a player shows up in a ranking list (VRRankingsItem)
-    await this.matchPlayerService.renumberPlayer(fromPlayer, toPlayer);
-    await this.vrRankingsItemService.renumberPlayer(fromPlayer, toPlayer);
+    let count = await this.matchPlayerService.renumberPlayer(fromPlayer, toPlayer);
+    response.push("Merged " + count + " matches");
+    count = await this.vrRankingsItemService.renumberPlayer(fromPlayer, toPlayer);
+    response.push("Merged " + count + " ranking entries");
+    return response;
   }
 
 
   // This does the work of importing a VR "All Persons" report.
   // Note:  We previously did this with xlsx js but loading the large
-  // xlsx file was taking over a minute and blocking the whole node server.
-  // Furthermore the xlsx library doies not allow a streaming read so we
-  // reverted to .csv which takes about 5 seconds to load about 8MB of player data.
-  async importVRPersons(file) {
+  // xlsx file was blocking the whole node server.
+  // Furthermore the xlsx library does not allow a streaming read so we
+  // reverted to .csv.
+  async importVRPersons(players:any[]) {
     this.personImportJobStats = new JobStats('Import players from VR "All Persons" admin report.');
-    this.personImportJobStats.status = JobState.IN_PROGRESS;
-    this.personImportJobStats.currentActivity = `Loding file (size: ${file.size}).`;
-
-    const players: any[] = await csv().fromFile(file.path );
-
-    console.log(JSON.stringify(players));
-    // TODO check header field names
-
+    this.personImportJobStats.setStatus(JobState.IN_PROGRESS);
     this.personImportJobStats.toDo = players.length;
+
+    logger.info("Importing " + players.length + " players.");
     let player:Player;
     let address: string[];
     for (let i = 0; i < players.length; i++) {
@@ -327,15 +355,16 @@ export class PlayerService {
       address.push(playerData.address);
       if (null != playerData.address2) address.push(playerData.address2);
       if (null != playerData.address3) address.push(playerData.address3);
-      player.address = address.join(" ");
+      player.address = address.join(", ");
       player.postalCode = playerData.postalcode;
       player.city = playerData.city;
       player.province = playerData.state;
       player.gender = playerData.gender;
       player.DOB = playerData.dob;
-      player.phone = playerData.phone;
-      player.phone2 = playerData.phone2;
-      player.mobile = playerData.mobile;
+      // strip special characters from phone numbers
+      player.phone = playerData.phone.replace(/\D/g);
+      player.phone2 = playerData.phone2.replace(/\D/g);
+      player.mobile = playerData.mobile.replace(/\D/g);
       // skip playerData.fax
       // skip playerData.fax2
       player.email = playerData.email;
@@ -350,12 +379,13 @@ export class PlayerService {
         this.personImportJobStats.bump('player save errors');
       }
       this.personImportJobStats.bump('done');
-      if (0 == i%100) console.log(i +"\n");
+      // if (0 == i%100) logger.info("\t done: " + i);
     }
+    this.personImportJobStats.status = JobState.DONE;
+    logger.info("\t Loaded: " + players.length + " players.");
+    return true;
   }
 }
-
-
 
 export interface PlayerConfig {
   playerId:any;
@@ -363,4 +393,14 @@ export interface PlayerConfig {
   lastName?:string;
   DOB?:string;
   source?:string;
+}
+
+export interface PlayerMergeRecord {
+  fromPlayerId: number,
+  toPlayerId:number,
+  fromLastName?: string,
+  toLastName?: string,
+  fromFirstName?: string,
+  toFirstName?: string,
+  date?:string,
 }

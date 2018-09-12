@@ -3,14 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from './match.entity'
 import {VRAPIService} from "../../VRAPI/vrapi.service";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
-import {PlayerService} from "../../player/player.service";
 import {Draw} from "../draw/draw.entity";
-import {isArray} from "util";
-import {MatchPlayer} from "../match_player/match_player.entity";
-import {Player} from "../../player/player.entity";
 import {MatchPlayerService} from "../match_player/match_player.service";
+import {JobStats} from "../../../utils/jobstats";
 
 const CREATION_COUNT = "match_creation";
 const logger = getLogger("matchService");
@@ -20,7 +16,6 @@ export class MatchService {
   constructor(
     @InjectRepository(Match)
     private readonly repository: Repository<Match>,
-    private readonly statsService: StatsService,
     private readonly matchPlayerService: MatchPlayerService,
     private readonly vrapi: VRAPIService,) {
   }
@@ -32,7 +27,7 @@ export class MatchService {
   }
 
   // go get all the matches for a given tournament from the VR API.
-  async importMatchesFromVR(draw: Draw): Promise<boolean> {
+  async importMatchesFromVR(draw: Draw, importStats: JobStats): Promise<boolean> {
     let matches = await this.vrapi.get(
       "Tournament/" + draw.event.tournament.tournamentCode +
       "/Draw/" + draw.drawCode +
@@ -46,7 +41,7 @@ export class MatchService {
     // We want an array regardless of whether the draw has 0, 1 or more matches
     if (null == matches) {
       matches = [];
-    } else if (isArray(matches.Match)) {
+    } else if (Array.isArray(matches.Match)) {
       matches = matches.Match;
     } else {
       matches = [matches.Match];
@@ -62,9 +57,7 @@ export class MatchService {
       match.buildFromVRAPIObj(matchData);
       await this.repository.save(match);
       await this.matchPlayerService.importMatchPlayersFromVR(match,matchData);
-      draw.matches.push(match);
-      draw.event.matches.push(match);
-      this.statsService.bump(CREATION_COUNT);
+      importStats.bump(CREATION_COUNT);
     }
     return true;
   }

@@ -1,12 +1,10 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TennisAssociation } from './tennis_association.entity'
-import {StatsService} from "../stats/stats.service";
 import {getLogger} from "log4js";
 import {Injectable} from "@nestjs/common";
 import {TENNIS_ASSOCIATIONS} from "./initial_tennis_associations";
 
-const CREATION_COUNT = "tennisAssociation_creation";
 const logger = getLogger("tennisAssociationService");
 
 @Injectable()
@@ -14,7 +12,6 @@ export class TennisAssociationService {
   constructor(
     @InjectRepository(TennisAssociation)
     private readonly repository: Repository<TennisAssociation>,
-    private readonly statsService: StatsService,
     )
   {  }
 

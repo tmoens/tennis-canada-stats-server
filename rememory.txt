@@ -3,27 +3,23 @@
 Server to handle requests and API for Tennis Canada for tasks relating to
 play data. (Players, tournaments, matches mostly)
 
--- Production Mode -----------------
-Before you run in production mode, please set the environment variable NODE_ENV
+-- Configuration -----------------
+
+
+Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
 > set NODE_ENV=production
 > npm run start:prod
+
+OR
+
+> set NODE_ENV=development
+> npm run start:development
 I generally have two terminals (Production and Development) with the appropriate environments
 
-Dependencies.
+then in the environment directory, create a corresponding development.env or production.env file
+do not commit these to git
 
--- kue ------------
-The app uses kue to queue long running jobs like generating UTR reports
-or loading up VRPersons.
-To look at the kue queue go into a shell and run
-node {path_to}/node_modules/kue/bin/kue-dashboard -p {some_port}
-then point your browser at localhost:{some_port};
-
--- redis ----------
-Kue uses a redis in-memory database.  So there has to be one. See
-https://github.com/ServiceStack/redis-windows
-
-There is also a RedisReact program to allow you to browse the redis database.
-It is in my downloads for now.  Probably don't ever need it.
+== Dependencies/Design notes =====================
 
 -- typeorm --------
 We use typeorm as our orm.  There are problems.  I could not get migrations to work
@@ -32,8 +28,8 @@ the same time.
 
 During development when you can turf the whole DB and regenerate it, you can go to
 the ormconfig.js file and add the line "synchronize": true, but you have to
-delete it right away again after the server runs or else it will complain
-that the tables already exist.
+change it to "false" right away again after the server runs or else it will complain
+that the tables already exist for every subsequent run.
 
 I suspect this is all related to using the @nest/typeorm package.
 

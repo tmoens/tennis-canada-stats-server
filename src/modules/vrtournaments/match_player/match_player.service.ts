@@ -6,6 +6,7 @@ import {getLogger} from "log4js";
 import {Match} from "../match/match.entity";
 import {PlayerService} from "../../player/player.service";
 import {Player} from "../../player/player.entity";
+import {JobStats} from "../../../utils/jobstats";
 
 const MATCH_DATA = "VR Match Data";
 const CREATION_COUNT = "matchplayer_creation";
@@ -31,25 +32,21 @@ export class MatchPlayerService {
       player = await this.findPlayer(matchData.Team1.Player1);
       mp = new MatchPlayer(match, player, 1, 1);
       await this.repository.save(mp);
-      match.matchPlayers.push(mp);
     }
     if (null != matchData.Team1.Player2) {
       player = await this.findPlayer(matchData.Team1.Player2);
       mp = new MatchPlayer(match, player, 1, 2);
       await this.repository.save(mp);
-      match.matchPlayers.push(mp);
     }
     if (null != matchData.Team2.Player1) {
       player = await this.findPlayer(matchData.Team2.Player1);
       mp = new MatchPlayer(match, player, 2, 1);
       await this.repository.save(mp);
-      match.matchPlayers.push(mp);
     }
     if (null != matchData.Team2.Player2) {
       player = await this.findPlayer(matchData.Team2.Player2);
       mp = new MatchPlayer(match, player, 2, 2);
       await this.repository.save(mp);
-      match.matchPlayers.push(mp);
     }
 
     return true;
@@ -65,9 +62,7 @@ export class MatchPlayerService {
 
   // Find all the matchPlayers records involving the FROM player and change
   // the player to the TO player
-  async renumberPlayer(fromPlayer:Player, toPlayer:Player): Promise<boolean> {
-    console.log("toPlayer: " + JSON.stringify(toPlayer));
-    console.log("fromPlayer: " + JSON.stringify(fromPlayer));
+  async renumberPlayer(fromPlayer:Player, toPlayer:Player): Promise<number> {
     let items: MatchPlayer[] = await this.repository.find({playerId: fromPlayer.playerId});
     let mp: MatchPlayer;
     for (let i = 0; i < items.length; i++) {
@@ -78,6 +73,6 @@ export class MatchPlayerService {
     logger.info("Renumbered player in Match Data (" +
       items.length + " times) from " +
       fromPlayer.playerId + " to " + toPlayer.playerId);
-    return true;
+    return items.length;
   }
 }

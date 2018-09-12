@@ -3,14 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { VRRankingsItem } from './item.entity'
 import {VRAPIService} from "../../VRAPI/vrapi.service";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {VRRankingsPublication} from "../publication/publication.entity";
-import {isArray} from "util";
 import {PlayerService} from "../../player/player.service";
 import {Player} from "../../player/player.entity";
 
-const UPDATE_COUNT = "vrrankingsitem_update";
 
 const logger = getLogger("vrrankingsitemService");
 
@@ -19,7 +16,6 @@ export class VRRankingsItemService {
   constructor(
     @InjectRepository(VRRankingsItem)
     private readonly repository: Repository<VRRankingsItem>,
-    private readonly statsService: StatsService,
     private readonly vrapi: VRAPIService,
     @Inject(forwardRef(() => PlayerService))
     private readonly playerService: PlayerService,
@@ -74,7 +70,7 @@ export class VRRankingsItemService {
     return true;
   }
 
-  async renumberPlayer(fromPlayer:Player, toPlayer:Player): Promise<boolean> {
+  async renumberPlayer(fromPlayer:Player, toPlayer:Player): Promise<number> {
     let items: VRRankingsItem[] = await this.repository.find({playerId: fromPlayer.playerId});
     let item: VRRankingsItem;
     for (let i = 0; i < items.length; i++) {
@@ -85,6 +81,6 @@ export class VRRankingsItemService {
     logger.info("Renumbered player in Rankings Data ("
       + items.length + " times) from " +
       fromPlayer.playerId + " to " + toPlayer.playerId);
-    return true;
+    return items.length;
   }
 }

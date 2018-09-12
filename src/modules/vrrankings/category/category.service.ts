@@ -2,14 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { VRRankingsCategory } from './category.entity'
-import {VRAPIService} from "../../VRAPI/vrapi.service";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
-import {VRRankingsPublication} from "../publication/publication.entity";
-import {VRRankingsItemService} from "../item/item.service";
 import {VRRankingsType} from "../type/type.entity";
-
-const UPDATE_COUNT = "vrrankingscategory_update";
 
 const logger = getLogger("VRRankingCategoryService");
 
@@ -18,9 +12,6 @@ export class VRRankingsCategoryService {
   constructor(
     @InjectRepository(VRRankingsCategory)
     private readonly repository: Repository<VRRankingsCategory>,
-    private readonly statsService: StatsService,
-    private readonly vrapi: VRAPIService,
-    private readonly rankItemService: VRRankingsItemService,
   ) {}
 
   async findAll(): Promise<VRRankingsCategory[]> {
@@ -42,7 +33,7 @@ export class VRRankingsCategoryService {
         data.categoryName,
         data.loadme);
       this.repository.save(c);
-      rt.vrRankingsCategories.push(c);
     }
+    logger.info("Loaded static rankings categories.");
   }
 }

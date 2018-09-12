@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as request from "superagent";
 import {getLogger} from "log4js";
+import {ConfigurationService} from "../configuration/configuration.service";
 const HttpsAgent = require('agentkeepalive').HttpsAgent;
 
 const logger = getLogger("vrapi");
@@ -25,6 +26,11 @@ const keepaliveAgent = new HttpsAgent({maxSockets: 10});
 
 @Injectable()
 export class VRAPIService {
+
+  constructor(
+    private readonly config: ConfigurationService) {
+    logger.info("API User: " + config.vrapiUser);
+  }
   async get(pattern:string = ""): Promise<any> {
     let r: any = {};
 
@@ -40,7 +46,7 @@ export class VRAPIService {
         let response = await request
           .get("https://api.tournamentsoftware.com/1.0/" + pattern)
           .agent(keepaliveAgent)
-          .auth('tsapi_tc_884b','PkO9SYQ4ZJs36rMdGPYWfT0Bnu7WVs');
+          .auth(this.config.vrapiUser, this.config.vrapiPassword);
         done = true;
 
         parseString(response.text,{explicitArray:false, mergeAttrs:true }, function(err,result) {

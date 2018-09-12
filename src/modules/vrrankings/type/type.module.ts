@@ -4,7 +4,6 @@ import { VRRankingsTypeService } from './type.service';
 import { VRRankingsTypeController } from './type.controller';
 import { VRRankingsType } from './type.entity';
 import {VRAPIModule} from "../../VRAPI/vrapi.module";
-import {StatsModule} from "../../stats/stats.module";
 import {VRRankingsPublicationModule} from "../publication/publication.module";
 import {VRRankingsCategoryModule} from "../category/category.module";
 
@@ -15,7 +14,6 @@ import {VRRankingsCategoryModule} from "../category/category.module";
   imports: [
     TypeOrmModule.forFeature([VRRankingsType]),
     VRAPIModule,
-    StatsModule,
     VRRankingsPublicationModule,
     VRRankingsCategoryModule,
   ],

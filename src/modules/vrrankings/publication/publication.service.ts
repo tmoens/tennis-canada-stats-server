@@ -3,11 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { VRRankingsPublication } from './publication.entity'
 import {VRAPIService} from "../../VRAPI/vrapi.service";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {VRRankingsType} from "../type/type.entity";
 import {VRRankingsCategory} from "../category/category.entity";
 import {VRRankingsItemService} from "../item/item.service";
+import {JobStats} from "../../../utils/jobstats";
 
 const CREATION_COUNT = "publication_creation";
 const UPDATE_COUNT = "publication_update";
@@ -20,7 +20,6 @@ export class VRRankingsPublicationService {
   constructor(
     @InjectRepository(VRRankingsPublication)
     private readonly repository: Repository<VRRankingsPublication>,
-    private readonly statsService: StatsService,
     private readonly vrapi: VRAPIService,
     private readonly vrRankingsItemService: VRRankingsItemService,
   ) {}
@@ -34,7 +33,7 @@ export class VRRankingsPublicationService {
   }
 
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
-  async importVRRankingsPublicationFromVR(rankingType:VRRankingsType) {
+  async importVRRankingsPublicationFromVR(rankingType:VRRankingsType, importStats: JobStats) {
     // Ask the API for a list of vr rankings publications for this type of ranking
     let list = await this.vrapi.get(
       "Ranking/" + rankingType.typeCode + "/Publication");
@@ -57,14 +56,13 @@ export class VRRankingsPublicationService {
       let apiPublication = list[i];
       let pubDate:Date = new Date(apiPublication.PublicationDate);
 
-      // go see if we already have a record of the vrrankingspublicationId.
-      // If not make a new one
-      let publication:VRRankingsPublication = await
-        this.repository.findOne({publicationCode: apiPublication.Code});
+      // If we do not already have a record of the vrrankingspublicationId, make one
+      let publication:VRRankingsPublication =
+        await this.repository.findOne({publicationCode: apiPublication.Code});
       if (null == publication) {
         logger.info("Loading rankings publication: " + apiPublication.Name);
         await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
-        this.statsService.bump(CREATION_COUNT);
+        importStats.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
@@ -74,22 +72,22 @@ export class VRRankingsPublicationService {
         // Because VR has one publication per rankings type
         // (adult/senior/junior/wheelchair) per week,
         // but we break it down to one publication per category per week
-        // (4.5 Men's singles/ U16 Girls doubles etc)
+        // (e.g. 4.5 Men's singles, U16 Girls doubles etc)
         let outdatedPublications: VRRankingsPublication[] =
           await this.repository.find({publicationCode: apiPublication.Code});
         for (let j = 0; j < outdatedPublications.length; j++) {
           await this.repository.remove(outdatedPublications[j]);
         }
         await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
-        this.statsService.bump(UPDATE_COUNT);
+        importStats.bump(UPDATE_COUNT);
       }
 
       // otherwise, our version is up to date and we can skip along.
       else {
-        this.statsService.bump(UP_TO_DATE_COUNT);
+        importStats.bump(UP_TO_DATE_COUNT);
       }
 
-      if (1 <= this.statsService.get(CREATION_COUNT)) break; // for debugging
+      if (1 <= importStats.get(CREATION_COUNT)) break; // for debugging
     }
   }
 

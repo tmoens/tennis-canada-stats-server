@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayerService } from './player.service';
 import { PlayerController } from './player.controller';
 import { Player } from './player.entity';
-import {StatsModule} from "../stats/stats.module";
 import {VRAPIModule} from "../VRAPI/vrapi.module";
 import {MatchPlayerModule} from "../vrtournaments/match_player/match_player.module";
 import {VRRankingsItemModule} from "../vrrankings/item/item.module";
@@ -11,7 +10,6 @@ import {VRRankingsItemModule} from "../vrrankings/item/item.module";
 @Module({
   imports: [
     TypeOrmModule.forFeature([Player]),
-    StatsModule,
     VRAPIModule,
     forwardRef(() => MatchPlayerModule),
     forwardRef(() => VRRankingsItemModule),

@@ -9,7 +9,7 @@ import {getLogger} from "log4js";
  * or building reports for the client.
  */
 
-const logger = getLogger("jobstats")
+const logger = getLogger("jobstats");
 
 export class JobStats {
   name:string;
@@ -17,19 +17,18 @@ export class JobStats {
   endTime: Date;
   status: JobState;
   currentActivity: string;
+  message:string;
   toDo:number;
   // anything the client wants to remember about the job
   data: any;
-
-
-  private counters: any = {};
+  counters: any = {};
+  percentComplete?:number;
 
   constructor(name: string) {
     this.name = name;
     this.startTime = new Date();
     this.status = JobState.NOT_STARTED;
     this.toDo = -1; // If it is -1 it is not known yet.
-    this.counters.done = 0;
   }
 
   bump(counterName:string): number {
@@ -38,18 +37,10 @@ export class JobStats {
     } else {
       this.counters[counterName] = this.counters[counterName] + 1;
     }
+    if (counterName == "done" && this.toDo > 0) {
+      this.percentComplete = Math.trunc( (this.counters["done"] / this.toDo) * 100);
+    }
     return this.counters[counterName];
-  }
-
-  resetCounter(counterName:string): number {
-    this.counters[counterName] = 0;
-    return this.counters[counterName];
-  }
-
-  resetCounters(counters: string[]) {
-    counters.forEach(name => {
-      this.resetCounter(name);
-    })
   }
 
   get(counterName:string): number {
@@ -63,9 +54,11 @@ export class JobStats {
   setStatus(state: JobState) {
     this.status = state;
     if (JobState.DONE == state) {
+      this.endTime = new Date();
       logger.info("Job complete: " + JSON.stringify(this));
     }
     if (JobState.ERROR == state) {
+      this.endTime = new Date();
       logger.error("Job failed: " + JSON.stringify(this));
     }
   }

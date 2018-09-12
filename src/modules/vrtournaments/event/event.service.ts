@@ -4,11 +4,10 @@ import {EntityManager, Repository} from 'typeorm';
 import { Event } from './event.entity'
 import {VRAPIService} from "../../VRAPI/vrapi.service";
 import {Tournament} from "../tournament/tournament.entity";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {PlayerService} from "../../player/player.service";
 import {DrawService} from "../draw/draw.service";
-import {isArray} from "util";
+import {JobStats} from "../../../utils/jobstats";
 
 const CREATION_COUNT = "event_creation";
 const logger = getLogger("eventService");
@@ -18,7 +17,6 @@ export class EventService {
   constructor(
     @InjectRepository(Event)
     private readonly repository: Repository<Event>,
-    private readonly statsService: StatsService,
     private readonly drawService: DrawService,
     private readonly playerService: PlayerService,
     private readonly vrapi: VRAPIService,
@@ -31,7 +29,7 @@ export class EventService {
   }
 
   // go get all the events for a given tournament from the VR API.
-  async importEventsFromVR(tournament: Tournament): Promise<boolean> {
+  async importEventsFromVR(tournament: Tournament, importStats: JobStats): Promise<boolean> {
     let events = await this.vrapi.get("Tournament/" + tournament.tournamentCode + "/Event");
     // console.log("Events: \n" + JSON.stringify(events));
 
@@ -41,7 +39,7 @@ export class EventService {
     // We want an array regardless of whether the tournament has 0, 1 or more events
     if (null == events.TournamentEvent) {
       events = [];
-    } else if (isArray(events.TournamentEvent)) {
+    } else if (Array.isArray(events.TournamentEvent)) {
       events = events.TournamentEvent;
     } else {
       events = [events.TournamentEvent];
@@ -58,19 +56,11 @@ export class EventService {
       e.matches = [];
       await this.repository.save(e);
 
-      // update the tournament by pushing the event into it
-      tournament.events.push(e);
-
-      // now dig down and do the roster for the event.
-      // await this.importEventRosterFromVR(e);
-
       // Now dig down and load the draws for this event.
-      await this.drawService.importDrawsFromVR(e);
+      await this.drawService.importDrawsFromVR(e, importStats);
 
-      // this may be superfluous
-      await this.repository.save(e);
 
-      this.statsService.bump(CREATION_COUNT);
+      importStats.bump(CREATION_COUNT);
     }
     return true;
   }
@@ -85,7 +75,3 @@ export class EventService {
     return roster;
   }
 }
-
-
-
-// This SQL gives you the event roster

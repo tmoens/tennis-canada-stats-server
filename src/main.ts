@@ -5,12 +5,13 @@ import {mkdirSync} from "fs";
 import {LicenseService} from "./modules/vrtournaments/license/license.service";
 import {VRRankingsTypeService} from "./modules/vrrankings/type/type.service";
 import {TennisAssociationService} from "./modules/tennis_association/tennis_association.service";
+import {ConfigurationService} from "./modules/configuration/configuration.service";
 
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  await app.listen(3002);
+  await app.listen(app.get('ConfigurationService')["envConfig"]['PORT']);
 
   /**
    * make a log directory, just in case it isn't there.
@@ -24,8 +25,6 @@ async function bootstrap() {
     }
   }
 
-  // console.log(process.env);
-
   configure("log4js_config.json");
   const logger = getLogger("main");
   logger.info("started");
@@ -37,7 +36,7 @@ async function bootstrap() {
   licenseService.loadLicenses();
 
   const rankingstypeService = app.get(VRRankingsTypeService);
-  rankingstypeService.loadInitialRankingsTpes();
+  rankingstypeService.loadInitialRankingsTypes();
 
   const tennisAssociationsService = app.get(TennisAssociationService);
   tennisAssociationsService.loadTennisAssociations();

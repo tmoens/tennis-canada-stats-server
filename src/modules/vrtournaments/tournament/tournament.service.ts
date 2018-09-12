@@ -1,31 +1,36 @@
-import {Injectable, forwardRef, Inject} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tournament } from './tournament.entity'
 import {VRAPIService} from "../../VRAPI/vrapi.service";
 import {EventService} from "../event/event.service";
-import {StatsService} from "../../stats/stats.service";
 import {getLogger} from "log4js";
 import {License} from "../license/license.entity";
 import {LicenseService} from "../license/license.service";
+import {ConfigurationService} from "../../configuration/configuration.service";
+import {JobStats, JobState} from "../../../utils/jobstats";
 
-const CREATION_COUNT = "tournament_creation";
-const UPDATE_COUNT = "tournament_update";
-const UP_TO_DATE_COUNT = "tournament_up_to_date";
-
+const CREATION_COUNT = "tournaments_created";
+const UPDATE_COUNT = "tournaments_updated";
+const UP_TO_DATE_COUNT = "tournaments_already_up_to_date";
+const SKIP_COUNT = "tournaments_skipped";
+const DONE = "done";
 const logger = getLogger("tournamentService");
 
 @Injectable()
 export class TournamentService {
+  private importStats: JobStats;
   constructor(
+    private readonly config: ConfigurationService,
     @InjectRepository(Tournament)
     private readonly repository: Repository<Tournament>,
     private readonly eventService: EventService,
     private readonly licenseService: LicenseService,
-    private readonly statsService: StatsService,
     private readonly vrapi: VRAPIService,
 
-  ) {}
+  ) {
+    this.importStats = new JobStats('tournamentImport');
+  }
 
   async findAll(): Promise<Tournament[]> {
     return await this.repository.find();
@@ -34,22 +39,28 @@ export class TournamentService {
   // update the ts_stats_server database wrt tournaments.
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
-  async importTournamentsFromVR(since:number = 2018) {
-    // Ask the API for a list of tournaments since TODO
+  async importTournamentsFromVR() {
+    this.importStats = new JobStats('tournamentImport');
+    this.importStats.setStatus(JobState.IN_PROGRESS);
+    // TODO - this needs to be done in a loop from start to this year
+
+    // Ask the API for a list of tournaments since a configured start time
     // The API responds with an array an object containing only one item called
     // Tournament which is an array of mini tournamentId records.
-    let miniTournaments = await this.vrapi.get("Tournament/Year/2018");
+    let miniTournaments = await this.vrapi.get("Tournament/Year/" + this.config.tournamentUploadStartYear);
+
     logger.info (miniTournaments.Tournament.length + " tournaments found");
-    let importLimit = 2;
+    let tournamentCount:number = miniTournaments.Tournament.length;
+    // the next line is not strictly true as many will be skipped and there
+    // may be an import limit (but only during testing.  But it is a reasonable guess.
+    this.importStats.toDo = tournamentCount;
 
-    // This is the top of the import hierarchy so we can clear counters before we start.
-    this.statsService.resetAll();
-
-    for (let i = 0; i < miniTournaments.Tournament.length; i++) {
+    for (let i = 0; i < tournamentCount; i++) {
       let miniTournament = miniTournaments.Tournament[i];
 
       // Skipping leagues and team tennis for now.
       if ("0" != miniTournament.TypeID) {
+        this.importStats.bump(SKIP_COUNT);
         logger.info("Skipping team tournament or league. " + miniTournament.Name + " Code: " + miniTournament.Code);
         continue;
       }
@@ -58,30 +69,31 @@ export class TournamentService {
       let tournament:Tournament = await
         this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
-        logger.info("Creating: " + miniTournament.Name + " Code: " + miniTournament.Code);
+        logger.info("Creating: " + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        this.statsService.bump(CREATION_COUNT);
+        this.importStats.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
-        logger.info("Updating: " + miniTournament.Name);
+        logger.info("Updating: " + JSON.stringify(miniTournament));
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        this.statsService.bump(UPDATE_COUNT);
+        this.importStats.bump(UPDATE_COUNT);
       }
 
       // otherwise, our version is up to date and we can skip along.
       else {
-        this.statsService.bump(UP_TO_DATE_COUNT);
+        this.importStats.bump(UP_TO_DATE_COUNT);
       }
 
-      // for initial development
-      if (this.statsService.get(CREATION_COUNT) >= importLimit) break;
-    }
+      this.importStats.bump(DONE);
 
-    this.statsService.logAll();
-    return this.statsService.get(CREATION_COUNT);
+      // Break out early, but really only used during development.
+      if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
+    }
+    this.importStats.setStatus(JobState.DONE);
+    return JSON.stringify(this.importStats);
   }
 
   async createTournamentFromVRAPI(tournamentCode:string): Promise<boolean> {
@@ -96,12 +108,16 @@ export class TournamentService {
     let license:License = await this.licenseService.lookupOrCreate(apiTournament.Organization.Name);
 
     // Create the tournament object.
-    tournament.buildFromVRAPIObj(apiTournament)
+    tournament.buildFromVRAPIObj(apiTournament);
     tournament.license = license;
     await this.repository.save(tournament);
 
     // Now dig down and import the events for this tournament
-    await this.eventService.importEventsFromVR(tournament);
+    await this.eventService.importEventsFromVR(tournament, this.importStats);
     return true;
+  }
+
+  getImportStatus():string {
+    return JSON.stringify(this.importStats);
   }
 }
