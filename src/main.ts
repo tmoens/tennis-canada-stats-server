@@ -14,13 +14,29 @@ async function bootstrap() {
   await app.listen(app.get('ConfigurationService')["envConfig"]['PORT']);
 
   /**
-   * make a log directory, just in case it isn't there.
+   * make a several directory, just in case it is a fresh install.
    */
   try {
     mkdirSync('./log');
   } catch (e) {
     if (e.code != 'EEXIST') {
       console.error("Could not set up log directory, error was: ", e);
+      process.exit(1);
+    }
+  }
+  try {
+    mkdirSync('./uploads');
+  } catch (e) {
+    if (e.code != 'EEXIST') {
+      console.error("Could not set up uploads directory, error was: ", e);
+      process.exit(1);
+    }
+  }
+  try {
+    mkdirSync('./Reports');
+  } catch (e) {
+    if (e.code != 'EEXIST') {
+      console.error("Could not set up Reports directory, error was: ", e);
       process.exit(1);
     }
   }
