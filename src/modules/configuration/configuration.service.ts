@@ -57,6 +57,4 @@ export class ConfigurationService {
   get tournamentUploadLimit(): number {
     return Number(this.envConfig.TOURNAMENT_UPLOAD_LIMIT);
   }
-
-
 }
