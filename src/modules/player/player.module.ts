@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlayerService } from './player.service';
 import { PlayerController } from './player.controller';
 import { Player } from './player.entity';
-import {VRAPIModule} from "../VRAPI/vrapi.module";
-import {MatchPlayerModule} from "../vrtournaments/match_player/match_player.module";
-import {VRRankingsItemModule} from "../vrrankings/item/item.module";
+import {VRAPIModule} from '../VRAPI/vrapi.module';
+import {MatchPlayerModule} from '../vrtournaments/match_player/match_player.module';
+import {VRRankingsItemModule} from '../vrrankings/item/item.module';
 
 @Module({
   imports: [
@@ -19,10 +19,10 @@ import {VRRankingsItemModule} from "../vrrankings/item/item.module";
     PlayerService,
   ],
   controllers: [
-    PlayerController
+    PlayerController,
   ],
   exports: [
-    PlayerService
-  ]
+    PlayerService,
+  ],
 })
 export class PlayerModule {}

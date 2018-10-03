@@ -1,21 +1,21 @@
 import {Injectable} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Tournament } from './tournament.entity'
-import {VRAPIService} from "../../VRAPI/vrapi.service";
-import {EventService} from "../event/event.service";
-import {getLogger} from "log4js";
-import {License} from "../license/license.entity";
-import {LicenseService} from "../license/license.service";
-import {ConfigurationService} from "../../configuration/configuration.service";
-import {JobStats, JobState} from "../../../utils/jobstats";
+import { Tournament } from './tournament.entity';
+import {VRAPIService} from '../../VRAPI/vrapi.service';
+import {EventService} from '../event/event.service';
+import {getLogger} from 'log4js';
+import {License} from '../license/license.entity';
+import {LicenseService} from '../license/license.service';
+import {ConfigurationService} from '../../configuration/configuration.service';
+import {JobStats, JobState} from '../../../utils/jobstats';
 
-const CREATION_COUNT = "tournaments_created";
-const UPDATE_COUNT = "tournaments_updated";
-const UP_TO_DATE_COUNT = "tournaments_already_up_to_date";
-const SKIP_COUNT = "tournaments_skipped";
-const DONE = "done";
-const logger = getLogger("tournamentService");
+const CREATION_COUNT = 'tournaments_created';
+const UPDATE_COUNT = 'tournaments_updated';
+const UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
+const SKIP_COUNT = 'tournaments_skipped';
+const DONE = 'done';
+const logger = getLogger('tournamentService');
 
 @Injectable()
 export class TournamentService {
@@ -39,7 +39,7 @@ export class TournamentService {
   // update the ts_stats_server database wrt tournaments.
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
-  async importTournamentsFromVR() {
+  async importTournamentsFromVR(): Promise<string> {
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
     // TODO - this needs to be done in a loop from start to this year
@@ -47,36 +47,36 @@ export class TournamentService {
     // Ask the API for a list of tournaments since a configured start time
     // The API responds with an array an object containing only one item called
     // Tournament which is an array of mini tournamentId records.
-    let miniTournaments = await this.vrapi.get("Tournament/Year/" + this.config.tournamentUploadStartYear);
+    const miniTournaments = await this.vrapi.get('Tournament/Year/' + this.config.tournamentUploadStartYear);
 
-    logger.info (miniTournaments.Tournament.length + " tournaments found");
-    let tournamentCount:number = miniTournaments.Tournament.length;
+    logger.info (miniTournaments.Tournament.length + ' tournaments found');
+    const tournamentCount: number = miniTournaments.Tournament.length;
     // the next line is not strictly true as many will be skipped and there
     // may be an import limit (but only during testing.  But it is a reasonable guess.
     this.importStats.toDo = tournamentCount;
 
     for (let i = 0; i < tournamentCount; i++) {
-      let miniTournament = miniTournaments.Tournament[i];
+      const miniTournament = miniTournaments.Tournament[i];
 
       // Skipping leagues and team tennis for now.
-      if ("0" != miniTournament.TypeID) {
+      if ('0' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
-        logger.info("Skipping team tournament or league. " + miniTournament.Name + " Code: " + miniTournament.Code);
+        logger.info('Skipping team tournament or league. ' + miniTournament.Name + ' Code: ' + miniTournament.Code);
         continue;
       }
 
       // go see if we already have a record of the tournamentId.  If not make a new one
-      let tournament:Tournament = await
+      const tournament: Tournament = await
         this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
-        logger.info("Creating: " + JSON.stringify(miniTournament));
+        logger.info('Creating: ' + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
         this.importStats.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
-        logger.info("Updating: " + JSON.stringify(miniTournament));
+        logger.info('Updating: ' + JSON.stringify(miniTournament));
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
         this.importStats.bump(UPDATE_COUNT);
@@ -96,16 +96,16 @@ export class TournamentService {
     return JSON.stringify(this.importStats);
   }
 
-  async createTournamentFromVRAPI(tournamentCode:string): Promise<boolean> {
-    let tournament = new Tournament();
-    let apiTournament = await this.vrapi.get("Tournament/" + tournamentCode);
+  async createTournamentFromVRAPI(tournamentCode: string): Promise<boolean> {
+    const tournament = new Tournament();
+    let apiTournament = await this.vrapi.get('Tournament/' + tournamentCode);
 
     // sluff off the outer layer of the returned object.
     apiTournament = apiTournament.Tournament;
 
     // Lookup the license - this is the only reliable way to get the
     // province for the tournament.
-    let license:License = await this.licenseService.lookupOrCreate(apiTournament.Organization.Name);
+    const license: License = await this.licenseService.lookupOrCreate(apiTournament.Organization.Name);
 
     // Create the tournament object.
     tournament.buildFromVRAPIObj(apiTournament);
@@ -117,7 +117,7 @@ export class TournamentService {
     return true;
   }
 
-  getImportStatus():string {
+  getImportStatus(): string {
     return JSON.stringify(this.importStats);
   }
 }

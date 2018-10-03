@@ -3,11 +3,20 @@
 Server to handle requests and API for Tennis Canada for tasks relating to
 play data. (Players, tournaments, matches mostly)
 
+This runs as a node server on port 3002 (for now).
+
+To get apache to forward request to and from the node server, we have to add
+the following lines to the httpd.conf file on the rogersrankings.com server:
+
+ProxyPass /stats http://localhost:3002
+ProxyPassReverse /stats http://localhost:3002
+
+
 -- Configuration -----------------
 
 
 Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
-> set NODE_ENV=production
+> set NODE_ENV=production (this is the default, by the way)
 > npm run start:prod
 
 OR
@@ -16,7 +25,7 @@ OR
 > npm run start:development
 I generally have two terminals (Production and Development) with the appropriate environments
 
-then in the environment directory, create a corresponding development.env or production.env file
+then in the environments directory, create a corresponding development.env or production.env file
 do not commit these to git
 
 == Dependencies/Design notes =====================
@@ -27,7 +36,7 @@ properly, so database changes have to be done in both the code and on the db at
 the same time.
 
 During development when you can turf the whole DB and regenerate it, you can go to
-the ormconfig.js file and add the line "synchronize": true, but you have to
+the config service and change the line "synchronize": true, but you have to
 change it to "false" right away again after the server runs or else it will complain
 that the tables already exist for every subsequent run.
 
@@ -42,6 +51,15 @@ logs handled.  That is, which files to stick logs in from which level.
 
 
 npm run {whatever} // the options for whatever are in package.json
+
+-- Tournament Loader and Rankings Loader
+
+These can be run from the command line like this:
+
+> node dist/loadVRTournaments.js
+
+1) make sure the regular api server has been run at least once first
+2) make sure that the production.env file is correct
 
 -- TODO ---------------
 I added a library "dom" to the tsconfig.json file which solves a compile problem
