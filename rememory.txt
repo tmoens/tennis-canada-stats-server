@@ -19,8 +19,7 @@ Before you run, please set the environment variable NODE_ENV to 'production' or 
 > set NODE_ENV=production (this is the default, by the way)
 > npm run start:prod
 using git-bash it is
-git-bash$ env NODE_ENV=production
-
+git-bash$ export NODE_ENV=production
 
 OR
 

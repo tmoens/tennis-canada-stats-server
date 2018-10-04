@@ -325,6 +325,7 @@ export class PlayerService {
   // Furthermore the xlsx library does not allow a streaming read so we
   // reverted to .csv.
   async importVRPersons(players: any[]) {
+    logger.info('**** Starting player import.');
     this.personImportJobStats = new JobStats('Import players from VR "All Persons" admin report.');
     this.personImportJobStats.setStatus(JobState.IN_PROGRESS);
     this.personImportJobStats.toDo = players.length;
@@ -332,6 +333,7 @@ export class PlayerService {
     logger.info('Importing ' + players.length + ' players.');
     let player: Player;
     let address: string[];
+    let count: number = 0;
     for (const playerData of  players) {
       player = await this.findPlayer(playerData.memberid);
       if (null == player) {
@@ -349,8 +351,8 @@ export class PlayerService {
       player.firstName = playerData.firstname;
       address = [];
       address.push(playerData.address);
-      if (null != playerData.address2) address.push(playerData.address2);
-      if (null != playerData.address3) address.push(playerData.address3);
+      if ('' !== playerData.address2) address.push(playerData.address2);
+      if ('' !== playerData.address3) address.push(playerData.address3);
       player.address = address.join(', ');
       player.postalCode = playerData.postalcode;
       player.city = playerData.city;
@@ -358,9 +360,9 @@ export class PlayerService {
       player.gender = playerData.gender;
       player.DOB = playerData.dob;
       // strip special characters from phone numbers
-      player.phone = playerData.phone.replace(/\D/g);
-      player.phone2 = playerData.phone2.replace(/\D/g);
-      player.mobile = playerData.mobile.replace(/\D/g);
+      player.phone = playerData.phone.replace(/\D/g, '');
+      player.phone2 = playerData.phone2.replace(/\D/g, '');
+      player.mobile = playerData.mobile.replace(/\D/g, '');
       // skip playerData.fax
       // skip playerData.fax2
       player.email = playerData.email;
@@ -374,11 +376,14 @@ export class PlayerService {
           JSON.stringify(playerData));
         this.personImportJobStats.bump('player save errors');
       }
+      count++;
       this.personImportJobStats.bump('done');
-      // if (0 == i%100) logger.info("\t done: " + i);
+      if (0 === count % 100) logger.info('\t done: ' + count);
     }
     this.personImportJobStats.status = JobState.DONE;
     logger.info('\t Loaded: ' + players.length + ' players.');
+    logger.info('**** Ending player import.');
+
     return true;
   }
 }

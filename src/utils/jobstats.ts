@@ -57,7 +57,7 @@ export class JobStats {
       this.endTime = new Date();
       logger.info("Job complete: " + JSON.stringify(this));
     }
-    if (JobState.ERROR == state) {
+    if (JobState.ERROR === state) {
       this.endTime = new Date();
       logger.error("Job failed: " + JSON.stringify(this));
     }
