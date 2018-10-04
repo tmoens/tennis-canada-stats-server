@@ -5,12 +5,12 @@
     },
     "vrimport": {
       "type": "dateFile",
-      "filename": "log/vrimport",
+      "filename": "log/vrimport.log",
       "pattern": "-yyyy-MM-dd"
     },
     "vrapi": {
       "type":"dateFile",
-      "filename":"log/vrapi",
+      "filename":"log/vrapi.log",
       "pattern": "-yyyy-MM-dd"
     }
   },

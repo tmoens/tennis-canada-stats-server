@@ -39,7 +39,8 @@ export class TournamentService {
   // update the ts_stats_server database wrt tournaments.
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
-  async importTournamentsFromVR(): Promise<string> {
+  async importTournamentsFromVR() {
+    logger.info('**** VR Tournament Import started.');
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
     // TODO - this needs to be done in a loop from start to this year
@@ -93,7 +94,9 @@ export class TournamentService {
       if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
     }
     this.importStats.setStatus(JobState.DONE);
-    return JSON.stringify(this.importStats);
+    logger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
+    logger.info('**** VR Tournament Import done.');
+    return;
   }
 
   async createTournamentFromVRAPI(tournamentCode: string): Promise<boolean> {

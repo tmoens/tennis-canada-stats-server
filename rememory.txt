@@ -18,6 +18,9 @@ ProxyPassReverse /stats http://localhost:3002
 Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
 > set NODE_ENV=production (this is the default, by the way)
 > npm run start:prod
+using git-bash it is
+git-bash$ env NODE_ENV=production
+
 
 OR
 
@@ -60,6 +63,9 @@ These can be run from the command line like this:
 
 1) make sure the regular api server has been run at least once first
 2) make sure that the production.env file is correct
+
+However, the program is meant to run periodically and is thus created as a recurring task
+using Windows Task Scheduler.
 
 -- TODO ---------------
 I added a library "dom" to the tsconfig.json file which solves a compile problem
