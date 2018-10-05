@@ -37,7 +37,11 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       VRAPI_PASSWORD: Joi.string().required(),
 
       TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(2013),
-      TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(-1),
+      TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(10),
+
+      RANKING_PUBLICATION_UPLOAD_LIMIT: Joi.number().default(10),
+
+      TYPEORM_SYNCH_DATABASE: Joi.boolean().default(false),
 
     });
 
@@ -65,6 +69,10 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get tournamentUploadLimit(): number {
     return Number(this.envConfig.TOURNAMENT_UPLOAD_LIMIT);
+  }
+
+  get rankingUploadLimit(): number {
+    return Number(this.envConfig.RANKING_PUBLICATION_UPLOAD_LIMIT);
   }
 
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
