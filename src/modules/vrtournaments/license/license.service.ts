@@ -77,6 +77,7 @@ export class LicenseService {
   // For every license return both the number of tournaments under the licenses
   // and the end date of the most recent tournament that used the license.
   async getLicenseUsageReport(): Promise<string> {
+    logger.info("Creating license usage report.")
     const licenses = await this.repository
       .createQueryBuilder("license")
       .select("license.licenseName", "licenseName")

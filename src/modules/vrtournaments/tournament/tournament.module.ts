@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TournamentService } from './tournament.service';
 import { TournamentController } from './tournament.controller';
 import { Tournament } from './tournament.entity';
-import {VRAPIModule} from "../../VRAPI/vrapi.module";
-import {EventModule} from "../event/event.module";
-import {LicenseModule} from "../license/license.module";
+import {VRAPIModule} from '../../VRAPI/vrapi.module';
+import {EventModule} from '../event/event.module';
+import {LicenseModule} from '../license/license.module';
 
 @Module({
   imports: [
@@ -17,13 +17,13 @@ import {LicenseModule} from "../license/license.module";
     LicenseModule,
   ],
   providers: [
-    TournamentService
+    TournamentService,
   ],
   controllers: [
-    TournamentController
+    TournamentController,
   ],
-  exports:[
-    TournamentService
+  exports: [
+    TournamentService,
   ],
 })
 export class TournamentModule {}

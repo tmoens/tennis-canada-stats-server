@@ -3,9 +3,9 @@
     "out": {
       "type": "stdout"
     },
-    "vrimport": {
+    "tcStats": {
       "type": "dateFile",
-      "filename": "log/vrimport.log",
+      "filename": "log/tcStats.log",
       "pattern": "-yyyy-MM-dd"
     },
     "vrapi": {
@@ -18,7 +18,7 @@
     "default": {
       "appenders": [
         "out",
-        "vrimport"
+        "tcStats"
       ],
       "level": "info"
     },

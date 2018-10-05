@@ -1,14 +1,14 @@
-import {Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tournament } from './tournament.entity';
-import {VRAPIService} from '../../VRAPI/vrapi.service';
-import {EventService} from '../event/event.service';
-import {getLogger} from 'log4js';
-import {License} from '../license/license.entity';
-import {LicenseService} from '../license/license.service';
-import {ConfigurationService} from '../../configuration/configuration.service';
-import {JobStats, JobState} from '../../../utils/jobstats';
+import { VRAPIService } from '../../VRAPI/vrapi.service';
+import { EventService } from '../event/event.service';
+import { getLogger } from 'log4js';
+import { License } from '../license/license.entity';
+import { LicenseService } from '../license/license.service';
+import { ConfigurationService } from '../../configuration/configuration.service';
+import { JobStats, JobState } from '../../../utils/jobstats';
 
 const CREATION_COUNT = 'tournaments_created';
 const UPDATE_COUNT = 'tournaments_updated';
@@ -40,7 +40,8 @@ export class TournamentService {
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
   async importTournamentsFromVR() {
-    logger.info('**** VR Tournament Import started.');
+    const importLogger = getLogger('tournamentImport');
+    importLogger.info('**** VR Tournament Import started.');
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
     // TODO - this needs to be done in a loop from start to this year
@@ -50,7 +51,7 @@ export class TournamentService {
     // Tournament which is an array of mini tournamentId records.
     const miniTournaments = await this.vrapi.get('Tournament/Year/' + this.config.tournamentUploadStartYear);
 
-    logger.info (miniTournaments.Tournament.length + ' tournaments found');
+    importLogger.info (miniTournaments.Tournament.length + ' tournaments found');
     const tournamentCount: number = miniTournaments.Tournament.length;
     // the next line is not strictly true as many will be skipped and there
     // may be an import limit (but only during testing.  But it is a reasonable guess.
@@ -62,7 +63,7 @@ export class TournamentService {
       // Skipping leagues and team tennis for now.
       if ('0' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
-        logger.info('Skipping team tournament or league. ' + miniTournament.Name + ' Code: ' + miniTournament.Code);
+        importLogger.info('Skipping team tournament or league. ' + miniTournament.Name + ' Code: ' + miniTournament.Code);
         continue;
       }
 
@@ -70,14 +71,14 @@ export class TournamentService {
       const tournament: Tournament = await
         this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
-        logger.info('Creating: ' + JSON.stringify(miniTournament));
+        importLogger.info('Creating: ' + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
         this.importStats.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
-        logger.info('Updating: ' + JSON.stringify(miniTournament));
+        importLogger.info('Updating: ' + JSON.stringify(miniTournament));
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
         this.importStats.bump(UPDATE_COUNT);
@@ -94,8 +95,8 @@ export class TournamentService {
       if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
     }
     this.importStats.setStatus(JobState.DONE);
-    logger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
-    logger.info('**** VR Tournament Import done.');
+    importLogger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
+    importLogger.info('**** VR Tournament Import done.');
     return;
   }
 
