@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {Equal, Repository} from 'typeorm';
 import { VRRankingsPublication } from './publication.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {getLogger} from 'log4js';
@@ -9,6 +9,8 @@ import {VRRankingsCategory} from '../category/category.entity';
 import {VRRankingsItemService} from '../item/item.service';
 import {JobStats} from '../../../utils/jobstats';
 import {ConfigurationService} from '../../configuration/configuration.service';
+
+import * as moment from 'moment';
 
 const CREATION_COUNT = 'publication_creation';
 const UPDATE_COUNT = 'publication_update';
@@ -34,9 +36,13 @@ export class VRRankingsPublicationService {
     return await this.repository.findOne({publicationCode});
   }
 
+  async findByCategoryYearWeek(category: VRRankingsCategory, year: number, week: number): Promise<VRRankingsPublication> {
+     return this.repository.findOne({where: {year, week, rankingsCategory: category.categoryCode}});
+  }
+
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
   async importVRRankingsPublicationFromVR(rankingType: VRRankingsType) {
-    const importStats: JobStats = new JobStats(`rankingsImport`)
+    const importStats: JobStats = new JobStats(`rankingsImport`);
 
     // Ask the API for a list of vr rankings publications for this type of ranking
     let list = await this.vrapi.get('Ranking/' + rankingType.typeCode + '/Publication');

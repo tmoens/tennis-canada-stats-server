@@ -36,12 +36,14 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       VRAPI_USER: Joi.string().required(),
       VRAPI_PASSWORD: Joi.string().required(),
 
-      TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(2013),
+      TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(0),
       TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(10),
 
       RANKING_PUBLICATION_UPLOAD_LIMIT: Joi.number().default(10),
 
       TYPEORM_SYNCH_DATABASE: Joi.boolean().default(false),
+
+      TYPEORM_LOG_QUERIES: Joi.boolean().default(false),
 
     });
 
@@ -64,7 +66,20 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
   }
 
   get tournamentUploadStartYear(): number {
-    return Number(this.envConfig.TOURNAMENT_UPLOAD_START_YEAR);
+    /* If there is an explicit start year configured, use it.
+     * otherwise:
+     * if it now before May, load this year and last.
+     * if it is May or later, just load this year.
+     */
+    if (Number(this.envConfig.TOURNAMENT_UPLOAD_START_YEAR) > 2012) {
+      return Number(this.envConfig.TOURNAMENT_UPLOAD_START_YEAR);
+    }
+    const d = new Date();
+    if (d.getMonth() > 5) {
+      return d.getFullYear();
+    } else {
+      return d.getFullYear() - 1;
+    }
   }
 
   get tournamentUploadLimit(): number {
@@ -75,21 +90,43 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     return Number(this.envConfig.RANKING_PUBLICATION_UPLOAD_LIMIT);
   }
 
+  get typeORMLogQueries(): boolean {
+    return Boolean(this.envConfig.TYPEORM_LOG_QUERIES);
+  }
+
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
 
-    return {
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: this.envConfig.DB_USER,
-      password: this.envConfig.DB_PASSWORD,
-      database: this.envConfig.DB_NAME,
-      entities: [
-        `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
-      ],
-      synchronize: false,
-      logging: ['error'],
-    };
+    const logOptions: string[] = ['error'];
+    if (this.typeORMLogQueries) {
+      return {
+        type: 'mysql',
+        host: 'localhost',
+        port: 3306,
+        username: this.envConfig.DB_USER,
+        password: this.envConfig.DB_PASSWORD,
+        database: this.envConfig.DB_NAME,
+        entities: [
+          `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
+        ],
+        synchronize: false,
+        logging: ['error', 'query'],
+      };
+    } else {
+      return {
+        type: 'mysql',
+        host: 'localhost',
+        port: 3306,
+        username: this.envConfig.DB_USER,
+        password: this.envConfig.DB_PASSWORD,
+        database: this.envConfig.DB_NAME,
+        entities: [
+          `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
+        ],
+        synchronize: false,
+        logging: ['error'],
+      };
+
+    }
   }
 }

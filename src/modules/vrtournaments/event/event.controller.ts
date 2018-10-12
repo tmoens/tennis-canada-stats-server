@@ -1,7 +1,7 @@
-import {Controller, Get, Param} from '@nestjs/common';
+import {Controller, Get, Param, Query, UseGuards} from '@nestjs/common';
 import { EventService } from './event.service';
 import { Event } from './event.entity';
-import {ParamsTokenFactory} from "@nestjs/core/pipes/params-token-factory";
+import {AuthGuard} from '@nestjs/passport';
 
 @Controller('Event')
 export class EventController {
@@ -13,8 +13,15 @@ export class EventController {
   }
 
   @Get()
+  @UseGuards(AuthGuard('bearer'))
   async findAll(): Promise<Event[]> {
     return await this.eventService.findAll();
   }
 
+  @Get('/ratingsReport')
+  async exportRatingsReport(@Query() query): Promise<any> {
+    const filename: string = await this.eventService.rateEvents(
+      query.from, query.to, query.province, query.categories.split(','), query.gender);
+    return {whatever: 'whatever, dude'};
+  }
 }

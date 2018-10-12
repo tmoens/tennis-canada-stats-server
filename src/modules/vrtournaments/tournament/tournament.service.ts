@@ -16,6 +16,7 @@ const UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
 const SKIP_COUNT = 'tournaments_skipped';
 const DONE = 'done';
 const logger = getLogger('tournamentService');
+const importLogger = getLogger('tournamentImport');
 
 @Injectable()
 export class TournamentService {
@@ -40,25 +41,45 @@ export class TournamentService {
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
   async importTournamentsFromVR() {
-    const importLogger = getLogger('tournamentImport');
     importLogger.info('**** VR Tournament Import started.');
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
-    // TODO - this needs to be done in a loop from start to this year
 
+    // If we are past June or late, load into next year
+    const d = new Date();
+    let year: number;
+    if (d.getMonth() > 4 ) {
+      year = d.getFullYear() + 1;
+    } else {
+      year = d.getFullYear();
+    }
+
+    for (year; year >= this.config.tournamentUploadStartYear; year-- ) {
+      if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
+      await this.importTournamentsFromVRYear(year);
+    }
+
+    this.importStats.setStatus(JobState.DONE);
+    importLogger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
+    importLogger.info('**** VR Tournament Import done.');
+    return;
+  }
+
+  async importTournamentsFromVRYear(year: number) {
     // Ask the API for a list of tournaments since a configured start time
     // The API responds with an array an object containing only one item called
     // Tournament which is an array of mini tournamentId records.
-    const miniTournaments = await this.vrapi.get('Tournament/Year/' + this.config.tournamentUploadStartYear);
+    const miniTournaments_json = await this.vrapi.get('Tournament/Year/' + year);
+    const miniTournaments: any[] = VRAPIService.arrayify(miniTournaments_json.Tournament);
+    importLogger.info (miniTournaments.length + ' tournaments found');
 
-    importLogger.info (miniTournaments.Tournament.length + ' tournaments found');
-    const tournamentCount: number = miniTournaments.Tournament.length;
+    const tournamentCount: number = miniTournaments.length;
     // the next line is not strictly true as many will be skipped and there
     // may be an import limit (but only during testing.  But it is a reasonable guess.
     this.importStats.toDo = tournamentCount;
 
-    for (let i = 0; i < tournamentCount; i++) {
-      const miniTournament = miniTournaments.Tournament[i];
+    for (let i = tournamentCount - 1; i >= 0; i--) {
+      const miniTournament = miniTournaments[i];
 
       // Skipping leagues and team tennis for now.
       if ('0' !== miniTournament.TypeID) {
@@ -94,9 +115,6 @@ export class TournamentService {
       // Break out early, but really only used during development.
       if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
     }
-    this.importStats.setStatus(JobState.DONE);
-    importLogger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
-    importLogger.info('**** VR Tournament Import done.');
     return;
   }
 
@@ -121,7 +139,12 @@ export class TournamentService {
     return true;
   }
 
+  /* this is vestigial from the time that tournament loader was run manually
+   * and the client had to poll to find out the status of the loader.
+   * But I can see it being useful again at some point.
+   */
   getImportStatus(): string {
     return JSON.stringify(this.importStats);
   }
+
 }

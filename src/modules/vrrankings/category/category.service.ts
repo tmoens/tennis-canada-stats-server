@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { VRRankingsCategory } from './category.entity'
-import {getLogger} from "log4js";
-import {VRRankingsType} from "../type/type.entity";
+import { VRRankingsCategory } from './category.entity';
+import {getLogger} from 'log4js';
+import {VRRankingsType} from '../type/type.entity';
 
-const logger = getLogger("VRRankingCategoryService");
+const logger = getLogger('VRRankingCategoryService');
 
 @Injectable()
 export class VRRankingsCategoryService {
@@ -18,14 +18,16 @@ export class VRRankingsCategoryService {
     return await this.repository.find();
   }
 
+  async getRankingCategoryFromId(catId: string): Promise<VRRankingsCategory> | null {
+    return await this.repository.findOne({where: { categoryId: catId}});
+  }
+
   // This is done only when starting with a fresh database
   // in practical terms it just helps during development and is
   // never called when the system is live.
-  async loadCategories(rt:VRRankingsType,categoryData:any[]) {
-    let c:VRRankingsCategory;
-    let data:any;
-    for (let i=0; i < categoryData.length; i++) {
-      data = categoryData[i];
+  async loadCategories(rt: VRRankingsType, categoryData: any[]) {
+    let c: VRRankingsCategory;
+    for (const data of categoryData) {
       c = new VRRankingsCategory(
         data.categoryCode,
         rt,
@@ -34,6 +36,6 @@ export class VRRankingsCategoryService {
         data.loadme);
       this.repository.save(c);
     }
-    logger.info("Loaded static rankings categories.");
+    logger.info('Loaded static rankings categories.');
   }
 }

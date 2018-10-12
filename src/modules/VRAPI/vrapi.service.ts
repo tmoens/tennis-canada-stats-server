@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import * as request from "superagent";
-import {getLogger} from "log4js";
-import {ConfigurationService} from "../configuration/configuration.service";
+import * as request from 'superagent';
+import {getLogger} from 'log4js';
+import {ConfigurationService} from '../configuration/configuration.service';
 const HttpsAgent = require('agentkeepalive').HttpsAgent;
 
-const logger = getLogger("vrapi");
+const logger = getLogger('vrapi');
 
 const parseString = require('xml2js').parseString;
 
@@ -29,38 +29,64 @@ export class VRAPIService {
 
   constructor(
     private readonly config: ConfigurationService) {
-    logger.info("API User: " + config.vrapiUser);
+    logger.info('API User: ' + config.vrapiUser);
   }
-  async get(pattern:string = ""): Promise<any> {
+  async get(pattern: string = ''): Promise<any> {
     let r: any = {};
 
     // Note, the VRAPI seemed to be timing out sometimes.  So we will
     // retry the call up to three times.
     // The timeout should probably not be happening - need to ask VR why.
     let done = false;
-    let retryLimit: number = 3;
+    const retryLimit: number = 3;
     let retryCount: number = 0;
     while (!done )
       try {
-        logger.info("calling: https://api.tournamentsoftware.com/1.0/" + pattern);
-        let response = await request
-          .get("https://api.tournamentsoftware.com/1.0/" + pattern)
+        logger.info('calling: https://api.tournamentsoftware.com/1.0/' + pattern);
+        const response = await request
+          .get('https://api.tournamentsoftware.com/1.0/' + pattern)
           .agent(keepaliveAgent)
           .auth(this.config.vrapiUser, this.config.vrapiPassword);
         done = true;
 
-        parseString(response.text,{explicitArray:false, mergeAttrs:true }, function(err,result) {
+        parseString(response.text, {explicitArray: false, mergeAttrs: true }, function(err, result) {
           r = result.Result;
         });
       } catch (e) {
-        logger.warn("Error calling VR API: " + e);
+        logger.warn('Error calling VR API: ' + e);
         retryCount++;
         // TODO handle failure after multiple retries
-        if (retryCount == retryLimit) {
+        if (retryCount === retryLimit) {
           done = true;
-          logger.error("Multiple retries failed");
+          logger.error('Multiple retries failed');
         }
       }
     return r;
+  }
+
+  /*
+   * In several places the vr api returns XML that can be
+   * - empty,
+   * - exactly one item
+   * - a list of items
+   * Examples: events in a tournament or entries in an event or matches in a draw.
+   *
+   * Because the xml2js parser is configured not to convert every single
+   * child node into an array (explicitArray: false), it only creates an
+   * array in the third case.
+   *
+   * But in fact, for those XML nodes which we know we want to treat as lists
+   * (such as the above examples) we build an array for the first two cases.
+   *
+   */
+
+  static arrayify(putativeArray: any): any[] {
+    if (null == putativeArray) {
+      return [];
+    } else if (Array.isArray(putativeArray)) {
+      return putativeArray;
+    } else {
+      return [putativeArray];
+    }
   }
 }

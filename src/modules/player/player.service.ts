@@ -88,7 +88,8 @@ export class PlayerService {
     // Note that the "unknown player" is very different from "no Player" like in a Bye
     // situation.
     if (!PlayerService.validatePlayerId(config.playerId)) {
-      logger.warn('74546100 Failed to findPlayerOrFacsimile invalid playerId. Here is the player data: ' + JSON.stringify(config));
+      logger.warn('74546100 Failed to findPlayerOrFacsimile invalid playerId. ' +
+        'Here is the player data: ' + JSON.stringify(config));
       return this.getPlayerZero();
     }
 
