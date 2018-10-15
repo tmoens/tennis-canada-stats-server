@@ -64,7 +64,7 @@ export class MatchPlayerService {
       playerId: matchPlayerData.MemberID,
       firstName: matchPlayerData.Firstame,
       lastName: matchPlayerData.Lastname,
-      source: MATCH_DATA});
+      source: MATCH_DATA}, false);
   }
 
   // Support the renumbering of a player for whome match data already exists.

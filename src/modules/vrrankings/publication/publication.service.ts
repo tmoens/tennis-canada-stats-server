@@ -36,7 +36,10 @@ export class VRRankingsPublicationService {
     return await this.repository.findOne({publicationCode});
   }
 
-  async findByCategoryYearWeek(category: VRRankingsCategory, year: number, week: number): Promise<VRRankingsPublication> {
+  async findByCategoryYearWeek(
+    category: VRRankingsCategory,
+    year: number,
+    week: number): Promise<VRRankingsPublication> | null {
      return this.repository.findOne({where: {year, week, rankingsCategory: category.categoryCode}});
   }
 

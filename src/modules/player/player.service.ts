@@ -7,6 +7,7 @@ import {getLogger} from 'log4js';
 import {MatchPlayerService} from '../vrtournaments/match_player/match_player.service';
 import {VRRankingsItemService} from '../vrrankings/item/item.service';
 import {JobState, JobStats} from '../../utils/jobstats';
+import {EventPlayerService} from "../vrtournaments/event_player/event_player.service";
 
 const logger = getLogger('playerService');
 
@@ -20,6 +21,8 @@ export class PlayerService {
     private readonly vrapi: VRAPIService,
     @Inject(forwardRef(() => MatchPlayerService))
     private readonly matchPlayerService: MatchPlayerService,
+    @Inject(forwardRef(() => EventPlayerService))
+    private readonly eventPlayerService: EventPlayerService,
     @Inject(forwardRef(() => VRRankingsItemService))
     private readonly vrRankingsItemService: VRRankingsItemService,
 
@@ -82,7 +85,7 @@ export class PlayerService {
 
   // Some client gets its hands on a VR player ID and possibly more scraps of player info.
   // It wants to lookup that player.
-  async findPlayerOrFacsimile(config: PlayerConfig): Promise<Player> {
+  async findPlayerOrFacsimile(config: PlayerConfig, tryToCreate: boolean = false): Promise<Player> {
     // if we get an invalid playerId, we are pretty much hooped
     // so this is the "unknown player" case and we just log it an return playerZero
     // Note that the "unknown player" is very different from "no Player" like in a Bye
@@ -108,12 +111,14 @@ export class PlayerService {
 
     // Failing that, we will try and make one up with whatever scraps of info
     // the client gives us
-    p = await this.createPlayerOnSpec(config);
-    if (p != null) return p;
+    if (tryToCreate) {
+      p = await this.createPlayerOnSpec(config);
+      if (p != null) return p;
+    }
 
     // and in the logically unreachable code department
     // TODO 2018-06-13 which was of course reached immediately when loading vrRankingsItem
-    // and failing becuase of duplicate Ids
+    // and failing because of duplicate Ids
     logger.error('2799810923 failed to findPlayerOrFacsimile with configuration: ' + JSON.stringify(config));
     return this.getPlayerZero();
   }
@@ -310,12 +315,15 @@ export class PlayerService {
     await this.repository.save(fromPlayer);
 
     // Now we have to do the actual renumbering of historical data
-    // in the database. PlayerIDs can show up in two places:
+    // in the database. PlayerIDs can show up in three places:
     // - any time a player has played a match (MatchPlayer)
     // - any time a player shows up in a ranking list (VRRankingsItem)
+    // - any time a player entered in an event
     let count = await this.matchPlayerService.renumberPlayer(fromPlayer, toPlayer);
     response.push('Merged ' + count + ' matches');
     count = await this.vrRankingsItemService.renumberPlayer(fromPlayer, toPlayer);
+    response.push('Merged ' + count + ' ranking entries');
+    count = await this.eventPlayerService.renumberPlayer(fromPlayer, toPlayer);
     response.push('Merged ' + count + ' ranking entries');
     return response;
   }

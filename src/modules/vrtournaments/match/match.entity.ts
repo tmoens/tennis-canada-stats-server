@@ -1,56 +1,56 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from "typeorm";
-import {Event} from "../event/event.entity";
-import {Draw} from "../draw/draw.entity";
-import {MatchPlayer} from "../match_player/match_player.entity";
+import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
+import {Event} from '../event/event.entity';
+import {Draw} from '../draw/draw.entity';
+import {MatchPlayer} from '../match_player/match_player.entity';
 
-@Entity("Match")
-@Index("event",["event",])
-@Index("draw",["draw",])
+@Entity('Match')
+@Index('event', ['event'])
+@Index('draw', ['draw'])
 export class Match {
 
   @PrimaryGeneratedColumn()
-  matchId:number;
+  matchId: number;
 
-  @ManyToOne(type=>Event, eventId=>eventId.matches,{
-    nullable:false,
+  @ManyToOne(type => Event, eventId => eventId.matches, {
+    nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE' })
-  @JoinColumn({ name:'eventId'})
-  event:Event;
+  @JoinColumn({ name: 'eventId'})
+  event: Event;
 
-  @ManyToOne(type=>Draw, drawId=>drawId.matches,{
-    nullable:false,
+  @ManyToOne(type => Draw, drawId => drawId.matches, {
+    nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE' })
-  @JoinColumn({ name:'drawId'})
-  draw:Draw;
+  @JoinColumn({ name: 'drawId'})
+  draw: Draw;
 
-  @Column("int",{
-    comment: "VRs code for this match "
+  @Column('int', {
+    comment: 'VRs code for this match ',
   })
-  vrMatchCode:number;
+  vrMatchCode: number;
 
-  @Column("int",{
-    comment: "The VR number of the draw (in the tournament) in which this match happened"
+  @Column('int', {
+    comment: 'The VR number of the draw (in the tournament) in which this match happened',
   })
-  vrDrawCode:number;
+  vrDrawCode: number;
 
-  @Column("int",{
-    comment: "The VR number of the event (in the tournament) in which this match happened"
+  @Column('int', {
+    comment: 'The VR number of the event (in the tournament) in which this match happened',
   })
-  vrEventCode:number;
+  vrEventCode: number;
 
-  @Column("int",{
-    name:"winnerCode",
-    comment: "as per VR data. 0: none, 1: team 1, 2: team2, 3: tie"
+  @Column('int', {
+    name: 'winnerCode',
+    comment: 'as per VR data. 0: none, 1: team 1, 2: team2, 3: tie',
   })
-  winnerCode:number;
+  winnerCode: number;
 
-  @Column("int",{
-    name:"scoreStatus",
-    comment: "0: normal, 1: walkover, 2: retirement, 3:dq, 4: no match, 5: bye"
+  @Column('int', {
+    name: 'scoreStatus',
+    comment: '0: normal, 1: walkover, 2: retirement, 3:dq, 4: no match, 5: bye',
   })
-  scoreStatus:number;
+  scoreStatus: number;
 
   @OneToMany(type => MatchPlayer, matchPlayers => matchPlayers.match, {
     onDelete: 'CASCADE',
@@ -58,26 +58,25 @@ export class Match {
   })
   matchPlayers: MatchPlayer[];
 
-  @Column("varchar",{
-    length:255
+  @Column('varchar', {
+    length: 255,
   })
-  score:string;
+  score: string;
 
-  // Given an event object from the VR API, fill in our own fields
+  // Given a match object from the VR API, fill in our own fields
   buildFromVRAPIObj(apiMatch: any) {
-    this.vrMatchCode = parseInt(apiMatch.Code);
-    this.vrDrawCode = parseInt(apiMatch.DrawCode);
-    this.vrEventCode = parseInt(apiMatch.EventCode);
-    this.winnerCode = parseInt(apiMatch.Winner);
-    this.scoreStatus = parseInt(apiMatch.ScoreStatus);
+    this.vrMatchCode = parseInt(apiMatch.Code, 10);
+    this.vrDrawCode = parseInt(apiMatch.DrawCode, 10);
+    this.vrEventCode = parseInt(apiMatch.EventCode, 10);
+    this.winnerCode = parseInt(apiMatch.Winner, 10);
+    this.scoreStatus = parseInt(apiMatch.ScoreStatus, 10);
 
-    let scoreString:string  = "";
     switch (this.scoreStatus) {
       case 0: // Normal
         // console.log ("Sets:\n" + JSON.stringify(apiMatch.Sets));
         if (null == apiMatch.Sets) {
           if (null == apiMatch.Team1.Player1 || null == apiMatch.Team2.Player1) {
-            this.score = "Bye";
+            this.score = 'Bye';
           }
         } else {
           // The sets will come back as an array only if there are two or more
@@ -89,29 +88,28 @@ export class Match {
             sets = [apiMatch.Sets.Set];
           }
 
-          let score = [];// one element for each set to be joined later.
-          for (let i = 0; i < sets.length; i++) {
-            let setScoreData = sets[i];
-            if (apiMatch.Winner == 2) {
-              score.push(setScoreData.Team2 + "-" + setScoreData.Team1);
+          const score = []; // one element for each set to be joined later.
+          for (const setScoreData of sets) {
+            if (apiMatch.Winner === 2) {
+              score.push(setScoreData.Team2 + '-' + setScoreData.Team1);
             } else {
-              score.push(setScoreData.Team1 + "-" + setScoreData.Team2);
+              score.push(setScoreData.Team1 + '-' + setScoreData.Team2);
             }
           }
-          this.score = score.join(", ");
+          this.score = score.join(', ');
         }
         break;
       case 1:
-        this.score = "Walkover";
+        this.score = 'Walkover';
         break;
       case 2:
-        this.score = "Retirement";
+        this.score = 'Retirement';
         break;
       case 3:
-        this.score = "Disqualification";
+        this.score = 'Disqualification';
         break;
       case 4:
-        this.score = "Unknown";
+        this.score = 'Unknown';
         break;
     }
   }

@@ -6,6 +6,7 @@
   "scripts": {
     "format": "prettier --write \"**/*.ts\"",
     "start": "ts-node -r tsconfig-paths/register src/main.ts ",
+    "start:loadTournaments": "ts-node -r tsconfig-paths/register src/loadVRTournaments.ts ",
     "start:development": "nodemon",
     "start:prod": "node dist/main.js",
     "test": "jest",

@@ -6,6 +6,7 @@ import { Player } from './player.entity';
 import {VRAPIModule} from '../VRAPI/vrapi.module';
 import {MatchPlayerModule} from '../vrtournaments/match_player/match_player.module';
 import {VRRankingsItemModule} from '../vrrankings/item/item.module';
+import {EventPlayerModule} from '../vrtournaments/event_player/event_player.module';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import {VRRankingsItemModule} from '../vrrankings/item/item.module';
     VRAPIModule,
     forwardRef(() => MatchPlayerModule),
     forwardRef(() => VRRankingsItemModule),
-
+    forwardRef(() => EventPlayerModule),
   ],
   providers: [
     PlayerService,

@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm';
-import {Between, EntityManager, Equal, FindConditions, LessThan, MoreThan, Repository} from 'typeorm';
+import { EntityManager, Repository} from 'typeorm';
 import { Event } from './event.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {Tournament} from '../tournament/tournament.entity';
@@ -9,11 +9,11 @@ import {PlayerService} from '../../player/player.service';
 import {DrawService} from '../draw/draw.service';
 import {JobStats} from '../../../utils/jobstats';
 import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
-import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
 import {VRRankingsCategoryService} from '../../vrrankings/category/category.service';
 import {VRRankingsPublicationService} from '../../vrrankings/publication/publication.service';
 import * as moment from 'moment';
-import {arrayify} from "../../../../node_modules/tslint/lib/utils";
+import {VRRankingsPublication} from '../../vrrankings/publication/publication.entity';
+import {EventPlayerService} from '../event_player/event_player.service';
 
 const CREATION_COUNT = 'event_creation';
 const logger = getLogger('eventService');
@@ -24,6 +24,7 @@ export class EventService {
     @InjectRepository(Event) private readonly repository: Repository<Event>,
     private readonly drawService: DrawService,
     private readonly playerService: PlayerService,
+    private readonly rosterService: EventPlayerService,
     private readonly vrapi: VRAPIService,
     @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly categoryService: VRRankingsCategoryService,
@@ -47,19 +48,29 @@ export class EventService {
       e = new Event();
       e.buildFromVRAPIObj(event);
       e.tournament = tournament;
+      e.vrRankingsCategory = await this.categoryService.getRankingCategoryFromId(e.buildCategoryId());
+      if (null === e.vrRankingsCategory) {
+        logger.warn('Could not find ranking category for tournament: ' +
+        tournament.tournamentCode + ', ' + tournament.name + ' event: '  + e.name);
+      }
       e.draws = [];
       e.matches = [];
+      e.players = [];
+
+      await this.repository.save(e).catch(reason => {
+        logger.error(`Failed to save event (reason: ${reason}) prior to doing roster` +
+          JSON.stringify(e));
+        return false;
+      });
+
       const entries_json = await this.vrapi.get(
         'Tournament/' + tournament.tournamentCode +
         '/Event/' + event.Code + '/Entry');
       const entries: any[] = VRAPIService.arrayify(entries_json.Entry);
-      e.rosterSize = entries.length;
+      e.numberOfEntries = entries.length;
+      await this.rosterService.loadRoster(e, entries, importStats );
 
-      // Note: We are electing not to put the roster in the database
-      // mainly because they are not guaranteed, and in fact often do
-      // not have, valid membership identifiers, which means the best
-      // we can do is put in a list of members.
-      await this.repository.save(e);
+      // TODO - I suspect I need to re-fetch the event at this point.
 
       // Now dig down and load the draws for this event.
       await this.drawService.importDrawsFromVR(e, importStats);
@@ -71,12 +82,7 @@ export class EventService {
 
   // Get the ranks publication that applies to this event.
   // This would be the publication from the week before the tournament starts.
-  async getRankingsPublication(event: Event) {
-    // go get the rankings category for this event
-    const eventCategory: VRRankingsCategory =
-      await this.categoryService.getRankingCategoryFromId(event.categoryId);
-    console.log('Ranking Category: ' + JSON.stringify(eventCategory));
-
+  async getRankingsPublication(event: Event): Promise<VRRankingsPublication> | null {
     const d = moment(event.tournament.startDate).subtract(1, 'week');
     let year = d.year();
     let week = d.isoWeek();
@@ -84,7 +90,7 @@ export class EventService {
       year = 2013;
       week = 53;
     }
-    return await this.rankingsPubService.findByCategoryYearWeek(eventCategory, year, week);
+    return await this.rankingsPubService.findByCategoryYearWeek(event.vrRankingsCategory, year, week);
   }
 
   /* Find all the players who actually played in an event by looking

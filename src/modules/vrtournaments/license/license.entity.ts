@@ -1,23 +1,23 @@
-import {Column, Entity, OneToMany, PrimaryColumn} from "typeorm";
-import {Tournament} from "../tournament/tournament.entity";
+import {Column, Entity, OneToMany, PrimaryColumn} from 'typeorm';
+import {Tournament} from '../tournament/tournament.entity';
 
-@Entity("License")
+@Entity('License')
 export class License {
-  @PrimaryColumn("varchar",{
-    length:255,
+  @PrimaryColumn('varchar', {
+    length: 255,
   })
-  licenseName:string;
+  licenseName: string;
 
-  @Column("varchar",{
-    nullable:false,
-    length:3
+  @Column('varchar', {
+    nullable: false,
+    length: 3,
   })
-  province:string;
+  province: string;
 
-  @OneToMany(type=>Tournament, tournaments=>tournaments.license)
-  tournaments:Tournament[];
+  @OneToMany(type => Tournament, tournaments => tournaments.license)
+  tournaments: Tournament[];
 
-  constructor(n:string, p:string) {
+  constructor(n: string, p: string) {
     this.licenseName = n;
     this.province = p;
   }
@@ -31,6 +31,6 @@ export class LicenseDTO {
 export class VRLicenseUseDTO {
   licenseName: string;
   province: string;
-  lastUsed:string;
-  usageCount:string;
+  lastUsed: string;
+  usageCount: string;
 }

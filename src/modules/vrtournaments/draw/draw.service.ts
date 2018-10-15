@@ -50,8 +50,6 @@ export class DrawService {
       // await this.repository.save(d);
       importStats.bump(CREATION_COUNT);
     }
-
     return true;
   }
-
 }
