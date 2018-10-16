@@ -24,6 +24,11 @@ export class VRRankingsItemService {
     return await this.repository.find();
   }
 
+  async findByPubAndPlayer(player: Player, publication: VRRankingsPublication): Promise<VRRankingsItem> {
+    return this.repository.findOne({
+      where: {playerId: player.playerId, publicationId: publication.publicationId}});
+  }
+
   async importVRRankingsListFromVR(
     publication: VRRankingsPublication): Promise<boolean> {
     let list = await this.vrapi.get(

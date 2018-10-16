@@ -1,7 +1,7 @@
 import {Body, Controller, Get, HttpStatus, Param, Post, Req, Res, UseGuards} from '@nestjs/common';
 import { LicenseService } from './license.service';
 import { License, LicenseDTO } from './license.entity';
-import { AuthGuard } from "@nestjs/passport";
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('License')
 export class LicenseController {
@@ -25,10 +25,10 @@ export class LicenseController {
   // properly download the file.  And really, there is no sensitive data served up here.
   @Get('usageReport')
   async getLicenseUsageReport( @Res() response): Promise<any> {
-    let filename = await this.licenseService.getLicenseUsageReport();
+    const filename = await this.licenseService.getLicenseUsageReport();
     response.status(HttpStatus.OK);
     await response.download(filename);
-    //TODO Delete file?
+    // TODO Delete file?
     // fs.unlink(filename);
     return true;
   }

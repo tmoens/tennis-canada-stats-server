@@ -40,7 +40,8 @@ export class VRRankingsPublicationService {
     category: VRRankingsCategory,
     year: number,
     week: number): Promise<VRRankingsPublication> | null {
-     return this.repository.findOne({where: {year, week, rankingsCategory: category.categoryCode}});
+     return this.repository.findOne(
+       {where: {year, week, rankingsCategory: category.categoryCode}});
   }
 
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type

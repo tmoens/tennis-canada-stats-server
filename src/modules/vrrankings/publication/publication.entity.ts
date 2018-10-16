@@ -1,5 +1,16 @@
-import {Index, Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne} from 'typeorm';
+import {
+  Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  JoinColumn,
+  ManyToOne,
+  OneToMany
+} from 'typeorm';
 import {VRRankingsCategory} from '../category/category.entity';
+import {EventPlayer} from "../../vrtournaments/event_player/event_player.entity";
+import {VRRankingsItem} from "../item/item.entity";
 
 /**
  * NOTE
@@ -45,6 +56,12 @@ export class VRRankingsPublication {
 
   @CreateDateColumn()
   tcCreatedAt: Date;
+
+  @OneToMany(type => VRRankingsItem, items => items.publication, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  items: VRRankingsItem[];
 
   // Check if our view of when the publication was published in VR
   // is older than the provided date string - in which case we are out of date.

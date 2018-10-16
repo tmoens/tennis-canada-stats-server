@@ -16,7 +16,7 @@ export class VRRankingsItem {
   @PrimaryGeneratedColumn()
   vrRankingsItemId;
 
-  @ManyToOne(type => VRRankingsPublication, {
+  @ManyToOne(type => VRRankingsPublication, publication => publication.items, {
     nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
@@ -36,6 +36,11 @@ export class VRRankingsItem {
   // without having to load the entire player object.
   @Column()
   playerId: number;
+
+  // This "column" just give access to the publication Id value
+  // without having to load the entire player object.
+  @Column()
+  publicationId: number;
 
   @Column('int')
   rank: number;

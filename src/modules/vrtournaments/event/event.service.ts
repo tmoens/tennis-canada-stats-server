@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
-import { InjectRepository, InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, Repository} from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository} from 'typeorm';
 import { Event } from './event.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {Tournament} from '../tournament/tournament.entity';
@@ -14,6 +14,9 @@ import {VRRankingsPublicationService} from '../../vrrankings/publication/publica
 import * as moment from 'moment';
 import {VRRankingsPublication} from '../../vrrankings/publication/publication.entity';
 import {EventPlayerService} from '../event_player/event_player.service';
+import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
+import {VRRankingsItemService} from '../../vrrankings/item/item.service';
+import {Player} from '../../player/player.entity';
 
 const CREATION_COUNT = 'event_creation';
 const logger = getLogger('eventService');
@@ -26,9 +29,9 @@ export class EventService {
     private readonly playerService: PlayerService,
     private readonly rosterService: EventPlayerService,
     private readonly vrapi: VRAPIService,
-    @InjectEntityManager() private readonly entityManager: EntityManager,
     private readonly categoryService: VRRankingsCategoryService,
     private readonly rankingsPubService: VRRankingsPublicationService,
+    private readonly rankingsItemService: VRRankingsItemService,
   ) {
   }
 
@@ -36,17 +39,16 @@ export class EventService {
     return await this.repository.find();
   }
 
-  // go get all the events for a given tournament from the VR API.
+  // Go fetch all the events for a given tournament from the VR API.
   async importEventsFromVR(tournament: Tournament, importStats: JobStats): Promise<boolean> {
     const events_json = await this.vrapi.get('Tournament/' + tournament.tournamentCode + '/Event');
-    const events: any[] = VRAPIService.arrayify(events_json.TournamentEvent);
-    logger.info(events.length + ' events found');
+    const eventsData: any[] = VRAPIService.arrayify(events_json.TournamentEvent);
+    logger.info(eventsData.length + ' events found');
 
-    let e: Event;
-    // go and create the events
-    for (const event of events) {
-      e = new Event();
-      e.buildFromVRAPIObj(event);
+    // Build Event Objects from the event data returned by the VR API
+    for (const eventData of eventsData) {
+      const e = new Event();
+      e.buildFromVRAPIObj(eventData);
       e.tournament = tournament;
       e.vrRankingsCategory = await this.categoryService.getRankingCategoryFromId(e.buildCategoryId());
       if (null === e.vrRankingsCategory) {
@@ -57,17 +59,22 @@ export class EventService {
       e.matches = [];
       e.players = [];
 
+      // Find out how many entries there are in the event. For
+      // doubles this will be half the number of players.
+      const entries_json = await this.vrapi.get(
+        'Tournament/' + tournament.tournamentCode +
+        '/Event/' + eventData.Code + '/Entry');
+      const entries: any[] = VRAPIService.arrayify(entries_json.Entry);
+      e.numberOfEntries = entries.length;
+
+      // Save the event.
       await this.repository.save(e).catch(reason => {
         logger.error(`Failed to save event (reason: ${reason}) prior to doing roster` +
           JSON.stringify(e));
         return false;
       });
 
-      const entries_json = await this.vrapi.get(
-        'Tournament/' + tournament.tournamentCode +
-        '/Event/' + event.Code + '/Entry');
-      const entries: any[] = VRAPIService.arrayify(entries_json.Entry);
-      e.numberOfEntries = entries.length;
+      // Load the roster - I.e. the players in the event.
       await this.rosterService.loadRoster(e, entries, importStats );
 
       // TODO - I suspect I need to re-fetch the event at this point.
@@ -80,7 +87,7 @@ export class EventService {
     return true;
   }
 
-  // Get the ranks publication that applies to this event.
+  // Find the ranking publication that applies to this event.
   // This would be the publication from the week before the tournament starts.
   async getRankingsPublication(event: Event): Promise<VRRankingsPublication> | null {
     const d = moment(event.tournament.startDate).subtract(1, 'week');
@@ -93,53 +100,40 @@ export class EventService {
     return await this.rankingsPubService.findByCategoryYearWeek(event.vrRankingsCategory, year, week);
   }
 
-  /* Find all the players who actually played in an event by looking
-   * at any player that shows up at least once in matches played in that event.
+  /*
+   * Create a report which rates events based on the strength of the players
+   * in the events.
+   * The result is provided in an excel book with one page per event category.
    */
-  async getRoster(eventId): Promise<any[]> {
-    return await this.entityManager.query(
-      'select DISTINCTROW p.* from event e\n' +
-      'LEFT JOIN `match` m ON e.eventId = m.eventId\n' +
-      'LEFT JOIN matchplayer mp ON m.matchId = mp.matchId\n' +
-      'LEFT JOIN player p ON mp.playerId = p.playerId\n' +
-      'WHERE e.eventId = "' + eventId + '"');
-  }
-
-  /* Same as fetching the event roster, but also add in the player ranking
-   * at the date of the event.
-   */
-  async getRatedRoster(event: Event): Promise<any[]> | null {
-    const rankingPublication = await this.getRankingsPublication(event);
-    console.log('Ranking Publication: ' + JSON.stringify(rankingPublication));
-    return await this.entityManager.query(
-      'select DISTINCTROW p.*, ri.*  from event e\n' +
-      'LEFT JOIN `match` m ON e.eventId = m.eventId\n' +
-      'LEFT JOIN matchplayer mp ON m.matchId = mp.matchId\n' +
-      'LEFT JOIN player p ON mp.playerId = p.playerId\n' +
-      'LEFT JOIN vrRankingsItem ri ON p.playerId = ri.playerId\n' +
-      'WHERE e.eventId = "' + event.eventId + '"' +
-      ' AND ri.publicationId = ' + rankingPublication.publicationId);
-  }
-
   async rateEvents(fromDate: Date,
                    toDate: Date,
                    province: string,
-                   categories: string[],
-                   gender: string = null): Promise<string>{
+                   categoryIds: string[]): Promise<string>{
     const wb: WorkBook = utils.book_new();
+    logger.info('Generating event strength report.');
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
     };
-    for (const category of categories) {
-      let newCategory: boolean = true;
-      // let events: any[] = [];
+    for (const categoryId of categoryIds) {
+      // For every category we build a list of events in that category and '
+      // a list of the players in those events complete with their ranking at
+      // at the time of the event.
+      const playerList: any[] = [];
+      const eventList: any[] = [];
+      // look up the rankings category object based on the given Id string
+      const category: VRRankingsCategory =
+        await this.categoryService.getRankingCategoryFromId(categoryId);
+      if (!category) break;
       let events: Event[] = [];
       if (province) {
         events = await this.repository
           .createQueryBuilder('event')
           .leftJoinAndSelect('event.tournament', 'tournament')
           .leftJoinAndSelect('tournament.license', 'license')
-          .where(`event.categoryId = '${category}'`)
+          .leftJoinAndSelect('event.vrRankingsCategory', 'category')
+          .leftJoinAndSelect('event.players', 'players')
+          .leftJoinAndSelect('players.player', 'player')
+          .where(`event.vrCategoryCode = '${category.categoryCode}'`)
           .andWhere(`tournament.endDate <= '${toDate}'`)
           .andWhere(`tournament.endDate >= '${fromDate}'`)
           .andWhere(`license.province = '${province}'`)
@@ -150,39 +144,71 @@ export class EventService {
           .createQueryBuilder('event')
           .leftJoinAndSelect('event.tournament', 'tournament')
           .leftJoinAndSelect('tournament.license', 'license')
-          .where(`event.categoryId = '${category}'`)
+          .leftJoinAndSelect('event.vrRankingsCategory', 'category')
+          .leftJoinAndSelect('event.players', 'players')
+          .leftJoinAndSelect('players.player', 'player')
+          .where(`event.vrCategoryCode = '${category.categoryCode}'`)
           .andWhere(`tournament.endDate <= '${toDate}'`)
           .andWhere(`tournament.endDate >= '${fromDate}'`)
           .getMany();
       }
 
       for (const event of events) {
-        console.log('Event:' + JSON.stringify(event));
-        console.log('Tournament' + JSON.stringify(event.tournament));
-        console.log('License' + JSON.stringify(event.tournament.license));
-        const ratedRoster = await this.getRatedRoster(event);
-        for (const player of ratedRoster) {
-          console.log('Player: ' + JSON.stringify(player));
+        // console.log("Event: " + JSON.stringify(event));
+        const pub = await this.getRankingsPublication(event);
+        // console.log('Rankings Publication: ' + JSON.stringify(pub));
+        let numRatedPlayers: number = 0;
+        let numUnratedPlayers: number = 0;
+        let eventRating: number = 0;
+        for (const eventPlayer of event.players) {
+          const player: Player = eventPlayer.player;
+          const rankItem =
+            await this.rankingsItemService.findByPubAndPlayer(player, pub);
+          if (rankItem) {
+            numRatedPlayers++;
+            // console.log('Player: ' + JSON.stringify(eventPlayer.player));
+            // console.log('RankiItem: ' + JSON.stringify(rankItem));
+            const rating = 1 / Math.pow(rankItem.rank, 0.7);
+            playerList.push( {
+              event: event.eventId,
+              playerId: player.playerId,
+              firstName: player.firstName,
+              lastName: player.lastName,
+              rank: rankItem.rank,
+              points: rankItem.points,
+              rating,
+            });
+            eventRating = eventRating + rating;
+          } else {
+            numUnratedPlayers++;
+          }
         }
-        if (newCategory) {
-          this.addCategoryToWorkbook(wb, category);
-          newCategory = false;
-        }
-        // this.addEventToWorkbook(wb, eventData);
+        eventList.push({
+          tournamentCode: event.tournament.tournamentCode,
+          eventCode: event.eventCode,
+          tournamentName: event.tournament.name,
+          startDate: event.tournament.startDate,
+          endDate: event.tournament.endDate,
+          province: event.tournament.license.province,
+          category: event.vrRankingsCategory.categoryName,
+          name: event.name,
+          numEntries: event.numberOfEntries,
+          numMembers: event.players.length,
+          numRatedPlayers,
+          numUnratedPlayers,
+          grade: event.grade,
+          winnerPoints: event.winnerPoints,
+          STRENGTH: eventRating,
+        });
       }
+      const playerSheet: WorkSheet = await utils.json_to_sheet(playerList);
+      utils.book_append_sheet(wb, playerSheet, categoryId + 'Players');
+      const eventSheet: WorkSheet = await utils.json_to_sheet(eventList);
+      utils.book_append_sheet(wb, eventSheet, categoryId + 'Events');
     }
-    const now: Date = new Date();
-    const filename = 'Reports/Event_Rating_' + now.toISOString().substr(0, 10) + '.xlsx';
-    // writeFile(wb, filename);
+    const now = moment().format('YYYY-MM-DD-HH-mm-ss');
+    const filename = `Reports/Event_Rating_${now}.xlsx`;
+    await writeFile(wb, filename);
     return filename;
-  }
-
-  private addCategoryToWorkbook(wb: WorkBook, category: string) {
-    return 'temporaryLintStopper';
-  }
-
-  private addEventToWorkbook(wb: WorkBook, event: any) {
-    return 'temporaryLintStopper';
-
   }
 }
