@@ -122,7 +122,7 @@ export class Event {
     this.maxAge = (null != apiEvent.MaxAge) ? this.maxAge = parseInt(apiEvent.MaxAge, 10) : 0;
     this.minAge = (null != apiEvent.MinAge) ? this.minAge = parseInt(apiEvent.MinAge, 10) : 0;
     this.winnerPoints = (null != apiEvent.WinnerPoints) ?
-      this.winnerPoints = parseInt(apiEvent.WinnerPoints, 10) : 0;
+      this.winnerPoints = parseInt(apiEvent.Points1, 10) : 0;
     this.isSingles = (1 === parseInt(apiEvent.GameTypeID, 10));
     if (null != apiEvent.Grading) this.grade = apiEvent.Grading.Name;
   }

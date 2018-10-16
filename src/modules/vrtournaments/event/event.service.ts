@@ -156,50 +156,58 @@ export class EventService {
       for (const event of events) {
         // console.log("Event: " + JSON.stringify(event));
         const pub = await this.getRankingsPublication(event);
-        // console.log('Rankings Publication: ' + JSON.stringify(pub));
-        let numRatedPlayers: number = 0;
-        let numUnratedPlayers: number = 0;
-        let eventRating: number = 0;
-        for (const eventPlayer of event.players) {
-          const player: Player = eventPlayer.player;
-          const rankItem =
-            await this.rankingsItemService.findByPubAndPlayer(player, pub);
-          if (rankItem) {
-            numRatedPlayers++;
-            // console.log('Player: ' + JSON.stringify(eventPlayer.player));
-            // console.log('RankiItem: ' + JSON.stringify(rankItem));
-            const rating = 1 / Math.pow(rankItem.rank, 0.7);
-            playerList.push( {
-              event: event.eventId,
-              playerId: player.playerId,
-              firstName: player.firstName,
-              lastName: player.lastName,
-              rank: rankItem.rank,
-              points: rankItem.points,
-              rating,
-            });
-            eventRating = eventRating + rating;
-          } else {
-            numUnratedPlayers++;
+        // if you cannot find a rankings publication for the event,
+        // you cannot rate the event.
+        if (!pub) {
+          logger.warn(
+            'Can not rate event because can not find a ranking publication for it: ' +
+            JSON.stringify(event));
+        } else {
+          // console.log('Rankings Publication: ' + JSON.stringify(pub));
+          let numRatedPlayers: number = 0;
+          let numUnratedPlayers: number = 0;
+          let eventRating: number = 0;
+          for (const eventPlayer of event.players) {
+            const player: Player = eventPlayer.player;
+            const rankItem =
+              await this.rankingsItemService.findByPubAndPlayer(player, pub);
+            if (rankItem) {
+              numRatedPlayers++;
+              // console.log('Player: ' + JSON.stringify(eventPlayer.player));
+              // console.log('RankiItem: ' + JSON.stringify(rankItem));
+              const rating = 1 / Math.pow(rankItem.rank, 0.7);
+              playerList.push({
+                event: event.eventId,
+                playerId: player.playerId,
+                firstName: player.firstName,
+                lastName: player.lastName,
+                rank: rankItem.rank,
+                points: rankItem.points,
+                rating,
+              });
+              eventRating = eventRating + rating;
+            } else {
+              numUnratedPlayers++;
+            }
           }
+          eventList.push({
+            tournamentCode: event.tournament.tournamentCode,
+            eventCode: event.eventCode,
+            tournamentName: event.tournament.name,
+            startDate: event.tournament.startDate,
+            endDate: event.tournament.endDate,
+            province: event.tournament.license.province,
+            category: event.vrRankingsCategory.categoryName,
+            name: event.name,
+            numEntries: event.numberOfEntries,
+            numMembers: event.players.length,
+            numRatedPlayers,
+            numUnratedPlayers,
+            grade: event.grade,
+            winnerPoints: event.winnerPoints,
+            STRENGTH: eventRating,
+          });
         }
-        eventList.push({
-          tournamentCode: event.tournament.tournamentCode,
-          eventCode: event.eventCode,
-          tournamentName: event.tournament.name,
-          startDate: event.tournament.startDate,
-          endDate: event.tournament.endDate,
-          province: event.tournament.license.province,
-          category: event.vrRankingsCategory.categoryName,
-          name: event.name,
-          numEntries: event.numberOfEntries,
-          numMembers: event.players.length,
-          numRatedPlayers,
-          numUnratedPlayers,
-          grade: event.grade,
-          winnerPoints: event.winnerPoints,
-          STRENGTH: eventRating,
-        });
       }
       const playerSheet: WorkSheet = await utils.json_to_sheet(playerList);
       utils.book_append_sheet(wb, playerSheet, categoryId + 'Players');
