@@ -14,6 +14,8 @@ export class EventController {
     return await this.eventService.findAll();
   }
 
+  // TODO add a jobstatus thingy to track the status of the report generation
+
   @Get('buildRatingsReport')
   @UseGuards(AuthGuard('bearer'))
   async buildRatingsReport( @Query() query): Promise<any> {
@@ -26,7 +28,8 @@ export class EventController {
   }
 
   @Get('downloadRatingsReport')
-  @UseGuards(AuthGuard('bearer'))
+  // TODO figure out how to guard this - client is an <a>...</a>
+  // @UseGuards(AuthGuard('bearer'))
   async exportRatingsReport( @Res() response, @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to download ' + query.filename);

@@ -392,6 +392,6 @@ docker-compose.yml
 environments/development.env
 environments/production.env
 dist/**
-reports/VR*
+reports/**
 uploads
 

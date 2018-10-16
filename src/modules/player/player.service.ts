@@ -87,12 +87,14 @@ export class PlayerService {
   // It wants to lookup that player.
   async findPlayerOrFacsimile(config: PlayerConfig, tryToCreate: boolean = false): Promise<Player> {
     // if we get an invalid playerId, we are pretty much hooped
-    // so this is the "unknown player" case and we just log it an return playerZero
+    // so this is the "unknown player" case and we just return playerZero
     // Note that the "unknown player" is very different from "no Player" like in a Bye
     // situation.
     if (!PlayerService.validatePlayerId(config.playerId)) {
-      logger.warn('74546100 Failed to findPlayerOrFacsimile invalid playerId. ' +
-        'Here is the player data: ' + JSON.stringify(config));
+      // This occurs too often to log.  Instead, will create a report of events with
+      // large numbers of entries but few known players.
+      // logger.warn('74546100 Failed to findPlayerOrFacsimile invalid playerId. ' +
+      //   'Here is the player data: ' + JSON.stringify(config));
       return this.getPlayerZero();
     }
 
