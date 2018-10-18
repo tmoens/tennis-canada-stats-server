@@ -14,6 +14,7 @@ import {LicenseModule} from './modules/vrtournaments/license/license.module';
 import {MatchModule} from './modules/vrtournaments/match/match.module';
 import {MatchPlayerModule} from './modules/vrtournaments/match_player/match_player.module';
 import {PlayerModule} from './modules/player/player.module';
+import {SeafileModule} from './modules/Seafile/seafile.module';
 import {TennisAssociationModule} from './modules/tennis_association/tennis_association.module';
 import {TournamentModule} from './modules/vrtournaments/tournament/tournament.module';
 import {VRAPIModule} from './modules/VRAPI/vrapi.module';
@@ -21,6 +22,7 @@ import {VRRankingsTypeModule} from './modules/vrrankings/type/type.module';
 import {VRRankingsCategoryModule} from './modules/vrrankings/category/category.module';
 import {VRRankingsPublicationModule} from './modules/vrrankings/publication/publication.module';
 import {ConfigurationService} from './modules/configuration/configuration.service';
+import {UtrModule} from './modules/reporters/UTRReports/utr.module';
 
 @Module({
   imports: [
@@ -39,8 +41,10 @@ import {ConfigurationService} from './modules/configuration/configuration.servic
     MatchModule,
     MatchPlayerModule,
     PlayerModule,
+    SeafileModule,
     TennisAssociationModule,
     TournamentModule,
+    UtrModule,
     VRAPIModule,
     VRRankingsTypeModule,
     VRRankingsCategoryModule,

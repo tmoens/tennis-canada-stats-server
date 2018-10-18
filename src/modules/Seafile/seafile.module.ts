@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { VRAPIService } from './vrapi.service';
+import { SeafileService } from './seafile.service';
 import {HttpModule} from '@nestjs/common/http';
 
 @Module({
   providers: [
-    VRAPIService,
+    SeafileService,
   ],
   imports: [
     HttpModule,
@@ -12,7 +12,7 @@ import {HttpModule} from '@nestjs/common/http';
   controllers: [
   ],
   exports: [
-    VRAPIService,
+    SeafileService,
   ],
 })
-export class VRAPIModule {}
+export class SeafileModule {}

@@ -177,8 +177,9 @@ export class PlayerService {
   static validatePlayerId(playerId: number): boolean {
     let message: string = null;
     if (null == playerId ) {
-      message = 'Undefined player ID';
-      logger.warn(message);
+      // Too many logs.  Now dealt with through a report.
+      // message = 'Undefined player ID';
+      // logger.warn(message);
       return false;
     }
     if (isNaN(Number(playerId))) {

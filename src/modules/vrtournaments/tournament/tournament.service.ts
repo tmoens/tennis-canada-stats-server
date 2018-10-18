@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository} from 'typeorm';
 import { Tournament } from './tournament.entity';
 import { VRAPIService } from '../../VRAPI/vrapi.service';
 import { EventService } from '../event/event.service';
@@ -15,7 +15,6 @@ const UPDATE_COUNT = 'tournaments_updated';
 const UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
 const SKIP_COUNT = 'tournaments_skipped';
 const DONE = 'done';
-const logger = getLogger('tournamentService');
 const importLogger = getLogger('tournamentImport');
 
 @Injectable()
@@ -146,5 +145,4 @@ export class TournamentService {
   getImportStatus(): string {
     return JSON.stringify(this.importStats);
   }
-
 }

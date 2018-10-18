@@ -45,7 +45,11 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
       TYPEORM_LOG_QUERIES: Joi.boolean().default(false),
 
-    });
+      SEAFILE_URL: Joi.string().required(),
+      SEAFILE_ID: Joi.string().required(),
+      SEAFILE_PASSWORD: Joi.string().required(),
+      SEAFILE_REPO_NAME: Joi.string().required(),
+  });
 
     const { error, value: validatedEnvConfig } = Joi.validate(
       envConfig,
@@ -88,6 +92,23 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get rankingUploadLimit(): number {
     return Number(this.envConfig.RANKING_PUBLICATION_UPLOAD_LIMIT);
+  }
+
+  // The seafile configuration is used to upload files to a server for UTR.
+  get seafileURL(): string {
+    return this.envConfig.SEAFILE_URL;
+  }
+
+  get seafileUserId(): string {
+    return this.envConfig.SEAFILE_ID;
+  }
+
+  get seafilePassword(): string {
+    return this.envConfig.SEAFILE_PASSWORD;
+  }
+
+  get seafileRepoName(): string {
+    return this.envConfig.SEAFILE_REPO_NAME;
   }
 
   get typeORMLogQueries(): boolean {
