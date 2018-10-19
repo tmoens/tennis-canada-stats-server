@@ -90,7 +90,7 @@ export class VRRankingsPublicationService {
       // So we take a remedial action here - if we have not loaded every category
       // for a particular publication, we delete all the categories of that
       // publication and re-load it.
-      if (rankingType.vrRankingsCategories.length !== publications.length) {
+      else if (rankingType.vrRankingsCategories.length !== publications.length) {
         logger.warn('Detected incomplete rankings upload for: ' +
           rankingType.typeName + ' for ' + publications[0].year + ' week: ' +
           publications[0].week + '. Expected ' + rankingType.vrRankingsCategories.length +
