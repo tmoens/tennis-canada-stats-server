@@ -3,7 +3,7 @@ import {getLogger} from 'log4js';
 import {ConfigurationService} from '../configuration/configuration.service';
 import * as fs from 'fs';
 import * as request from 'superagent';
-const xrequest = require('request');
+const rp = require('request-promise');
 
 const logger = getLogger('seafile');
 
@@ -75,15 +75,25 @@ export class SeafileService {
           parent_dir: '/' },
     };
 
-    await xrequest(options, (error, response, body) => {
-      if (error) {
-          logger.error('Error uploading file: ' + error);
-          return false;
-      }
-      logger.info('Upload successful.');
-      return true;
-    });
+    rp(options)
+      .then(body => {
+        logger.info('Upload successful.');
+        console.log('Body:' + body);
 
+      })
+      .catch(error => {
+        logger.error('Error uploading file: ' + error);
+
+      });
+
+    // await xrequest(options, (error, response, body) => {
+    //   if (error) {
+    //     logger.error('Error uploading file: ' + error);
+    //     return false;
+    //   }
+    //   logger.info('Upload successful.');
+    //   return true;
+    // });
   }
 
   // request a token from the seafile server to use for authentication

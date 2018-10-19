@@ -94,10 +94,30 @@ export class UtrService {
     stats.currentActivity = 'Uploading UTR Report';
     await this.seafileAPI.uploadFile(filename);
 
+    /* Forgiveness requested.  I tired to get the seafile API
+     * to wait for the upload to complete before returning. I failed.
+     * If the UTR report was being generated from a
+     * main.js (which never exits) - no big deal.
+     *
+     * But the auto reporter executable DOES exit and it does so after the report
+     * writer returns but before the file is actually uploaded.
+     *
+     * Consequently the upload gets aborted.
+     *
+     * So I am kludging things so that this process waits a while before
+     * returning
+     */
+
+    await this.delay(30000);
+
     logger.info('Finished UTR Report');
     stats.currentActivity = 'Finished UTR Report';
     stats.setStatus(JobState.DONE);
     return stats;
+  }
+
+  delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   makeHeaders(): UTRLine {
