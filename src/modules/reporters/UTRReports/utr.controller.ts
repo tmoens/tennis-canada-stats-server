@@ -7,8 +7,14 @@ import {JobStats} from '../../../utils/jobstats';
 export class UtrController {
   constructor(private readonly service: UtrService) {}
 
+  @Get('/buildUTRReport/status')
+  @UseGuards(AuthGuard('bearer'))
+  async buildUTRReportStatus(): Promise<JobStats> {
+    return this.service.getBuildReportStats();
+  }
+
   @Get('/buildUTRReport')
-  // @UseGuards(AuthGuard('bearer'))
+  @UseGuards(AuthGuard('bearer'))
   async buildUTRReport(): Promise<JobStats> {
     return await this.service.buildUTRReport();
   }

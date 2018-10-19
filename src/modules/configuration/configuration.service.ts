@@ -18,7 +18,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       this.environment = 'production';
     }
 
-    const filePath = `environments/${this.environment}.env`
+    const filePath = `environments/${this.environment}.env`;
     const config = dotenv.parse(fs.readFileSync(filePath));
     this.envConfig = this.validateInput(config);
   }
@@ -29,10 +29,21 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
    */
   private validateInput(envConfig: EnvConfig): EnvConfig {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
+
       PORT: Joi.number().default(3002),
+
       DB_NAME: Joi.string().required(),
       DB_USER: Joi.string().required(),
       DB_PASSWORD: Joi.string().required(),
+
+      SEAFILE_URL: Joi.string().required(),
+      SEAFILE_ID: Joi.string().required(),
+      SEAFILE_PASSWORD: Joi.string().required(),
+      SEAFILE_REPO_NAME: Joi.string().required(),
+
+      TYPEORM_SYNCH_DATABASE: Joi.boolean().default(false),
+      TYPEORM_LOG_QUERIES: Joi.boolean().default(false),
+
       VRAPI_USER: Joi.string().required(),
       VRAPI_PASSWORD: Joi.string().required(),
 
@@ -41,15 +52,9 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
       RANKING_PUBLICATION_UPLOAD_LIMIT: Joi.number().default(10),
 
-      TYPEORM_SYNCH_DATABASE: Joi.boolean().default(false),
+      UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
-      TYPEORM_LOG_QUERIES: Joi.boolean().default(false),
-
-      SEAFILE_URL: Joi.string().required(),
-      SEAFILE_ID: Joi.string().required(),
-      SEAFILE_PASSWORD: Joi.string().required(),
-      SEAFILE_REPO_NAME: Joi.string().required(),
-  });
+    });
 
     const { error, value: validatedEnvConfig } = Joi.validate(
       envConfig,
@@ -72,14 +77,14 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
   get tournamentUploadStartYear(): number {
     /* If there is an explicit start year configured, use it.
      * otherwise:
-     * if it now before May, load this year and last.
+     * if it now before May (month 4), load this year and last.
      * if it is May or later, just load this year.
      */
     if (Number(this.envConfig.TOURNAMENT_UPLOAD_START_YEAR) > 2012) {
       return Number(this.envConfig.TOURNAMENT_UPLOAD_START_YEAR);
     }
     const d = new Date();
-    if (d.getMonth() > 5) {
+    if (d.getMonth() > 4) {
       return d.getFullYear();
     } else {
       return d.getFullYear() - 1;
@@ -92,6 +97,10 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get rankingUploadLimit(): number {
     return Number(this.envConfig.RANKING_PUBLICATION_UPLOAD_LIMIT);
+  }
+
+  get utrReportGoesBackInDays(): number {
+    return Number(this.envConfig.UTR_REPORT_GOES_BACK_IN_DAYS);
   }
 
   // The seafile configuration is used to upload files to a server for UTR.
@@ -115,6 +124,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     return Boolean(this.envConfig.TYPEORM_LOG_QUERIES);
   }
 
+  // This is used to build ORM configuration options
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
 

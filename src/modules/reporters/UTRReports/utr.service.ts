@@ -5,23 +5,26 @@ import {getLogger} from 'log4js';
 import {ConfigurationService} from '../../configuration/configuration.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
-import * as moment from 'moment';
 import {MatchPlayer} from '../../vrtournaments/match_player/match_player.entity';
 import {Match} from '../../vrtournaments/match/match.entity';
 import {Tournament} from '../../vrtournaments/tournament/tournament.entity';
 import {Event} from '../../vrtournaments/event/event.entity';
 import {SeafileService} from '../../Seafile/seafile.service';
+import * as moment from 'moment';
 
 const TOURNAMENT_URL_PREFIX = 'http://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
 
 @Injectable()
 export class UtrService {
+  private reportStats: JobStats;
   constructor(
     private readonly config: ConfigurationService,
     @InjectRepository(Tournament)
     private readonly repository: Repository<Tournament>,
     private readonly seafileAPI: SeafileService,
-    ) {}
+    ) {
+    this.reportStats = new JobStats('BuildUTRReport');
+  }
 
   // build a report of all the matches in all the tournaments
   // at a national, regional or provincial level from any tournament
@@ -29,12 +32,12 @@ export class UtrService {
   async buildUTRReport(): Promise<JobStats> {
     const logger = getLogger('UTRReporter');
     logger.info('Querying UTR Data.');
-    const stats = new JobStats('BuildUTRReport');
-    stats.setStatus(JobState.IN_PROGRESS);
-    stats.currentActivity = 'Querying UTR Data Report';
+    this.reportStats = new JobStats('BuildUTRReport');
+    this.reportStats.setStatus(JobState.IN_PROGRESS);
+    this.reportStats.currentActivity = 'Querying UTR Data Report';
     let d = new Date();
     const nowDateString = d.toISOString().substr(0, 10);
-    d = new Date(d.setDate(d.getDate() - 7));
+    d = new Date(d.setDate(d.getDate() - this.config.utrReportGoesBackInDays));
     const updatedSinceString = d.toISOString().substr(0, 10);
     const tournaments: Tournament[] = await this.repository
       .createQueryBuilder('t')
@@ -46,39 +49,39 @@ export class UtrService {
       .leftJoinAndSelect('m.matchPlayers', 'mp')
       .leftJoinAndSelect('mp.player', 'p')
       .where(`t.endDate <= '${nowDateString}'`)
-      .andWhere(`t.tcUpdatedAt > '${updatedSinceString}'` )
+      .andWhere(`t.lastUpdatedInVR > '${updatedSinceString}'` )
       .andWhere('t.level IN ("National","Provincial","Regional")')
       .getMany();
 
     logger.info('Building UTR Report.');
-    stats.currentActivity = 'Building UTR Report';
+    this.reportStats.currentActivity = 'Building UTR Report';
     const reportData: any[] = [];
     reportData.push(JSON.parse(JSON.stringify(this.makeHeaders())));
     for (const t of tournaments) {
-      stats.bump('tournaments');
+      this.reportStats.bump('tournaments');
       for (const e of t.events) {
-        stats.bump('events');
+        this.reportStats.bump('events');
         // skip events without a rankingCategory
         if (null === e.vrRankingsCategory) {
-          stats.bump('eventsWithoutCategoriesSkipped');
+          this.reportStats.bump('eventsWithoutCategoriesSkipped');
           continue;
         }
         // Skip Junior events for ages U10 and below
         if ('Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
-          stats.bump('U10AndBelowSkipped');
+          this.reportStats.bump('U10AndBelowSkipped');
           continue;
         }
         for (const m of e.matches) {
-          stats.bump('matches');
+          this.reportStats.bump('matches');
           const reportLine = new UTRLine();
-          if (await reportLine.dataFill(t, e, m, stats)) {
+          if (await reportLine.dataFill(t, e, m, this.reportStats)) {
             reportData.push(JSON.parse(JSON.stringify(reportLine)));
           }
         }
       }
     }
     logger.info('Writing UTR Report.');
-    stats.currentActivity = 'Writing UTR Report';
+    this.reportStats.currentActivity = 'Writing UTR Report';
     const wb: WorkBook = utils.book_new();
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
@@ -88,36 +91,20 @@ export class UtrService {
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/UTR_Report_${now}.xlsx`;
     await writeFile(wb, filename);
-    stats.data = {filename};
+    this.reportStats.data = {filename};
 
     logger.info('Uploading UTR Report.');
-    stats.currentActivity = 'Uploading UTR Report';
+    this.reportStats.currentActivity = 'Uploading UTR Report';
     await this.seafileAPI.uploadFile(filename);
 
-    /* Forgiveness requested.  I tired to get the seafile API
-     * to wait for the upload to complete before returning. I failed.
-     * If the UTR report was being generated from a
-     * main.js (which never exits) - no big deal.
-     *
-     * But the auto reporter executable DOES exit and it does so after the report
-     * writer returns but before the file is actually uploaded.
-     *
-     * Consequently the upload gets aborted.
-     *
-     * So I am kludging things so that this process waits a while before
-     * returning
-     */
-
-    await this.delay(30000);
-
     logger.info('Finished UTR Report');
-    stats.currentActivity = 'Finished UTR Report';
-    stats.setStatus(JobState.DONE);
-    return stats;
+    this.reportStats.currentActivity = 'Finished UTR Report';
+    this.reportStats.setStatus(JobState.DONE);
+    return this.reportStats;
   }
 
-  delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  getBuildReportStats(): JobStats {
+    return this.reportStats;
   }
 
   makeHeaders(): UTRLine {

@@ -15,14 +15,15 @@ export class TournamentController {
     return await this.tournamentService.findAll();
   }
 
+  @Get('/import/status')
+  @UseGuards(AuthGuard('bearer'))
+  importVRPersonsStatus(): any {
+    return this.tournamentService.getImportStatus();
+  }
+
   @Get('/import')
   @UseGuards(AuthGuard('bearer'))
   async importTournamentsFromVR(): Promise<any> {
     return await this.tournamentService.importTournamentsFromVR();
-  }
-
-  @Get('/status/importVRTournaments')
-  importVRPersonsStatus(): any {
-    return this.tournamentService.getImportStatus();
   }
 }

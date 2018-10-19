@@ -34,9 +34,9 @@ export class VRRankingsTypeService {
   async importVRRankingsFromVR() {
     logger.info('**** VR Ranking Import starting...');
     // go get the the known rankings types
-    const rankingTypes: VRRankingsType[] = await this.repository.find({relations: ['vrRankingsCategories']});
-    let rankingType: any;
-    for (rankingType of rankingTypes) {
+    const rankingTypes: VRRankingsType[] = await this.repository
+      .find({relations: ['vrRankingsCategories']});
+    for (const rankingType of rankingTypes) {
       await this.publicationService.importVRRankingsPublicationFromVR(rankingType);
     }
     logger.info('**** VR Ranking Import done.');
@@ -60,4 +60,16 @@ export class VRRankingsTypeService {
     }
     return true;
   }
+
+  async test() {
+    logger.info('**** VR Ranking Import starting...');
+    // go get the the known rankings types
+    const rankingTypes: VRRankingsType[] = await this.repository
+      .find({relations: ['vrRankingsCategories']});
+    for (const rankingType of rankingTypes) {
+      console.log("Type: " + rankingType.typeName + ": " + rankingType.vrRankingsCategories.length);
+    }
+    logger.info('**** VR Ranking Import done.');
+  }
+
 }

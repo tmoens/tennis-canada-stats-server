@@ -13,7 +13,7 @@ const logger = getLogger('playerService');
 
 @Injectable()
 export class PlayerService {
-  personImportJobStats: JobStats;
+  private personImportJobStats: JobStats;
   private playerZero: Player;
   constructor(
     @InjectRepository(Player)
@@ -28,6 +28,10 @@ export class PlayerService {
 
   ) {
     this.personImportJobStats = new JobStats('playerImport');
+  }
+
+  getPersonImportStatus(): JobStats {
+    return this.personImportJobStats;
   }
 
   async findAll(): Promise<Player[]> {

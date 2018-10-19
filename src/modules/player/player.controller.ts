@@ -32,8 +32,9 @@ export class PlayerController {
   }
 
   @Get('importVRPersonsCSV/status')
+  @UseGuards(AuthGuard('bearer'))
   importVRPersonsStatus(): any {
-    return this.playerService.personImportJobStats;
+    return this.playerService.getPersonImportStatus();
   }
 
   @Post('importVRPersonsCSV')
@@ -72,7 +73,7 @@ export class PlayerController {
 
     // We are intentionally not waiting for the promise to be returned here, because
     // it could take several minutes and we need to return from this handler.
-    // Clients can watch the progress by calling the status call.
+    // Clients can watch the progress by polling importVRPersonsCSV/status
     this.playerService.importVRPersons(players);
   }
 }

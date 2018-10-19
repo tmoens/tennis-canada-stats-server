@@ -60,12 +60,6 @@ export class Tournament {
   })
   endDate: string;
 
-  // @Column("varchar",{
-  //   length:255,
-  //   name:"licenseName",
-  //   comment: "The name of the VR licensee for the tournament."
-  // })
-  // licenseName:string;
   @ManyToOne(type => License, license => license.tournaments, {
     nullable: false,
     onDelete: 'CASCADE',
