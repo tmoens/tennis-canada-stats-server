@@ -358,7 +358,7 @@ export class PlayerService {
         player.source = 'VR All Persons Report';
         this.personImportJobStats.bump('player created');
       }
-      this.personImportJobStats.currentActivity = `Loading player ${player.playerId}).`;
+      this.personImportJobStats.setCurrentActivity(`Loading player ${player.playerId}.`);
       // This is the order in which the fields appear in the excel spreadsheet.
       // skip playerData.code
       player.lastName = playerData.lastname;

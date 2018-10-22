@@ -13,14 +13,15 @@ export class VRRankingsTypeController {
     return await this.vrrankingstypeService.findAll();
   }
 
+  @Get('/import/status')
+  @UseGuards(AuthGuard('bearer'))
+  importVRPersonsStatus(): any {
+    return this.vrrankingstypeService.getImportStatus();
+  }
+
   @Get('/import')
   @UseGuards(AuthGuard('bearer'))
   async importRankingsFromVR(): Promise<any> {
     return await this.vrrankingstypeService.importVRRankingsFromVR();
-  }
-
-  @Get('/test')
-  async test(): Promise<any> {
-    return await this.vrrankingstypeService.test();
   }
 }

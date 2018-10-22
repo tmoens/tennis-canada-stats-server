@@ -9,8 +9,7 @@ import {
   OneToMany
 } from 'typeorm';
 import {VRRankingsCategory} from '../category/category.entity';
-import {EventPlayer} from "../../vrtournaments/event_player/event_player.entity";
-import {VRRankingsItem} from "../item/item.entity";
+import {VRRankingsItem} from '../item/item.entity';
 
 /**
  * NOTE

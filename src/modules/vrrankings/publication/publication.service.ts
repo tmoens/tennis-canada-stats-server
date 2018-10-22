@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository} from 'typeorm';
-import { VRRankingsPublication } from './publication.entity';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {VRRankingsPublication} from './publication.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {getLogger} from 'log4js';
 import {VRRankingsType} from '../type/type.entity';
 import {VRRankingsCategory} from '../category/category.entity';
 import {VRRankingsItemService} from '../item/item.service';
-import {JobStats} from '../../../utils/jobstats';
+import {JobState, JobStats} from '../../../utils/jobstats';
 import {ConfigurationService} from '../../configuration/configuration.service';
 
 // NOTE: There will be many publication objects for a single VR rankings
@@ -51,30 +51,52 @@ export class VRRankingsPublicationService {
       {where: {year, week, rankingsCategory: category.categoryCode}});
   }
 
+  // Get a superficial state of the rankings data that has been loaded from VR
+  async getLoadedRankingsData(): Promise<any[]> {
+    let data: any[] = await this.repository.createQueryBuilder('rp')
+      .select('rt.typeName', 'type')
+      .addSelect('rp.year', 'year')
+      .addSelect('rp.week', 'week')
+      .addSelect('COUNT(rp.publicationCode)', 'categoryCount')
+      .leftJoin('rp.rankingsCategory', 'rc')
+      .leftJoin('rc.vrRankingsType', 'rt')
+      .groupBy('rp.publicationCode')
+      .orderBy({'rt.typeName': 'ASC',
+                       'rp.year': 'DESC',
+                        'rp.week': 'DESC'})
+      .getRawMany();
+    return data;
+  }
+
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
-  async importVRRankingsPublicationFromVR(rankingType: VRRankingsType) {
+  async importVRRankingsPublicationFromVR(rankingType: VRRankingsType): Promise<JobStats>{
+    let message: string;
     const importStats: JobStats = new JobStats(`rankingsImport`);
 
+    importStats.setCurrentActivity(`Loading ${rankingType.typeName} publications from VR`);
     // Ask the API for a list of vr rankings publications for this type of ranking
     const pubs_json = await this.vrapi.get('Ranking/' + rankingType.typeCode + '/Publication');
     const list = await VRAPIService.arrayify(pubs_json.RankingPublication);
 
     logger.info(list.length + ' publications found for ' + rankingType.typeName);
 
-    let apiPublication: any;
-    for (apiPublication of list) {
+    for (const apiPublication of list) {
       // If we do not already have a record of the vrrankingspublicationId, make one
       const publications: VRRankingsPublication[] =
         await this.repository.find({publicationCode: apiPublication.Code});
       if (0 === publications.length) {
-        logger.info('Loading rankings publication: ' + apiPublication.Name);
+        message = `Loading rankings publication: ${apiPublication.Name}`;
+        logger.info(message);
+        importStats.addNote(message);
         await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
         importStats.bump(CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (publications[0].isOutOfDate(apiPublication.PublicationDate)) {
-        logger.info('Updating rankings publication: ' + apiPublication.Name);
+        message = `Updating rankings publication: ${apiPublication.Name}`;
+        logger.info(message);
+        importStats.addNote(message);
         for (const outdatedPub of publications) {
           await this.repository.remove(outdatedPub);
         }
@@ -91,10 +113,12 @@ export class VRRankingsPublicationService {
       // for a particular publication, we delete all the categories of that
       // publication and re-load it.
       else if (rankingType.vrRankingsCategories.length !== publications.length) {
-        logger.warn('Detected incomplete rankings upload for: ' +
+        message = 'Detected incomplete rankings upload for: ' +
           rankingType.typeName + ' for ' + publications[0].year + ' week: ' +
           publications[0].week + '. Expected ' + rankingType.vrRankingsCategories.length +
-          ' categories, found ' + publications.length + '. Reloading this publication.');
+          ' categories, found ' + publications.length + '. Reloading this publication.';
+        logger.info(message);
+        importStats.addNote(message);
         for (const brokenPub of publications) {
           await this.repository.remove(brokenPub);
         }
@@ -107,10 +131,17 @@ export class VRRankingsPublicationService {
         importStats.bump(UP_TO_DATE_COUNT);
       }
 
-      if (this.config.rankingUploadLimit <= importStats.get(CREATION_COUNT)) break;
+      // Rate limiting so as not to stress the VRAPI when we are first loading up rankings.
+      if (this.config.rankingUploadLimit <= importStats.get(CREATION_COUNT)) {
+        importStats.addNote(
+          `Import limit of ${this.config.rankingUploadLimit} reached for importing ${rankingType.typeName} rankings`);
+        break;
+      }
     }
-    logger.info('Stats: ' + JSON.stringify(importStats));
+    importStats.setCurrentActivity('Finished');
+    importStats.setStatus(JobState.DONE);
     logger.info(`Finished loading publications found for ${rankingType.typeName}.` );
+    return importStats;
   }
 
   async loadVRRankingsPublicationFromVRAPI(rankingType: VRRankingsType, apiPublication: any): Promise<boolean> {

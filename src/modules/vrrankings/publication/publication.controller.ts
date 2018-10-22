@@ -18,4 +18,10 @@ export class VRRankingsPublicationController {
   async findBycode(@Param() params): Promise<VRRankingsPublication> {
     return await this.vrrankingspublicationService.findByCode(params.code);
   }
+
+  @Get('/WhatsBeenLoaded')
+  // @UseGuards(AuthGuard('bearer'))
+  async getLoadedRankingsData(@Param() params): Promise<any[]> {
+    return await this.vrrankingspublicationService.getLoadedRankingsData();
+  }
 }

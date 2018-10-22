@@ -17,7 +17,7 @@ export class JobStats {
   endTime: Date;
   status: JobState;
   currentActivity: string;
-  message: string;
+  history: string[] = [];
   toDo: number;
   // anything the client wants to remember about the job
   data: any;
@@ -31,11 +31,11 @@ export class JobStats {
     this.toDo = -1; // If it is -1 it is not known yet.
   }
 
-  bump(counterName: string): number {
+  bump(counterName: string, amount: number = 1): number {
     if (null == this.counters[counterName]) {
-      this.counters[counterName] = 1;
+      this.counters[counterName] = amount;
     } else {
-      this.counters[counterName] = this.counters[counterName] + 1;
+      this.counters[counterName] = this.counters[counterName] + amount;
     }
     if (counterName === 'done' && this.toDo > 0) {
       this.percentComplete = Math.trunc( (this.counters.done / this.toDo) * 100);
@@ -51,6 +51,10 @@ export class JobStats {
     }
   }
 
+  getCounters(): any {
+    return this.counters;
+  }
+
   setStatus(state: JobState) {
     this.status = state;
     if (JobState.DONE === state) {
@@ -60,6 +64,29 @@ export class JobStats {
     if (JobState.ERROR === state) {
       this.endTime = new Date();
       logger.error('Job failed: ' + JSON.stringify(this));
+    }
+  }
+
+  getHistory(): string[] {
+    return this.history;
+  }
+
+  addNote(note: string) {
+    this.history.push((new Date()).toISOString() + ' ' + note);
+  }
+
+  setCurrentActivity(activity: string) {
+    this.currentActivity = activity;
+    this.addNote(activity);
+  }
+
+  // Merge one set of stats with another
+  // For now just add in the others history and counters.
+  merge(other: JobStats) {
+    this.history.concat(other.getHistory());
+    const otherCounters = other.getCounters();
+    for (const name of Object.keys(otherCounters)) {
+      this.bump(name, otherCounters[name]);
     }
   }
 }

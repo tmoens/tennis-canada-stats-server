@@ -34,7 +34,7 @@ export class UtrService {
     logger.info('Querying UTR Data.');
     this.reportStats = new JobStats('BuildUTRReport');
     this.reportStats.setStatus(JobState.IN_PROGRESS);
-    this.reportStats.currentActivity = 'Querying UTR Data Report';
+    this.reportStats.setCurrentActivity('Querying UTR Data Report');
     let d = new Date();
     const nowDateString = d.toISOString().substr(0, 10);
     d = new Date(d.setDate(d.getDate() - this.config.utrReportGoesBackInDays));
@@ -54,7 +54,7 @@ export class UtrService {
       .getMany();
 
     logger.info('Building UTR Report.');
-    this.reportStats.currentActivity = 'Building UTR Report';
+    this.reportStats.setCurrentActivity('Building UTR Report');
     const reportData: any[] = [];
     reportData.push(JSON.parse(JSON.stringify(this.makeHeaders())));
     for (const t of tournaments) {
@@ -81,7 +81,7 @@ export class UtrService {
       }
     }
     logger.info('Writing UTR Report.');
-    this.reportStats.currentActivity = 'Writing UTR Report';
+    this.reportStats.setCurrentActivity('Writing UTR Report');
     const wb: WorkBook = utils.book_new();
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
@@ -94,11 +94,11 @@ export class UtrService {
     this.reportStats.data = {filename};
 
     logger.info('Uploading UTR Report.');
-    this.reportStats.currentActivity = 'Uploading UTR Report';
+    this.reportStats.setCurrentActivity('Uploading UTR Report');
     await this.seafileAPI.uploadFile(filename);
 
     logger.info('Finished UTR Report');
-    this.reportStats.currentActivity = 'Finished UTR Report';
+    this.reportStats.setCurrentActivity('Finished UTR Report');
     this.reportStats.setStatus(JobState.DONE);
     return this.reportStats;
   }
