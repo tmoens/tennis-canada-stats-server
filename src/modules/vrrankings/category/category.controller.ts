@@ -8,7 +8,7 @@ export class VRRankingsCategoryController {
   constructor(private readonly vrrankingscategoryService: VRRankingsCategoryService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(AuthGuard('bearer'))
   async findAll(): Promise<VRRankingsCategory[]> {
     return await this.vrrankingscategoryService.findAll();
   }

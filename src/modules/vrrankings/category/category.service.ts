@@ -33,7 +33,7 @@ export class VRRankingsCategoryService {
         rt,
         data.categoryId,
         data.categoryName,
-        data.loadme);
+        data.vrURLCode);
       this.repository.save(c);
     }
     logger.info('Loaded static rankings categories.');

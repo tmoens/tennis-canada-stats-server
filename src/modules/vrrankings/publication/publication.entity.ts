@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   JoinColumn,
   ManyToOne,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
 import {VRRankingsCategory} from '../category/category.entity';
 import {VRRankingsItem} from '../item/item.entity';

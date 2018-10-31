@@ -47,6 +47,11 @@ export class VRRankingsCategory {
   })
   loadMe: boolean;
 
+  @Column('int', {
+    comment: 'The code used to build a URL to VRs rankings for this category',
+  })
+  vrURLCode: number;
+
   @OneToMany(type => VRRankingsPublication, publications => publications.rankingsCategory, {onDelete: 'CASCADE'})
   publications: VRRankingsPublication[];
 
