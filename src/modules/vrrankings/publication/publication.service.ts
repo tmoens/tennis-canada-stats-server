@@ -9,6 +9,8 @@ import {VRRankingsCategory} from '../category/category.entity';
 import {VRRankingsItemService} from '../item/item.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 import {ConfigurationService} from '../../configuration/configuration.service';
+import * as ts from "../../../../node_modules/typescript/lib/tsserverlibrary";
+import makeInferredProjectName = ts.server.makeInferredProjectName;
 
 // NOTE: There will be many publication objects for a single VR rankings
 // publication. VR has one publication per rankings type
@@ -53,7 +55,7 @@ export class VRRankingsPublicationService {
 
   // Get a superficial state of the rankings data that has been loaded from VR
   async getLoadedRankingsData(): Promise<any[]> {
-    let data: any[] = await this.repository.createQueryBuilder('rp')
+    const data: any[] = await this.repository.createQueryBuilder('rp')
       .select('rt.typeName', 'type')
       .addSelect('rp.year', 'year')
       .addSelect('rp.week', 'week')
@@ -62,8 +64,8 @@ export class VRRankingsPublicationService {
       .leftJoin('rc.vrRankingsType', 'rt')
       .groupBy('rp.publicationCode')
       .orderBy({'rt.typeName': 'ASC',
-                       'rp.year': 'DESC',
-                        'rp.week': 'DESC'})
+        'rp.year': 'DESC',
+        'rp.week': 'DESC'})
       .getRawMany();
     return data;
   }
@@ -162,5 +164,45 @@ export class VRRankingsPublicationService {
       }
     }
     return true;
+  }
+
+  // Find a rankings a rankings list for a particular category , year and week
+  // in some cases we filter out players below a minimum age to support
+  // Quebec's strict age groups like 14-15 instead of U16
+  async getRankingList(
+    code: string,
+    year: number,
+    isoWeek: number,
+    minAge: number,
+    prov: string): Promise<any> {
+    // figure out the minimum date of birth of players to be included in the list
+    const maxDOB = (year - 1 - minAge).toString() + '-12-31';
+    // Find the publication
+    let publication: VRRankingsPublication = await this.repository.createQueryBuilder('p')
+      .where('p.year = :year', {year})
+      .andWhere('p.week = :week', {week: isoWeek})
+      .andWhere('p.categorycode = :code', {code})
+      .leftJoinAndSelect('p.rankingsCategory', 'c')
+      .leftJoinAndSelect('c.vrRankingsType', 't')
+      .getOne();
+
+    // if you don't find one, try to find the most recent one instead
+    if (!publication) {
+      publication = await this.repository.createQueryBuilder('p')
+        .where('p.categorycode = :code', {code})
+        .leftJoinAndSelect('p.rankingsCategory', 'c')
+        .leftJoinAndSelect('c.vrRankingsType', 't')
+        .orderBy({'p.year': 'DESC', 'p.week': 'DESC'})
+        .getOne();
+    }
+
+    // Find the players on the list (skipping those who do not meet the age and province criteria)
+    if (publication) {
+      const list: any[] =
+        await this.vrRankingsItemService.findByPub(publication.publicationId, maxDOB, prov);
+      return {publication, list};
+    } else {
+      return {publication: {}, list: {}}
+    }
   }
 }

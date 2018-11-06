@@ -24,6 +24,26 @@ export class VRRankingsItemService {
     return await this.repository.find();
   }
 
+  // gets a list of publication items joined with SOME aspects of the player
+  // so that it can be sent to the GUI without violating privacy
+  // Can be limited to players from a province
+  // Can be limited to players having a certain minimum DOB
+  // This last one is to allow us to concoct age groups like 17-18 for Quebec
+  async findByPub(pubId: number, maxDOB: string, prov: string = '%'): Promise<any[]> {
+    return this.repository.createQueryBuilder('i')
+      .select('i.rank', 'rank')
+      .addSelect('i.points', 'points')
+      .addSelect('i.playerId', 'playerId')
+      .addSelect('p.province', 'province')
+      .leftJoin('i.player', 'p')
+      .addSelect('CONCAT(p.firstName, " ", p.lastName)', 'name')
+      .addSelect('YEAR(p.DOB)', 'YOB')
+      .where('i.publicationId = :pubId', {pubId})
+      .andWhere('p.province LIKE :prov', {prov})
+      .andWhere('p.DOB < :maxDOB', {maxDOB})
+      .getRawMany();
+  }
+
   async findByPubAndPlayer(player: Player, publication: VRRankingsPublication): Promise<VRRankingsItem> {
     return this.repository.findOne({
       where: {playerId: player.playerId, publicationId: publication.publicationId}});
@@ -83,4 +103,5 @@ export class VRRankingsItemService {
       fromPlayer.playerId + ' to ' + toPlayer.playerId);
     return items.length;
   }
+
 }

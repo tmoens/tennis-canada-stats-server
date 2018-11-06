@@ -12,5 +12,4 @@ export class VRRankingsCategoryController {
   async findAll(): Promise<VRRankingsCategory[]> {
     return await this.vrrankingscategoryService.findAll();
   }
-
 }

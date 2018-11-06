@@ -51,7 +51,6 @@ logger.some_level("some message").
 Then the log4js_config.json file allows you to set up how you want the
 logs handled.  That is, which files to stick logs in from which level.
 
-
 npm run {whatever} // the options for whatever are in package.json
 
 -- Tournament Loader and Rankings Loader
