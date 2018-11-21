@@ -9,8 +9,6 @@ import {VRRankingsCategory} from '../category/category.entity';
 import {VRRankingsItemService} from '../item/item.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 import {ConfigurationService} from '../../configuration/configuration.service';
-import * as ts from "../../../../node_modules/typescript/lib/tsserverlibrary";
-import makeInferredProjectName = ts.server.makeInferredProjectName;
 
 // NOTE: There will be many publication objects for a single VR rankings
 // publication. VR has one publication per rankings type
@@ -55,7 +53,7 @@ export class VRRankingsPublicationService {
 
   // Get a superficial state of the rankings data that has been loaded from VR
   async getLoadedRankingsData(): Promise<any[]> {
-    const data: any[] = await this.repository.createQueryBuilder('rp')
+    return await this.repository.createQueryBuilder('rp')
       .select('rt.typeName', 'type')
       .addSelect('rp.year', 'year')
       .addSelect('rp.week', 'week')
@@ -63,11 +61,12 @@ export class VRRankingsPublicationService {
       .leftJoin('rp.rankingsCategory', 'rc')
       .leftJoin('rc.vrRankingsType', 'rt')
       .groupBy('rp.publicationCode')
-      .orderBy({'rt.typeName': 'ASC',
+      .orderBy({
+        'rt.typeName': 'ASC',
         'rp.year': 'DESC',
-        'rp.week': 'DESC'})
+        'rp.week': 'DESC'
+      })
       .getRawMany();
-    return data;
   }
 
   // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
@@ -202,7 +201,7 @@ export class VRRankingsPublicationService {
         await this.vrRankingsItemService.findByPub(publication.publicationId, maxDOB, prov);
       return {publication, list};
     } else {
-      return {publication: {}, list: {}}
+      return {publication: {}, list: {}};
     }
   }
 }
