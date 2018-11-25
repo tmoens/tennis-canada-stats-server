@@ -1,108 +1,108 @@
-import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from "typeorm";
+import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeorm';
 
-@Entity("Player")
-@Index("firstName",["firstName",])
-@Index("lastName",["lastName",])
-@Index("DOB",["DOB",])
+@Entity('Player')
+@Index('firstName', ['firstName'])
+@Index('lastName', ['lastName'])
+@Index('DOB', ['DOB'])
 export class Player {
 
   @PrimaryColumn()
-  playerId:number;
+  playerId: number;
 
-  @Column("varchar",{
-    length:50
+  @Column('varchar', {
+    length: 50,
   })
-  firstName:string;
+  firstName: string;
 
-  @Column("varchar",{
-    length:50
+  @Column('varchar', {
+    length: 50,
   })
-  lastName:string;
+  lastName: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:2
+  @Column('varchar', {
+    nullable: true,
+    length: 2,
   })
-  gender:string;
+  gender: string;
 
-  @Column("date",{
-    nullable:true
+  @Column('date', {
+    nullable: true,
   })
-  DOB:string;
+  DOB: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:3
+  @Column('varchar', {
+    nullable: true,
+    length: 3,
   })
-  province:string;
+  province: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:50
+  @Column('varchar', {
+    nullable: true,
+    length: 50,
   })
-  city:string;
+  city: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:10
+  @Column('varchar', {
+    nullable: true,
+    length: 10,
   })
-  postalCode:string;
+  postalCode: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:100
+  @Column('varchar', {
+    nullable: true,
+    length: 100,
   })
-  email:string;
+  email: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:10
+  @Column('varchar', {
+    nullable: true,
+    length: 10,
   })
-  phone:string;
+  phone: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:10
+  @Column('varchar', {
+    nullable: true,
+    length: 10,
   })
-  phone2:string;
+  phone2: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:10
+  @Column('varchar', {
+    nullable: true,
+    length: 10,
   })
-  mobile:string;
+  mobile: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:50
+  @Column('varchar', {
+    nullable: true,
+    length: 50,
   })
-  address:string;
+  address: string;
 
-  @Column("varchar",{
-    nullable:true,
-    length:255,
-    comment: "How this player was discovered/updated."
+  @Column('varchar', {
+    nullable: true,
+    length: 255,
+    comment: 'How this player was discovered/updated.',
   })
-  source:string;
+  source: string;
 
-  @ManyToOne(type=>Player,{
+  @ManyToOne(type => Player, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name:'renumberedToPlayerId'})
-  renumberedToPlayer:Player;
+  @JoinColumn({ name: 'renumberedToPlayerId'})
+  renumberedToPlayer: Player;
 
-  // This "column" just give access to the renumberdToPlayerId value
+  // This "column" just give access to the renumberedToPlayerId value
   // without having to load the entire player object.
   @Column({ nullable: true })
-  renumberedToPlayerId:number;
+  renumberedToPlayerId: number;
 
   // Given an player object from the VR API, fill in our own fields
-  buildFromVRAPIObj(apiObj:any) {
+  buildFromVRAPIObj(apiObj: any) {
     this.playerId = apiObj.MemberID;
     this.firstName = apiObj.Firstname;
     this.lastName = apiObj.Lastname;
-    this.DOB = apiObj.DateOfBirth.substring(0,10);
-    if (apiObj.GenderID == 1) this.gender = "M";
-    if (apiObj.GenderID == 2) this.gender = "F";
+    this.DOB = apiObj.DateOfBirth.substring(0, 10);
+    if (apiObj.GenderID === 1) this.gender = 'M';
+    if (apiObj.GenderID === 2) this.gender = 'F';
   }
 }

@@ -1,19 +1,20 @@
 import {forwardRef, Inject, Injectable} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Player } from './player.entity';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {Player} from './player.entity';
 import {VRAPIService} from '../VRAPI/vrapi.service';
 import {getLogger} from 'log4js';
 import {MatchPlayerService} from '../vrtournaments/match_player/match_player.service';
 import {VRRankingsItemService} from '../vrrankings/item/item.service';
 import {JobState, JobStats} from '../../utils/jobstats';
-import {EventPlayerService} from "../vrtournaments/event_player/event_player.service";
+import {EventPlayerService} from '../vrtournaments/event_player/event_player.service';
 
 const logger = getLogger('playerService');
 
 @Injectable()
 export class PlayerService {
-  private personImportJobStats: JobStats;
+  private importStats: JobStats;
+  private mergeStats: JobStats;
   private playerZero: Player;
   constructor(
     @InjectRepository(Player)
@@ -27,11 +28,15 @@ export class PlayerService {
     private readonly vrRankingsItemService: VRRankingsItemService,
 
   ) {
-    this.personImportJobStats = new JobStats('playerImport');
+    this.importStats = new JobStats('playerImport');
+    this.mergeStats = new JobStats('playerMerges');
   }
 
   getPersonImportStatus(): JobStats {
-    return this.personImportJobStats;
+    return this.importStats;
+  }
+  getPersonMergesImportStatus() {
+    return this.mergeStats;
   }
 
   async findAll(): Promise<Player[]> {
@@ -78,7 +83,9 @@ export class PlayerService {
     }
   }
 
-  async findPlayerOrTryToCreate(playerId: any, source?: string): Promise<Player|null> {
+  // If we do not already know about a player, check to see if VR knows about it and
+  // load it if we can.  Returns null if unsuccessful on both fronts.
+  async findPlayerOrLoadFromVR(playerId: any, source?: string): Promise<Player|null> {
     let p: Player = await this.findPlayer(playerId);
     if (null == p) {
       // not found, so let's try loading from the VRAPI
@@ -96,7 +103,7 @@ export class PlayerService {
     // situation.
     if (!PlayerService.validatePlayerId(config.playerId)) {
       // This occurs too often to log.  Instead, will create a report of events with
-      // large numbers of entries but few known players.
+      // large numbers of matches but few known players.
       // logger.warn('74546100 Failed to findPlayerOrFacsimile invalid playerId. ' +
       //   'Here is the player data: ' + JSON.stringify(config));
       return this.getPlayerZero();
@@ -129,6 +136,8 @@ export class PlayerService {
     return this.getPlayerZero();
   }
 
+  // This checks the VRAPI to see if it knows about a player Id and if so
+  // it creates the player *and saves* it in the database.
   async loadPlayerFromVRAPI(playerId: number, source?: string): Promise<Player|null> {
     // Lets try to use the VR API to get the player details.
     const apiPlayer = await this.vrapi.get('Player/' + playerId);
@@ -157,6 +166,8 @@ export class PlayerService {
     return p;
   }
 
+  // This just tries to create a player record.  The most common client
+  // for this is the Player loader or the Player merge loader
   async createPlayerOnSpec(config: PlayerConfig): Promise<Player|null> {
     if (!PlayerService.validatePlayerId(config.playerId)) {
       return null;
@@ -170,7 +181,13 @@ export class PlayerService {
     } else {
       p.source = config.source + ' (on spec)';
     }
-    await this.repository.save(p);
+    try {
+      await this.repository.save(p);
+    } catch (e) {
+      // This can get hit when two requests arrive very close together
+      // to create the same player.  But it is no big deal.
+      logger.error('89076007 createPlayerOnSpec failed to save ' + p.playerId);
+    }
     // after you save(), if you do not find() again before you save() again
     // you get a duplicate id error.  I do not understand why this is, but it is.
     // Since the client may well save() the returned value better do a find.
@@ -200,6 +217,26 @@ export class PlayerService {
     return true;
   }
 
+  // Process a list of player merges.
+  async importVRPersonMerges(merges: PlayerMergeRecord[]) {
+    logger.info('**** Starting player merge import.');
+    const allResults: PlayerMergeResult[] = [];
+    this.mergeStats = new JobStats('MergePlayers.');
+    this.mergeStats.setStatus(JobState.IN_PROGRESS);
+    this.mergeStats.toDo = merges.length;
+
+    logger.info('Importing ' + merges.length + ' merges.');
+    for (const mr of  merges) {
+      // This is serialized on purpose.
+      const mergeResult: PlayerMergeResult = await this.renumberPlayer(mr);
+      allResults.push(mergeResult);
+      this.mergeStats.bump('done');
+      this.mergeStats.bump(mergeResult.status);
+    }
+    this.mergeStats.data = {allResults};
+    this.mergeStats.setStatus(JobState.DONE);
+  }
+
   // ============== Player renumbering ======================================
   // Normally what happens is the Fred creates a VR account with a VRID.
   // Then he forgets his password and goes and creates another account
@@ -218,33 +255,36 @@ export class PlayerService {
   //    which requires that we keep track of all renumberings ever given to us.
   // It is also necessary to make sure we do not allow circular renumberings.
   // Renumber a player.
-  async renumberPlayer( pmr: PlayerMergeRecord ): Promise<string[]> {
+  async renumberPlayer( pmr: PlayerMergeRecord ): Promise<PlayerMergeResult> {
     let message: string;
-    const response: string[] = [];
+    const response: PlayerMergeResult = {
+      request: pmr,
+      status: PlayerMergeStatus.SUCCESS,
+      notes: [],
+    };
 
     message = `Request to renumber player from: ` +
       `${pmr.fromPlayerId} (${pmr.fromFirstName} ${pmr.fromLastName}) ` +
       `to: ${pmr.toPlayerId} (${pmr.toFirstName} ${pmr.toLastName})`;
-    response.push(message);
     logger.info(message);
 
     if (!PlayerService.validatePlayerId(pmr.fromPlayerId)) {
       message = `Error: attempt to renumber FROM bad playerId: ${pmr.fromPlayerId}`;
-      response.push(message);
       logger.error(message);
+      response.status = PlayerMergeStatus.BAD_ID;
       return response;
     }
 
     if (!PlayerService.validatePlayerId(pmr.toPlayerId)) {
       message = `Error: attempt to renumber TO a bad playerId: ${pmr.toPlayerId}`;
-      response.push(message);
       logger.error(message);
+      response.status = PlayerMergeStatus.BAD_ID;
       return response;
     }
 
     // Let's find (or create) the player we are trying to renumber.
     let fromPlayer: Player =
-      await this.findPlayerOrTryToCreate(pmr.fromPlayerId, '*fromPlayer* in renumbering');
+      await this.findPlayerOrLoadFromVR(pmr.fromPlayerId, '*fromPlayer* in renumbering');
     if (null == fromPlayer) {
       // fromId is not in the database and not available in the VRAPI.
       // Still we cannot give up because it is possible that we may
@@ -256,27 +296,26 @@ export class PlayerService {
         lastName: pmr.fromLastName,
         source: '*fromPlayer* in renumbering',
       });
-      response.push(`*fromPlayerId* ${pmr.fromPlayerId} not found in database or VR API, created automatically.`);
-    } else if (fromPlayer.renumberedToPlayerId === pmr.toPlayerId) {
-      message = 'Already done';
-      response.push(message);
+      response.notes.push(`*fromPlayerId* ${pmr.fromPlayerId} not found in database or VR API, created automatically.`);
+    } else if (fromPlayer.renumberedToPlayerId == pmr.toPlayerId) {  // USE == NOT === on purpose
+      response.status = PlayerMergeStatus.ALREADY_DONE;
       // not log worthy.
       return response;
     } else {
       // you cannot renumber the same player to two different things.
       if (null != fromPlayer.renumberedToPlayerId) {
         message = 'Error: attempt to renumber from ' +
-          pmr.fromPlayerId + ' to ' + pmr.toPlayerId + ' but ' + pmr.fromPlayerId +
+          pmr.fromPlayerId + ' to ' + pmr.toPlayerId + ' but ' + fromPlayer.playerId +
           ' is already renumbered to ' + fromPlayer.renumberedToPlayerId;
-        response.push(message);
         logger.error(message);
+        response.status = PlayerMergeStatus.AMBIGUOUS_RENUMBERING;
         return response;
       }
     }
 
     // The player you are trying to renumber TO must also be known.
     // Lets look up the TO player.
-    let toPlayer: Player = await this.findPlayerOrTryToCreate(pmr.toPlayerId, '*toPlayer* in renumbering');
+    let toPlayer: Player = await this.findPlayerOrLoadFromVR(pmr.toPlayerId, '*toPlayer* in renumbering');
     if (null === toPlayer) {
       // toId is not in the database and not available in the VRAPI.
       // Still we cannot give up because it is possible that we may
@@ -288,7 +327,7 @@ export class PlayerService {
         lastName: pmr.toLastName,
         source: '*toPlayer* in renumbering',
       });
-      response.push(`*toPlayerId* ${pmr.toPlayerId} not found in database or VR API, created automatically.`);
+      response.notes.push(`*toPlayerId* ${pmr.toPlayerId} not found in database or VR API, created automatically.`);
     }
 
     // Here is where we prevent renumbering loops.
@@ -304,34 +343,42 @@ export class PlayerService {
     // are already taken care of by the fact that you cannot renumber one id
     // to two different Ids (above)
     const renumberedToPlayer: Player = await this.findRenumberedPlayer(pmr.toPlayerId);
-    if (renumberedToPlayer.playerId === pmr.fromPlayerId) {
+    if (renumberedToPlayer.playerId === fromPlayer.playerId) {
       message = 'Error: attempt to renumber from ' +
         pmr.fromPlayerId + ' to ' + pmr.toPlayerId + ' but the reverse mapping already ' +
         'exists (directly or indirectly)';
-      response.push(message);
       logger.error(message);
+      response.status = PlayerMergeStatus.CIRCULAR_RENUMBERING;
       return response;
     }
 
     // All the hoops have been jumped, so now we do the renumbering.
-    response.push(`Renumbering from ${pmr.fromPlayerId} (${fromPlayer.firstName} ${fromPlayer.lastName})
-      to ${pmr.toPlayerId} (${toPlayer.firstName} ${toPlayer.lastName})`);
+    // Note: if the TO player is already renumbered to X, then we
+    // renumber the FROM player to X directly.
+    if (toPlayer.playerId !== renumberedToPlayer.playerId) {
+      response.actuallyRenumberedTo = renumberedToPlayer.playerId;
+    }
 
-    // Now just add the renumbering to the *FROM* player record.
+    // Add the renumbering to the *FROM* player record and save.
     fromPlayer.renumberedToPlayer = toPlayer;
-    await this.repository.save(fromPlayer);
+    try {
+      await this.repository.save(fromPlayer);
+    } catch (e) {
+      // This can get hit when two requests arrive very close together
+      // to create the same player.  But it is no big deal.
+      logger.error('91233433 failed to do save renumbered player ' + fromPlayer.playerId);
+    }
 
     // Now we have to do the actual renumbering of historical data
     // in the database. PlayerIDs can show up in three places:
     // - any time a player has played a match (MatchPlayer)
     // - any time a player shows up in a ranking list (VRRankingsItem)
     // - any time a player entered in an event
-    let count = await this.matchPlayerService.renumberPlayer(fromPlayer, toPlayer);
-    response.push('Merged ' + count + ' matches');
-    count = await this.vrRankingsItemService.renumberPlayer(fromPlayer, toPlayer);
-    response.push('Merged ' + count + ' ranking entries');
-    count = await this.eventPlayerService.renumberPlayer(fromPlayer, toPlayer);
-    response.push('Merged ' + count + ' ranking entries');
+    response.merges = {
+      matches: await this.matchPlayerService.renumberPlayer(fromPlayer, renumberedToPlayer),
+      ranking_entries: await this.vrRankingsItemService.renumberPlayer(fromPlayer, renumberedToPlayer),
+      event_entries: await this.eventPlayerService.renumberPlayer(fromPlayer, renumberedToPlayer),
+    };
     return response;
   }
 
@@ -342,9 +389,9 @@ export class PlayerService {
   // reverted to .csv.
   async importVRPersons(players: any[]) {
     logger.info('**** Starting player import.');
-    this.personImportJobStats = new JobStats('Import players from VR "All Persons" admin report.');
-    this.personImportJobStats.setStatus(JobState.IN_PROGRESS);
-    this.personImportJobStats.toDo = players.length;
+    this.importStats = new JobStats('Import players from VR "All Persons" admin report.');
+    this.importStats.setStatus(JobState.IN_PROGRESS);
+    this.importStats.toDo = players.length;
 
     logger.info('Importing ' + players.length + ' players.');
     let player: Player;
@@ -356,9 +403,9 @@ export class PlayerService {
         player = new Player();
         player.playerId = playerData.memberid;
         player.source = 'VR All Persons Report';
-        this.personImportJobStats.bump('player created');
+        this.importStats.bump('player created');
       }
-      this.personImportJobStats.setCurrentActivity(`Loading player ${player.playerId}.`);
+      this.importStats.setCurrentActivity(`Loading player ${player.playerId}.`);
       // This is the order in which the fields appear in the excel spreadsheet.
       // skip playerData.code
       player.lastName = playerData.lastname;
@@ -385,18 +432,18 @@ export class PlayerService {
       // skip playerData.website
       try {
         await this.repository.save(player);
-        this.personImportJobStats.bump('player saved');
+        this.importStats.bump('player saved');
       }
       catch (e) {
         logger.error('656120901 Failed to save/update player during import.\n' +
           JSON.stringify(playerData));
-        this.personImportJobStats.bump('player save errors');
+        this.importStats.bump('player save errors');
       }
       count++;
-      this.personImportJobStats.bump('done');
+      this.importStats.bump('done');
       if (0 === count % 100) logger.info('\t done: ' + count);
     }
-    this.personImportJobStats.status = JobState.DONE;
+    this.importStats.status = JobState.DONE;
     logger.info('\t Loaded: ' + players.length + ' players.');
     logger.info('**** Ending player import.');
 
@@ -420,4 +467,24 @@ export interface PlayerMergeRecord {
   fromFirstName?: string;
   toFirstName?: string;
   date?: string;
+}
+
+export interface PlayerMergeResult {
+  request: PlayerMergeRecord;
+  actuallyRenumberedTo?: number;
+  notes: string[];
+  status: PlayerMergeStatus;
+  merges?: {
+    matches?: number;
+    ranking_entries?: number;
+    event_entries?: number;
+  };
+}
+
+enum PlayerMergeStatus {
+  SUCCESS = 'Success',
+  ALREADY_DONE = 'Already Done',
+  AMBIGUOUS_RENUMBERING = 'Ambiguous Renumbering',
+  CIRCULAR_RENUMBERING = 'Circular Renumbering',
+  BAD_ID = 'Bad ID',
 }
