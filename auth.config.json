@@ -1,11 +1,11 @@
 {
   "resourceServer": {
     "oidc": {
-      "issuer": "https://dev-574317-admin.oktapreview.com/oauth2/default"
+      "issuer": "https://dev-574317.oktapreview.com/oauth2/default"
     },
+    "clientId": "0oaf4igrrdiZLXT1Q0h7",
     "assertClaims": {
-      "aud": "api://default",
-      "cid": "0oaf4igrrdiZLXT1Q0h7"
+      "aud": "api://default"
     }
   }
 }

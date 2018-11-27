@@ -3,8 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { VRRankingsItemService } from './item.service';
 import { VRRankingsItemController } from './item.controller';
 import { VRRankingsItem } from './item.entity';
-import {VRAPIModule} from "../../VRAPI/vrapi.module";
-import {PlayerModule} from "../../player/player.module";
+import {VRAPIModule} from '../../VRAPI/vrapi.module';
+import {PlayerModule} from '../../player/player.module';
 
 @Module({
   imports: [
@@ -13,13 +13,13 @@ import {PlayerModule} from "../../player/player.module";
     forwardRef(() => PlayerModule),
   ],
   providers: [
-    VRRankingsItemService
+    VRRankingsItemService,
   ],
   controllers: [
-    VRRankingsItemController
+    VRRankingsItemController,
   ],
-  exports:[
-    VRRankingsItemService
+  exports: [
+    VRRankingsItemService,
   ],
 })
 export class VRRankingsItemModule {}

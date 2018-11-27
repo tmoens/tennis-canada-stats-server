@@ -6,7 +6,8 @@ const authConfig = require('../../../auth.config.json');
 
 const oktaJwtVerifier = new OktaJwtVerifier({
   issuer: authConfig.resourceServer.oidc.issuer,
-  assertClaims: authConfig.resourceServer.assertClaims
+  clientId: authConfig.resourceServer.clientId,
+  assertClaims: authConfig.resourceServer.assertClaims,
 });
 
 @Injectable()
