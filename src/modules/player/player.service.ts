@@ -1,6 +1,6 @@
 import {forwardRef, Inject, Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
+import {IsNull, Repository} from 'typeorm';
 import {Player} from './player.entity';
 import {VRAPIService} from '../VRAPI/vrapi.service';
 import {getLogger} from 'log4js';
@@ -18,7 +18,7 @@ export class PlayerService {
   private playerZero: Player;
   constructor(
     @InjectRepository(Player)
-    private readonly repository: Repository<Player>,
+    private readonly repo: Repository<Player>,
     private readonly vrapi: VRAPIService,
     @Inject(forwardRef(() => MatchPlayerService))
     private readonly matchPlayerService: MatchPlayerService,
@@ -40,7 +40,14 @@ export class PlayerService {
   }
 
   async findAll(): Promise<Player[]> {
-    return await this.repository.find();
+    return await this.repo.find();
+  }
+
+  async findPlayersByLastName(lastName: string): Promise<any[] | null> {
+    return await this.repo.find({
+      where: {lastName, renumberedToPlayerId: IsNull()},
+      order: {firstName: 'ASC'},
+    });
   }
 
   // A special player that is used as a stand-in for a player we do not know.
@@ -56,14 +63,14 @@ export class PlayerService {
     this.playerZero.playerId = 0;
     this.playerZero.firstName = 'UnknownFN';
     this.playerZero.lastName = 'UnknownLN';
-    await this.repository.save(this.playerZero);
+    await this.repo.save(this.playerZero);
     this.playerZero = await this.findPlayer(0);
     return this.playerZero;
   }
 
   // Simple lookup.
   async findPlayer(playerId): Promise<Player|null> {
-    return await this.repository.findOne(playerId);
+    return await this.repo.findOne(playerId);
   }
 
   // Mostly this is a simple lookup.  But if the player has been renumbered,
@@ -150,7 +157,7 @@ export class PlayerService {
     p.buildFromVRAPIObj(apiPlayer.Player);
     p.source = 'VR Player API/' + source;
     try {
-      p = await this.repository.save(p);
+      p = await this.repo.save(p);
     } catch (e) {
       // TODO This keeps getting hit when loading rankings - duplicate key
       // It is a bit of a mystery because we only go load a player from
@@ -182,7 +189,7 @@ export class PlayerService {
       p.source = config.source + ' (on spec)';
     }
     try {
-      await this.repository.save(p);
+      await this.repo.save(p);
     } catch (e) {
       // This can get hit when two requests arrive very close together
       // to create the same player.  But it is no big deal.
@@ -297,7 +304,7 @@ export class PlayerService {
         source: '*fromPlayer* in renumbering',
       });
       response.notes.push(`*fromPlayerId* ${pmr.fromPlayerId} not found in database or VR API, created automatically.`);
-    } else if (fromPlayer.renumberedToPlayerId == pmr.toPlayerId) {  // USE == NOT === on purpose
+    } else if (fromPlayer.renumberedToPlayerId === pmr.toPlayerId) {  // USE == NOT === on purpose
       response.status = PlayerMergeStatus.ALREADY_DONE;
       // not log worthy.
       return response;
@@ -362,7 +369,7 @@ export class PlayerService {
     // Add the renumbering to the *FROM* player record and save.
     fromPlayer.renumberedToPlayer = toPlayer;
     try {
-      await this.repository.save(fromPlayer);
+      await this.repo.save(fromPlayer);
     } catch (e) {
       // This can get hit when two requests arrive very close together
       // to create the same player.  But it is no big deal.
@@ -431,7 +438,7 @@ export class PlayerService {
       player.email = playerData.email;
       // skip playerData.website
       try {
-        await this.repository.save(player);
+        await this.repo.save(player);
         this.importStats.bump('player saved');
       }
       catch (e) {
@@ -448,6 +455,33 @@ export class PlayerService {
     logger.info('**** Ending player import.');
 
     return true;
+  }
+
+  /**
+   * Find a player based on an exact match of attributes.
+   * @param fn
+   * @param ln
+   * @param gender
+   * @param dob
+   */
+  async findUniquePlayerByAttributes(
+    firstName: string,
+    lastName: string,
+    gender: string,
+    DOB: string): Promise<Player | null>
+  {
+    const players: Player[] = await this.repo.find({
+      where: {firstName, lastName, gender, DOB},
+    });
+    if (1 === players.length) {
+      return players[0];
+    } else {
+      return null;
+    }
+  }
+
+  async findById(playerId: any): Promise<Player | null> {
+    return this.repo.findOne(playerId);
   }
 }
 

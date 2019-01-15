@@ -53,16 +53,19 @@ logs handled.  That is, which files to stick logs in from which level.
 
 npm run {whatever} // the options for whatever are in package.json
 
--- Tournament Loader and Rankings Loader
+-- VR Tournament Loader, Rankings Loader
 
 These can be run from the command line like this:
 
-> node dist/loadVRTournaments.js
+node dist/loadVRTournaments.js
+node dist/loadVRVRRankings.js
+node dist/loadITFData.js
 
-1) make sure the regular api server has been run at least once first
+1) make sure the regular api server has been run at least once first because it loads
+   initial data into the database
 2) make sure that the production.env file is correct
 
-However, the program is meant to run periodically and is thus created as a recurring task
+However, the programs are meant to run periodically and is thus created as a recurring task
 using Windows Task Scheduler.
 
 -- TODO ---------------

@@ -4,6 +4,7 @@ import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeo
 @Index('firstName', ['firstName'])
 @Index('lastName', ['lastName'])
 @Index('DOB', ['DOB'])
+@Index('renumberedToPlayer', ['renumberedToPlayer'])
 export class Player {
 
   @PrimaryColumn()

@@ -12,19 +12,31 @@
       "type":"dateFile",
       "filename":"log/vrapi.log",
       "pattern": "-yyyy-MM-dd"
+    },
+    "itfapi": {
+      "type":"dateFile",
+      "filename":"log/itfapi.log",
+      "pattern": "-yyyy-MM-dd"
     }
   },
   "categories": {
     "default": {
       "appenders": [
         "out",
-        "tcStats"
+        "tcStats",
+        "itfapi"
       ],
       "level": "info"
     },
     "vrapi": {
       "appenders": [
         "vrapi"
+      ], "level": "info"
+    },
+    "itfapi": {
+      "appenders": [
+        "out",
+        "itfapi"
       ], "level": "info"
     }
   }

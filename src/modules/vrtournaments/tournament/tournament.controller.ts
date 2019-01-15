@@ -2,12 +2,12 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TournamentService } from './tournament.service';
 import { Tournament } from './tournament.entity';
-import {SeafileService} from '../../Seafile/seafile.service';
 
 @Controller('Tournament')
 export class TournamentController {
-  constructor(private readonly tournamentService: TournamentService,
-              private readonly seafileService: SeafileService) {}
+  constructor(
+    private readonly tournamentService: TournamentService,
+  ) {}
 
   @Get()
   @UseGuards(AuthGuard('bearer'))

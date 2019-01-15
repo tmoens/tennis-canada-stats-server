@@ -2,7 +2,7 @@ import {
   Controller,
   FileInterceptor,
   Get,
-  HttpException, HttpStatus,
+  HttpException, HttpStatus, Param,
   Post, Req,
   UploadedFile, UseGuards,
   UseInterceptors,
@@ -22,6 +22,12 @@ export class PlayerController {
   @UseGuards(AuthGuard('bearer'))
   async findAll(): Promise<Player[]> {
     return await this.playerService.findAll();
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard('bearer'))
+  async findById(@Param() params): Promise<Player> {
+    return await this.playerService.findById(params.id);
   }
 
   @Get('importVRPersonMergesCSV/status')

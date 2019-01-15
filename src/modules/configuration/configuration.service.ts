@@ -47,6 +47,10 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       VRAPI_USER: Joi.string().required(),
       VRAPI_PASSWORD: Joi.string().required(),
 
+      ITFAPI_URL: Joi.string().required(),
+      ITFAPI_USER: Joi.string().required(),
+      ITFAPI_PASSWORD: Joi.string().required(),
+
       TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(0),
       TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(10),
 
@@ -72,6 +76,18 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get vrapiPassword(): string {
     return this.envConfig.VRAPI_PASSWORD;
+  }
+
+  get itfapiURL(): string {
+    return this.envConfig.ITFAPI_URL;
+  }
+
+  get itfapiUser(): string {
+    return this.envConfig.ITFAPI_USER;
+  }
+
+  get itfapiPassword(): string {
+    return this.envConfig.ITFAPI_PASSWORD;
   }
 
   get tournamentUploadStartYear(): number {
@@ -124,6 +140,10 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     return Boolean(this.envConfig.TYPEORM_LOG_QUERIES);
   }
 
+  get typeORMSyncDatabase(): boolean {
+    return Boolean(this.envConfig.TYPEORM_SYNCH_DATABASE);
+  }
+
   // This is used to build ORM configuration options
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
@@ -140,7 +160,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
         entities: [
           `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
         ],
-        synchronize: false,
+        synchronize: this.typeORMSyncDatabase,
         logging: ['error', 'query'],
       };
     } else {
@@ -154,7 +174,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
         entities: [
           `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
         ],
-        synchronize: false,
+        synchronize: this.typeORMSyncDatabase,
         logging: ['error'],
       };
 

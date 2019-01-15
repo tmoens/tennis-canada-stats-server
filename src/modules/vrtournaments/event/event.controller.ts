@@ -1,4 +1,4 @@
-import {Controller, Get, HttpStatus, Param, Query, Res, UseGuards} from '@nestjs/common';
+import {Controller, Get, HttpStatus, Query, Res, UseGuards} from '@nestjs/common';
 import { EventService } from './event.service';
 import { Event } from './event.entity';
 import {AuthGuard} from '@nestjs/passport';

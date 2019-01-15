@@ -3,9 +3,7 @@ import { HttpModule } from '@nestjs/common/http';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Connection } from 'typeorm';
-
 import { AppController } from './app.controller';
-
 import {AuthModule} from './modules/auth/auth.module';
 import {ConfigurationModule} from './modules/configuration/configuration.module';
 import {DrawModule} from './modules/vrtournaments/draw/draw.module';
@@ -23,6 +21,19 @@ import {VRRankingsCategoryModule} from './modules/vrrankings/category/category.m
 import {VRRankingsPublicationModule} from './modules/vrrankings/publication/publication.module';
 import {ConfigurationService} from './modules/configuration/configuration.service';
 import {UtrModule} from './modules/reporters/UTRReports/utr.module';
+import { ExternalPlayerModule } from './modules/external-tournaments/external-player/external-player.module';
+import { ExternalTournamentService } from './modules/external-tournaments/external-tournament/external-tournament.service';
+import { ExternalTournamentController } from './modules/external-tournaments/external-tournament/external-tournament.controller';
+import { ExternalTournamentModule } from './modules/external-tournaments/external-tournament/external-tournament.module';
+import { ExternalEventModule } from './modules/external-tournaments/external-event/external-event.module';
+import { EventRatingService } from './modules/external-tournaments/event-rating/event-rating.service';
+import { EventRatingModule } from './modules/external-tournaments/event-rating/event-rating.module';
+import { ExternalEventResultController } from './modules/external-tournaments/external-event-result/external-event-result.controller';
+import { ExternalEventResultModule } from './modules/external-tournaments/external-event-result/external-event-result.module';
+import { ItfMatchResultsService } from './modules/external-tournaments/itf-match-results/itf-match-results.service';
+import { ItfMatchResultsController } from './modules/external-tournaments/itf-match-results/itf-match-results.controller';
+import { ItfMatchResultsModule } from './modules/external-tournaments/itf-match-results/itf-match-results.module';
+import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
 
 @Module({
   imports: [
@@ -49,12 +60,24 @@ import {UtrModule} from './modules/reporters/UTRReports/utr.module';
     VRRankingsTypeModule,
     VRRankingsCategoryModule,
     VRRankingsPublicationModule,
+    ExternalPlayerModule,
+    ExternalTournamentModule,
+    ExternalEventModule,
+    EventRatingModule,
+    ExternalEventResultModule,
+    ItfMatchResultsModule,
+    ITFAPIModule,
   ],
   controllers: [
     AppController,
+    ExternalTournamentController,
+    ExternalEventResultController,
+    ItfMatchResultsController,
   ],
   providers: [
-  ],
+  ExternalTournamentService,
+  EventRatingService,
+  ItfMatchResultsService],
 })
 
 export class AppModule {

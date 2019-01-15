@@ -1,0 +1,1 @@
+This directory is for managing results for players from international tournaments.
