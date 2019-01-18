@@ -237,10 +237,6 @@ export class UTRLine {
   async dataFill(t: Tournament, e: Event, m: Match, stats: JobStats): Promise<boolean> {
     // Not interested in byes
     // i.e. where there is less than two participants for singles or 4 for doubles
-    if ((e.isSingles && m.matchPlayers.length !== 2) || (!e.isSingles && m.matchPlayers.length !== 4)) {
-      stats.bump('byes');
-      return false;
-    }
 
     let w1: MatchPlayer;
     let l1: MatchPlayer;
@@ -264,41 +260,67 @@ export class UTRLine {
 
     this.matchId = [t.tournamentCode, m.vrEventCode, m.vrDrawCode, m.vrMatchCode].join('-');
     this.date = t.endDate;
-    if (w1) {
-      this.w1City = w1.player.city;
-      this.w1Name = w1.player.lastName + ', ' + w1.player.firstName;
-      this.w1Id = w1.playerId.toString();
-      this.w1Gender = w1.player.gender;
-      this.w1YOB = (w1.player.DOB) ? w1.player.DOB.substr(0, 4) : '';
-      this.w1City = w1.player.city;
-      this.w1State = w1.player.province;
+    if (!w1) {
+      stats.bump('no w1');
+      return false;
+    } else if (0 === w1.playerId) {
+      stats.bump('unknown w1')
+      return false;
+    } else {
+        this.w1City = w1.player.city;
+        this.w1Name = w1.player.lastName + ', ' + w1.player.firstName;
+        this.w1Id = w1.playerId.toString();
+        this.w1Gender = w1.player.gender;
+        this.w1YOB = (w1.player.DOB) ? w1.player.DOB.substr(0, 4) : '';
+        this.w1City = w1.player.city;
+        this.w1State = w1.player.province;
     }
-    if (w2) {
-      this.w2City = w2.player.city;
-      this.w2Name = w2.player.lastName + ', ' + w2.player.firstName;
-      this.w2Id = w2.playerId.toString();
-      this.w2Gender = w2.player.gender;
-      this.w1YOB = (w2.player.DOB) ? w2.player.DOB.substr(0, 4) : '';
-      this.w2City = w2.player.city;
-      this.w2State = w2.player.province;
-    }
-    if (l1) {
+    if (!l1) {
+      stats.bump('no l1');
+      return false;
+    } else if (0 === l1.playerId) {
+      stats.bump('unknown l1')
+      return false;
+    } else {
       this.l1City = l1.player.city;
       this.l1Name = l1.player.lastName + ', ' + l1.player.firstName;
       this.l1Id = l1.playerId.toString();
       this.l1Gender = l1.player.gender;
-      this.w1YOB = (l1.player.DOB) ? l1.player.DOB.substr(0, 4) : '';
+      this.l1YOB = (l1.player.DOB) ? l1.player.DOB.substr(0, 4) : '';
       this.l1City = l1.player.city;
       this.l1State = l1.player.province;
     }
-    if (l2) {
-      this.l2City = l2.player.city;
-      this.l2Name = l2.player.lastName + ', ' + l2.player.firstName;
-      this.l2Id = l2.playerId.toString();
-      this.l2Gender = l2.player.gender;
-      this.w1YOB = (l2.player.DOB) ? l2.player.DOB.substr(0, 4) : '';
-      this.l2City = l2.player.city;
-      this.l2State = l2.player.province;
+    if (!e.isSingles) {
+      if (!w2) {
+        stats.bump('no w2');
+        return false;
+      } else if (0 === w2.playerId) {
+        stats.bump('unknown w2')
+        return false;
+      } else {
+        this.w2City = w2.player.city;
+        this.w2Name = w2.player.lastName + ', ' + w2.player.firstName;
+        this.w2Id = w2.playerId.toString();
+        this.w2Gender = w2.player.gender;
+        this.w2YOB = (w2.player.DOB) ? w2.player.DOB.substr(0, 4) : '';
+        this.w2City = w2.player.city;
+        this.w2State = w2.player.province;
+      }
+      if (!l2) {
+        stats.bump('no l2');
+        return false;
+      } else if (0 === l2.playerId) {
+        stats.bump('unknown l2')
+        return false;
+      } else {
+        this.l2City = l2.player.city;
+        this.l2Name = l2.player.lastName + ', ' + l2.player.firstName;
+        this.l2Id = l2.playerId.toString();
+        this.l2Gender = l2.player.gender;
+        this.l2YOB = (l2.player.DOB) ? l2.player.DOB.substr(0, 4) : '';
+        this.l2City = l2.player.city;
+        this.l2State = l2.player.province;
+      }
     }
     this.score = m.score;
     this.drawGender = e.genderId;

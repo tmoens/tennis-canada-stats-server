@@ -14,7 +14,7 @@ export class UtrController {
   }
 
   @Get('/buildUTRReport')
-  @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(AuthGuard('bearer'))
   async buildUTRReport(): Promise<JobStats> {
     return await this.service.buildUTRReport();
   }
