@@ -78,8 +78,6 @@ export class SeafileService {
     rp(options)
       .then(body => {
         logger.info('Upload successful.');
-        console.log('Body:' + body);
-
       })
       .catch(error => {
         logger.error('Error uploading file: ' + error);

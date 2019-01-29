@@ -173,8 +173,6 @@ export class EventService {
               await this.rankingsItemService.findByPubAndPlayer(player, pub);
             if (rankItem) {
               numRatedPlayers++;
-              // console.log('Player: ' + JSON.stringify(eventPlayer.player));
-              // console.log('RankiItem: ' + JSON.stringify(rankItem));
               const rating = 1 / Math.pow(rankItem.rank, 0.7);
               playerList.push({
                 event: event.eventId,
@@ -190,7 +188,7 @@ export class EventService {
               numUnratedPlayers++;
             }
           }
-          eventList.push({
+          const e = {
             tournamentCode: event.tournament.tournamentCode,
             eventCode: event.eventCode,
             tournamentName: event.tournament.name,
@@ -206,7 +204,8 @@ export class EventService {
             grade: event.grade,
             winnerPoints: event.winnerPoints,
             STRENGTH: eventRating,
-          });
+          };
+          eventList.push(e);
         }
       }
       const playerSheet: WorkSheet = await utils.json_to_sheet(playerList);
