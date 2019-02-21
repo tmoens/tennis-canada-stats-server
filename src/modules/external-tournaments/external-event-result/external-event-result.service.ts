@@ -209,7 +209,7 @@ export class ExternalEventResultDTO {
       this.computeJuniorPoints(r);
       this.pointsCategory = [
         ('M' === this.eventGender) ? 'Boys' : 'Girls',
-        this.eventType,
+        'Under 18',
         this.eventDiscipline,
       ].join(' ');
       this.shortPointsCategory = [
