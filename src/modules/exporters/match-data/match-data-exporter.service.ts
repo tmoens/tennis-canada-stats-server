@@ -15,27 +15,29 @@ import * as moment from 'moment';
 const TOURNAMENT_URL_PREFIX = 'http://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
 
 @Injectable()
-export class UtrService {
-  private reportStats: JobStats;
-
+export class MatchDataExporterService {
+  private utrReportStats: JobStats;
+  private itfReportStats: JobStats;
   constructor(
     private readonly config: ConfigurationService,
     @InjectRepository(Tournament)
     private readonly repository: Repository<Tournament>,
     private readonly seafileAPI: SeafileService,
   ) {
-    this.reportStats = new JobStats('BuildUTRReport');
+    this.utrReportStats = new JobStats('BuildUTRReport');
+    this.itfReportStats = new JobStats('ITFMatchExport');
   }
 
+  // ================= For UTR ============================
   // build a report of all the matches in all the tournaments
   // at a national, regional or provincial level from any tournament
   // that has been uploaded in the last however many days
   async buildUTRReport(): Promise<JobStats> {
     const logger = getLogger('UTRReporter');
     logger.info('Querying UTR Data.');
-    this.reportStats = new JobStats('BuildUTRReport');
-    this.reportStats.setStatus(JobState.IN_PROGRESS);
-    this.reportStats.setCurrentActivity('Querying UTR Data Report');
+    this.utrReportStats = new JobStats('BuildUTRReport');
+    this.utrReportStats.setStatus(JobState.IN_PROGRESS);
+    this.utrReportStats.setCurrentActivity('Querying UTR Data Report');
     let d = new Date();
     const nowDateString = d.toISOString().substr(0, 10);
     d = new Date(d.setDate(d.getDate() - this.config.utrReportGoesBackInDays));
@@ -57,33 +59,33 @@ export class UtrService {
       .getMany();
 
     logger.info('Building UTR Report.');
-    this.reportStats.setCurrentActivity('Building UTR Report');
+    this.utrReportStats.setCurrentActivity('Building UTR Report');
     const reportData: any[] = [];
     for (const t of tournaments) {
-      this.reportStats.bump('tournaments');
+      this.utrReportStats.bump('tournaments');
       for (const e of t.events) {
-        this.reportStats.bump('events');
-        // skip events without a rankingCategory
+        this.utrReportStats.bump('events');
+        // skip events without a pointsCategory
         if (null === e.vrRankingsCategory) {
-          this.reportStats.bump('eventsWithoutCategoriesSkipped');
+          this.utrReportStats.bump('eventsWithoutCategoriesSkipped');
           continue;
         }
         // Skip Junior events for ages U10 and below
         if ('Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
-          this.reportStats.bump('U10AndBelowSkipped');
+          this.utrReportStats.bump('U10AndBelowSkipped');
           continue;
         }
         for (const m of e.matches) {
-          this.reportStats.bump('matches');
+          this.utrReportStats.bump('matches');
           const reportLine = new UTRLine();
-          if (await reportLine.dataFill(t, e, m, this.reportStats)) {
+          if (await reportLine.dataFill(t, e, m, this.utrReportStats)) {
             reportData.push(JSON.parse(JSON.stringify(reportLine)));
           }
         }
       }
     }
     logger.info('Writing UTR Report.');
-    this.reportStats.setCurrentActivity('Writing UTR Report');
+    this.utrReportStats.setCurrentActivity('Writing UTR Report');
     const wb: WorkBook = utils.book_new();
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
@@ -115,20 +117,86 @@ export class UtrService {
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/UTR_Report_${now}.xlsx`;
     await writeFile(wb, filename);
-    this.reportStats.data = { filename };
+    this.utrReportStats.data = { filename };
 
     logger.info('Uploading UTR Report.');
-    this.reportStats.setCurrentActivity('Uploading UTR Report');
+    this.utrReportStats.setCurrentActivity('Uploading UTR Report');
     await this.seafileAPI.uploadFile(filename);
 
     logger.info('Finished UTR Report');
-    this.reportStats.setCurrentActivity('Finished UTR Report');
-    this.reportStats.setStatus(JobState.DONE);
-    return this.reportStats;
+    this.utrReportStats.setCurrentActivity('Finished UTR Report');
+    this.utrReportStats.setStatus(JobState.DONE);
+    return this.utrReportStats;
+  }
+
+  // ================= For The ITF ============================
+  // Build a report of all the matches in all the tournaments
+  // at a national, regional or provincial level from any tournament
+  // that has been uploaded in the last however many days
+  async buildITFMatchData(updatedSinceString: string): Promise<ITFMatchDTO[]> {
+    const logger = getLogger('ITFMatchData');
+    let d = new Date();
+    const nowDateString = d.toISOString().substr(0, 10);
+    if (!updatedSinceString) {
+      d = new Date(d.setDate(d.getDate() - 14));
+      updatedSinceString = d.toISOString().substr(0, 10);
+    }
+    // const ed = "2018-12-31";
+    // const sd = "2018-01-01"
+    logger.info('Starting match data export for ITF for tournaments updated since ' + updatedSinceString);
+
+    const tournaments: Tournament[] = await this.repository
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.events', 'e')
+      .leftJoinAndSelect('t.license', 'l')
+      .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
+      .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
+      .leftJoinAndSelect('e.matches', 'm')
+      .leftJoinAndSelect('m.matchPlayers', 'mp')
+      .leftJoinAndSelect('mp.player', 'p')
+      .where(`t.endDate <= '${nowDateString}'`)
+      .andWhere(`t.lastUpdatedInVR > '${updatedSinceString}'`)
+      .andWhere('t.level IN ("National","Provincial","Regional")')
+      .getMany();
+    // const tournaments: Tournament[] = await this.repository
+    //   .createQueryBuilder('t')
+    //   .leftJoinAndSelect('t.events', 'e')
+    //   .leftJoinAndSelect('t.license', 'l')
+    //   .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
+    //   .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
+    //   .leftJoinAndSelect('e.matches', 'm')
+    //   .leftJoinAndSelect('m.matchPlayers', 'mp')
+    //   .leftJoinAndSelect('mp.player', 'p')
+    //   .where(`t.endDate <= '${ed}'`)
+    //   .andWhere(`t.endDate >= '${sd}'`)
+    //   .andWhere('t.level IN ("National","Provincial","Regional")')
+    //   .getMany();
+
+    const reportData: ITFMatchDTO[] = [];
+    for (const t of tournaments) {
+      for (const e of t.events) {
+        // skip events without a pointsCategory
+        if (null === e.vrRankingsCategory) {
+          continue;
+        }
+        // Skip Junior events for ages U10 and below
+        if ('Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
+          continue;
+        }
+        for (const m of e.matches) {
+          const itfMatchDTO = new ITFMatchDTO();
+          if (itfMatchDTO.dataFill(t, e, m)) {
+            reportData.push(itfMatchDTO);
+          }
+        }
+      }
+    }
+    logger.info('Finished match data export for ITF. Matches found: ' + reportData.length);
+    return reportData;
   }
 
   getBuildReportStats(): JobStats {
-    return this.reportStats;
+    return this.utrReportStats;
   }
 }
 
@@ -300,8 +368,8 @@ export class UTRLine {
     }
     this.tName = t.name;
     this.tURL = TOURNAMENT_URL_PREFIX + t.tournamentCode;
-    this.tStartDate = moment(t.startDate).format('MM/DD/YYYY')
-    this.tEndDate = moment(t.endDate).format('MM/DD/YYYY')
+    this.tStartDate = moment(t.startDate).format('MM/DD/YYYY');
+    this.tEndDate = moment(t.endDate).format('MM/DD/YYYY');
     this.tCity = t.city;
     this.tState = t.license.province;
     this.tHost = t.license.licenseName;
@@ -310,5 +378,93 @@ export class UTRLine {
     this.tSanctionBody = t.license.province;
     return true;
   }
+}
 
+export class ITFMatchDTO {
+  MatchID: string = null;
+  Side1Player1ID: string = null;
+  Side1Player2ID: string = null;
+  Side2Player1ID: string = null;
+  Side2Player2ID: string = null;
+  MatchWinner: number = null;
+  SurfaceType: string = 'H';
+  Score: string = null;
+  MatchStatus: string = null;
+  ScoreSet1Side1: number = null;
+  ScoreSet1Side2: number = null;
+  ScoreSet1WinningTieBreak: number = null;
+  ScoreSet1LosingTieBreak: number = null;
+  ScoreSet2Side1: number = null;
+  ScoreSet2Side2: number = null;
+  ScoreSet2WinningTieBreak: number = null;
+  ScoreSet2LosingTieBreak: number = null;
+  ScoreSet3Side1: number = null;
+  ScoreSet3Side2: number = null;
+  ScoreSet3WinningTieBreak: number = null;
+  ScoreSet3LosingTieBreak: number = null;
+  ScoreSet4Side1: number = null;
+  ScoreSet4Side2: number = null;
+  ScoreSet4WinningTieBreak: number = null;
+  ScoreSet4LosingTieBreak: number = null;
+  ScoreSet5Side1: number = null;
+  ScoreSet5Side2: number = null;
+  ScoreSet5WinningTieBreak: number = null;
+  ScoreSet5LosingTieBreak: number = null;
+  MatchType: string = null;
+  TournamentID: string = null;
+  TournamentName: string = null;
+  MatchStartDate: string = null;
+  MatchEndDate: string = null;
+  TournamentStartDate: string = null;
+  TournamentEndDate: string = null;
+  AgeCategoryCode: string = null;
+  IndoorFlag: boolean = false;
+  Grade: string = null;
+  MatchFormat: string = null;
+
+  constructor() {
+  }
+
+  dataFill(t: Tournament, e: Event, m: Match): boolean {
+    let p11: MatchPlayer;
+    let p12: MatchPlayer;
+    let p21: MatchPlayer;
+    let p22: MatchPlayer;
+    for (const mp of m.matchPlayers) {
+      if (1 === mp.team && 1 === mp.position) p11 = mp;
+      if (1 === mp.team && 2 === mp.position) p12 = mp;
+      if (2 === mp.team && 1 === mp.position) p21 = mp;
+      if (2 === mp.team && 2 === mp.position) p22 = mp;
+    }
+
+    // Not interested in byes
+    // i.e. where there is less than two participants for singles or 4 for doubles
+    if (!p11 || !p21) return false;
+    if (!e.isSingles && (!p12 || !p22)) return false;
+
+    this.MatchID = [t.tournamentCode, m.vrEventCode, m.vrDrawCode, m.vrMatchCode].join('-');
+    this.Side1Player1ID = p11.playerId.toString();
+    this.Side2Player1ID = p21.playerId.toString();
+    if (!e.isSingles) {
+      this.Side1Player2ID = p12.playerId.toString();
+      this.Side2Player2ID = p22.playerId.toString();
+    }
+    this.MatchWinner = m.winnerCode;
+    // Skipping this.SurfaceType as we don't have the data - defaults to 'H'
+    this.Score = m.score;
+    // Skipping this.MatchStatus
+    // Skipping the score breakdown fields
+    this.MatchType = (e.isSingles) ? 'S' : 'D';
+    this.TournamentID = t.tournamentCode;
+    this.TournamentName = t.name;
+    // We do not have match dates, so we use the tournament end date.
+    this.MatchStartDate = t.endDate;
+    this.MatchEndDate = t.endDate;
+    this.TournamentStartDate = t.startDate;
+    this.TournamentEndDate = t.endDate;
+    this.AgeCategoryCode = e.vrRankingsCategory.categoryId;
+    // Skipping this.IndoorCode - defaults to false;
+    this.Grade = e.grade + '(' + e.winnerPoints.toString() + ')';
+    return true;
+  }
 }

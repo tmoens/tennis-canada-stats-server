@@ -20,7 +20,7 @@ import {VRRankingsTypeModule} from './modules/vrrankings/type/type.module';
 import {VRRankingsCategoryModule} from './modules/vrrankings/category/category.module';
 import {VRRankingsPublicationModule} from './modules/vrrankings/publication/publication.module';
 import {ConfigurationService} from './modules/configuration/configuration.service';
-import {UtrModule} from './modules/reporters/UTRReports/utr.module';
+import {MatchDataExporterModule} from './modules/exporters/match-data/match-data-exporter.module';
 import { ExternalPlayerModule } from './modules/external-tournaments/external-player/external-player.module';
 import { ExternalTournamentService } from './modules/external-tournaments/external-tournament/external-tournament.service';
 import { ExternalTournamentController } from './modules/external-tournaments/external-tournament/external-tournament.controller';
@@ -55,7 +55,7 @@ import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
     SeafileModule,
     TennisAssociationModule,
     TournamentModule,
-    UtrModule,
+    MatchDataExporterModule,
     VRAPIModule,
     VRRankingsTypeModule,
     VRRankingsCategoryModule,

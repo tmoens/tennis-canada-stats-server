@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import {forwardRef, Module} from '@nestjs/common';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import { ExternalPlayerController } from './external-player.controller';
 import { ExternalPlayerService } from './external-player.service';
@@ -8,7 +8,7 @@ import {PlayerModule} from '../../player/player.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([ExternalPlayer]),
-    PlayerModule,
+    forwardRef(() => PlayerModule),
   ],
   providers: [
     ExternalPlayerService,

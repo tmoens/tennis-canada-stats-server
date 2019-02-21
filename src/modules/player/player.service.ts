@@ -8,6 +8,8 @@ import {MatchPlayerService} from '../vrtournaments/match_player/match_player.ser
 import {VRRankingsItemService} from '../vrrankings/item/item.service';
 import {JobState, JobStats} from '../../utils/jobstats';
 import {EventPlayerService} from '../vrtournaments/event_player/event_player.service';
+import {ExternalPlayerService} from '../external-tournaments/external-player/external-player.service';
+import {ExternalPlayer} from '../external-tournaments/external-player/external-player.entity';
 
 const logger = getLogger('playerService');
 
@@ -16,6 +18,7 @@ export class PlayerService {
   private importStats: JobStats;
   private mergeStats: JobStats;
   private playerZero: Player;
+
   constructor(
     @InjectRepository(Player)
     private readonly repo: Repository<Player>,
@@ -26,7 +29,8 @@ export class PlayerService {
     private readonly eventPlayerService: EventPlayerService,
     @Inject(forwardRef(() => VRRankingsItemService))
     private readonly vrRankingsItemService: VRRankingsItemService,
-
+    @Inject(forwardRef(() => ExternalPlayerService))
+    private readonly externalPlayerService: ExternalPlayerService,
   ) {
     this.importStats = new JobStats('playerImport');
     this.mergeStats = new JobStats('playerMerges');
@@ -35,6 +39,7 @@ export class PlayerService {
   getPersonImportStatus(): JobStats {
     return this.importStats;
   }
+
   getPersonMergesImportStatus() {
     return this.mergeStats;
   }
@@ -69,7 +74,7 @@ export class PlayerService {
   }
 
   // Simple lookup.
-  async findPlayer(playerId): Promise<Player|null> {
+  async findPlayer(playerId): Promise<Player | null> {
     return await this.repo.findOne(playerId);
   }
 
@@ -77,7 +82,7 @@ export class PlayerService {
   // we follow the trail.  This makes it super important that the trail has no
   // cycles. a->b, b->c, c->a would be deadly.
   // But that job is handled when we add a renumbering.
-  async findRenumberedPlayer(playerId): Promise<Player|null> {
+  async findRenumberedPlayer(playerId): Promise<Player | null> {
     try {
       const p: Player = await this.findPlayer(playerId);
       if (null == p) return null;
@@ -92,7 +97,7 @@ export class PlayerService {
 
   // If we do not already know about a player, check to see if VR knows about it and
   // load it if we can.  Returns null if unsuccessful on both fronts.
-  async findPlayerOrLoadFromVR(playerId: any, source?: string): Promise<Player|null> {
+  async findPlayerOrLoadFromVR(playerId: any, source?: string): Promise<Player | null> {
     let p: Player = await this.findPlayer(playerId);
     if (null == p) {
       // not found, so let's try loading from the VRAPI
@@ -145,7 +150,7 @@ export class PlayerService {
 
   // This checks the VRAPI to see if it knows about a player Id and if so
   // it creates the player *and saves* it in the database.
-  async loadPlayerFromVRAPI(playerId: number, source?: string): Promise<Player|null> {
+  async loadPlayerFromVRAPI(playerId: number, source?: string): Promise<Player | null> {
     // Lets try to use the VR API to get the player details.
     const apiPlayer = await this.vrapi.get('Player/' + playerId);
     if (null == apiPlayer.Player) {
@@ -175,7 +180,7 @@ export class PlayerService {
 
   // This just tries to create a player record.  The most common client
   // for this is the Player loader or the Player merge loader
-  async createPlayerOnSpec(config: PlayerConfig): Promise<Player|null> {
+  async createPlayerOnSpec(config: PlayerConfig): Promise<Player | null> {
     if (!PlayerService.validatePlayerId(config.playerId)) {
       return null;
     }
@@ -204,7 +209,7 @@ export class PlayerService {
 
   static validatePlayerId(playerId: number): boolean {
     let message: string = null;
-    if (null == playerId ) {
+    if (null == playerId) {
       // Too many logs.  Now dealt with through a report.
       // message = 'Undefined player ID';
       // logger.warn(message);
@@ -215,7 +220,7 @@ export class PlayerService {
       logger.warn(message);
       return false;
     }
-    const pid  = Number(playerId);
+    const pid = Number(playerId);
     if (10000000 > pid || 99999999 < pid) {
       message = 'Player ID out of range: ' + playerId;
       logger.warn(message);
@@ -262,7 +267,7 @@ export class PlayerService {
   //    which requires that we keep track of all renumberings ever given to us.
   // It is also necessary to make sure we do not allow circular renumberings.
   // Renumber a player.
-  async renumberPlayer( pmr: PlayerMergeRecord ): Promise<PlayerMergeResult> {
+  async renumberPlayer(pmr: PlayerMergeRecord): Promise<PlayerMergeResult> {
     let message: string;
     const response: PlayerMergeResult = {
       request: pmr,
@@ -459,17 +464,16 @@ export class PlayerService {
 
   /**
    * Find a player based on an exact match of attributes.
-   * @param fn
-   * @param ln
+   * @param firstName
+   * @param lastName
    * @param gender
-   * @param dob
+   * @param DOB
    */
   async findUniquePlayerByAttributes(
     firstName: string,
     lastName: string,
     gender: string,
-    DOB: string): Promise<Player | null>
-  {
+    DOB: string): Promise<Player | null> {
     const players: Player[] = await this.repo.find({
       where: {firstName, lastName, gender, DOB},
     });
@@ -482,6 +486,29 @@ export class PlayerService {
 
   async findById(playerId: any): Promise<Player | null> {
     return this.repo.findOne(playerId);
+  }
+
+  /**
+   * This returns minimal player records that can be given to the ITF without
+   * releasing personal information like birth date, address, phone numbers
+   * or e-mail.
+   */
+  async getITFPlayerData(): Promise<ITFPlayerDataDTO[]> {
+    const players: Player[] = await this.repo.find();
+    const itfPlayers: ITFPlayerDataDTO[] = [];
+    for (const p of players) {
+      /* looking at this you will ask "WTF? Why did you not simply join
+       * external player to the vr player???
+       * The answer is that a) i did not create that relation in the player entity
+       * and b) it is possible that two multiple external players could be mapped
+       * to the same internal player.
+       */
+      const dto = new ITFPlayerDataDTO(p);
+      const ep = await this.externalPlayerService.findByInternalId(p.playerId);
+      dto.updateExternalPlayerFields(ep);
+      itfPlayers.push(dto);
+    }
+    return itfPlayers;
   }
 }
 
@@ -513,6 +540,40 @@ export interface PlayerMergeResult {
     ranking_entries?: number;
     event_entries?: number;
   };
+}
+
+export class ITFPlayerDataDTO {
+  TennisID: string = null;
+  IPIN: string = null;
+  PlayerID: string = null;
+  Gender: string = null;
+  BirthDate: string = null;
+  PassportGivenName: string = null;
+  PassportFamilyName: string = null;
+  PreferredGivenName: string = null;
+  PreferredFamilyName: string = null;
+  Nationality: string = 'CA';
+  NationalRating: string = null;
+  PostalCode: string = null;
+  Email: string = null;
+  Source: string = null;
+
+  constructor(p: Player) {
+    this.PlayerID = p.playerId.toString();
+    this.PassportGivenName = p.firstName;
+    this.PassportFamilyName = p.lastName;
+    this.Gender = p.gender;
+    if (p.DOB) {
+      this.BirthDate = p.DOB.substr(0, 4) + '-01-01';
+    }
+  }
+
+  updateExternalPlayerFields(ep: ExternalPlayer) {
+    if (ep && ep.ipin) {
+      this.TennisID = ep.playerId;
+      this.IPIN = ep.ipin;
+    }
+  }
 }
 
 enum PlayerMergeStatus {

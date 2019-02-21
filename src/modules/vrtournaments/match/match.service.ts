@@ -16,13 +16,13 @@ const logger = getLogger('matchService');
 export class MatchService {
   constructor(
     @InjectRepository(Match)
-    private readonly repository: Repository<Match>,
+    private readonly repo: Repository<Match>,
     private readonly matchPlayerService: MatchPlayerService,
     private readonly vrapi: VRAPIService) {
   }
 
   async findAll(): Promise<Match[]> {
-    return await this.repository.find();
+    return await this.repo.find();
   }
 
   // go get all the matches for a given tournament from the VR API.
@@ -41,7 +41,7 @@ export class MatchService {
       match.event = draw.event;
       match.matchPlayers = [];
       match.buildFromVRAPIObj(matchData);
-      await this.repository.save(match)
+      await this.repo.save(match)
         .catch(reason => {
           logger.error('Failed to save match data. Reason: ' + reason +
             ', Match Data: ' + JSON.stringify(matchData));

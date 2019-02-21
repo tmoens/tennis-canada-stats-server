@@ -38,7 +38,7 @@ export class ExternalEventResult {
     nullable: true,
     name: 'manualPointAllocation',
   })
-  manualPointAllocation: number | null;
+  manualPointAllocation?: number | null;
 
   @VersionColumn()
   version: number;

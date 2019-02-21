@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import {forwardRef, Inject, Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Brackets, Repository} from 'typeorm';
 import {ExternalPlayer} from './external-player.entity';
@@ -13,6 +13,7 @@ export class ExternalPlayerService {
   constructor(
     @InjectRepository(ExternalPlayer)
     private readonly repo: Repository<ExternalPlayer>,
+    @Inject(forwardRef(() => PlayerService))
     private readonly playerService: PlayerService,
   ) {
   }
@@ -97,5 +98,9 @@ export class ExternalPlayerService {
     }
     ep.tcPlayer = vrp;
     return await this.repo.save(ep);
+  }
+
+  async findByInternalId(internalId: number): Promise<ExternalPlayer | null> {
+    return await this.repo.findOne({where: {internalId}});
   }
 }

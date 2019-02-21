@@ -97,37 +97,82 @@ export class ExternalEventResultService {
     if (query.lastName) {
       q = q.andWhere('p.lastName LIKE :ln', {ln: '%' + query.lastName + '%'});
     }
-    const results = await q.orderBy({'p.lastName': 'ASC', 't.endDate': 'DESC'}).getMany();
+    const results = await q.orderBy({'p.lastName': 'ASC', 't.endDate': 'DESC'})
+      .getMany();
 
     // Now we have an array of results and 5 related objects.  But the client only
     // wants to present a table.  So we have to flatten everything down for them.
     // Better than them doing it. I think.
-    return results.map(r => new ExternalEventResultDTO(r));
+
+    // NOTE: When a junior plays in an open event, her result counts towards BOTH the Canadian
+    // Open rankings and the canadian Junior rankings. So we might get two event result objects
+    // for a single event result.
+    const returnData: ExternalEventResultDTO[] = [];
+    for (const r of results) {
+      // Handle junior events.
+      if (r.event.eventType === 'U18') {
+        returnData.push(new ExternalEventResultDTO(r));
+      }
+
+      // Handle open events
+      if (r.event.eventType === 'Open') {
+        returnData.push(new ExternalEventResultDTO(r));
+        // If the player was a junior at the end date of the tournament, we also create a result
+        // as if this were a U18 tournament too.
+        const yob = (r.player.DOB) ? parseInt(r.player.DOB.substr(0, 4), 10) : 0;
+        if (parseInt(r.event.tournament.endDate.substr(0, 4), 10) - yob < 19) {
+          r.event.eventType = 'U18';
+          returnData.push(new ExternalEventResultDTO(r));
+        }
+      }
+    }
+    return returnData;
   }
 
+  async overrideExternalPoints(externalEventResultDTO: ExternalEventResultDTO): Promise<any> {
+    const target: ExternalEventResult = await this.repo.createQueryBuilder('r')
+      .leftJoinAndSelect('r.player', 'p')
+      .leftJoinAndSelect('r.event', 'e')
+      .where('e.eventId = :eventId', {eventId: externalEventResultDTO.eventId})
+      .andWhere('p.playerId = :playerId', {playerId: externalEventResultDTO.externalId})
+      .getOne();
+
+    if (isNaN(Number(externalEventResultDTO.manualPointAllocation)) || externalEventResultDTO.manualPointAllocation === '') {
+      target.manualPointAllocation = null;
+    } else {
+      target.manualPointAllocation = Number(externalEventResultDTO.manualPointAllocation);
+    }
+    await this.repo.save(target);
+    return true;
+  }
 }
 
 export class ExternalEventResultDTO {
+  eventId: string;
   finishPosition: number;
-  externalRankingPoints: number;
-  manualPointAllocation: number;
-  tcJuniorPoints: string;
-  tcOpenPoints: string;
+  externalRankingPoints: string;
+  manualPointAllocation: string | null;
+  tcPoints: string;
   tournamentName: string;
   sanctioningBody: string;
   endDate: string;
   tournamentType: string;
-  eventDescription: string;
+  eventType: string;
+  eventGender: string;
+  eventDiscipline: string;
+  pointsCategory: string;
+  shortPointsCategory: string;
   playerName: string;
   drawSize: number;
   yob: number;
   externalId: string;
   internalId: number;
-  isJunior: boolean;
+
   constructor(r: ExternalEventResult) {
+    this.eventId = r.event.eventId;
     this.finishPosition = r.finishPosition;
-    this.externalRankingPoints = r.externalRankingPoints;
-    this.manualPointAllocation = r.manualPointAllocation;
+    this.externalRankingPoints = r.externalRankingPoints.toString();
+    this.manualPointAllocation = (r.manualPointAllocation) ? r.manualPointAllocation.toString() : null;
     // For some reason, the runtime is thinking that the player DOB is a string.
     // But the compiler and Webstorm (correctly) think it is a date and will not let me
     // treat it as a string. It is a "date" type in the database and a "Date" type in
@@ -138,23 +183,45 @@ export class ExternalEventResultDTO {
     this.tournamentName = r.event.tournament.name;
     this.sanctioningBody = r.event.tournament.sanctioningBody;
     this.tournamentType = r.event.tournament.sanctioningBody + '/' + r.event.tournament.category;
+    this.eventType = r.event.eventType;
+    this.eventGender  = r.event.gender;
+    this.eventDiscipline = r.event.discipline;
     this.endDate = r.event.tournament.endDate;
     this.playerName = r.player.firstName + ' ' + r.player.lastName;
     this.externalId = r.player.playerId;
     this.internalId = (r.player.tcPlayer) ? r.player.tcPlayer.playerId : null;
     this.drawSize = r.event.drawSize;
-    this.eventDescription = [
-      r.event.gender,
-      r.event.eventType,
-      r.event.discipline.substr(0, 1),
-    ].join(' ');
+
     if (r.event.ignoreResults) {
-      this.eventDescription = this.eventDescription + ' (q)';
+      this.tournamentName = this.tournamentName + ' (q)';
     }
-    const yob = (r.player.DOB) ? parseInt(r.player.DOB.substr(0, 4), 10) : 0;
-    this.isJunior = (parseInt(r.event.tournament.endDate.substr(0, 4), 10) - yob < 19)
-    this.tcJuniorPoints = this.computeJuniorPoints(r);
-    this.tcOpenPoints = this.computeOpenPoints(r);
+    if (this.eventType === 'Open') {
+      this.computeOpenPoints(r);
+      this.pointsCategory =
+        ((this.eventGender === 'F') ? 'W' : 'M') +
+        this.eventDiscipline.substr(0, 1) + ' - ' +
+        this.eventType;
+      this.shortPointsCategory = [
+        ('M' === this.eventGender) ? 'M' : 'W',
+        this.eventDiscipline.substr(0, 1),
+      ].join('');
+    } else {
+      this.computeJuniorPoints(r);
+      this.pointsCategory = [
+        ('M' === this.eventGender) ? 'Boys' : 'Girls',
+        this.eventType,
+        this.eventDiscipline,
+      ].join(' ');
+      this.shortPointsCategory = [
+        ('M' === this.eventGender) ? 'B' : 'G',
+        this.eventType,
+        this.eventDiscipline.substr(0, 1),
+      ].join('');
+    }
+  }
+
+  getExternalPoints(): number | null {
+    return (this.manualPointAllocation) ? Number(this.manualPointAllocation) : Number(this.externalRankingPoints);
   }
 
   // Compute how many canadian junior ranking points are due to the player for this external result
@@ -166,31 +233,30 @@ export class ExternalEventResultDTO {
   // Also if, if you change a rating record (god forbid), you would have to go
   // change the ratings of all the results of all the tournaments that use that record.
   // Soooo, let's just compute the points whenever we need them.
-  computeJuniorPoints(r: ExternalEventResult): string {
+  computeJuniorPoints(r: ExternalEventResult) {
 
     // Qualifiers and some other tournaments are not awarded junior points.
     if (r.event.ignoreResults) {
-      return '-';
-    }
-
-    // The player has to be a junior at the time of the tournament to get junior points.
-    if (!this.isJunior) {
-      return '-';
+      this.tcPoints = '-';
+      return;
     }
 
     // If the event does not have a rating, we cannot compute points for it.
     if (!r.event.eventRating) {
-      return 'unrated';
+      this.tcPoints = 'unrated';
+      return;
     }
 
     // If points are awarded by simply converting from the currency of the tournament
-    // To Canadian Junior points, then do that math now.
+    // To Canadian Junior points, then do that arithmetic now.
     if (r.event.eventRating.pointExchangeRate) {
       // But it is not possible to do if the external points are not known
-      if (r.externalRankingPoints === null) {
-        return 'external points?';
+      if (this.getExternalPoints() === null) {
+        this.tcPoints = 'external points?';
+        return;
       } else {
-        return (r.externalRankingPoints * r.event.eventRating.pointExchangeRate).toString();
+        this.tcPoints = (this.getExternalPoints() * r.event.eventRating.pointExchangeRate).toString();
+        return;
       }
     }
 
@@ -211,7 +277,8 @@ export class ExternalEventResultDTO {
 
     // No points for first round losers outside of Orange bowl and Jr Grand Slams
     if (isFirstRoundLoss && ! isGrandSlamOrOrangeBowl) {
-      return '0';
+      this.tcPoints = '0';
+      return;
     } else {
       // Calculate the points
       const points: number = (Math.round(r.event.eventRating.eventRating * r.event.eventRating.sanctioningBodyRating * 10000 *
@@ -219,9 +286,11 @@ export class ExternalEventResultDTO {
       if (isGrandSlamOrOrangeBowl && r.finishPosition >= r.event.drawSize) {
         // First round losers in OrangeBowl and Junior Grand Slams get half points
         // So spoketh the Deborah and so it shall be.
-        return (points / 2).toString();
+        this.tcPoints = (points / 2).toString();
+        return;
       } else {
-        return points.toString();
+        this.tcPoints = points.toString();
+        return;
       }
     }
   }
@@ -230,26 +299,32 @@ export class ExternalEventResultDTO {
   computeOpenPoints(r: ExternalEventResult): string {
     // Open points are only available for Open events.
     if (r.event.eventType !== 'Open') {
-      return '-';
+      this.tcPoints = '-';
+      return;
     }
 
-    if (this.externalRankingPoints === null) {
+    if (this.getExternalPoints() === null) {
       // But it is not possible to do if the external points are not known
-      return 'external points?';
+      this.tcPoints = 'external points?';
+      return;
     }
 
     // I canna believe I am hard-coding this.
     if ('TT' === r.event.tournament.category) {
       if ('F' === r.event.gender) {
-        return (43 * r.externalRankingPoints).toString();
+        this.tcPoints = (40 * this.getExternalPoints()).toString();
+        return;
       } else {
-        return (80 * r.externalRankingPoints).toString();
+        this.tcPoints = (80 * this.getExternalPoints()).toString();
+        return;
       }
     } else if ('ATP' === r.event.tournament.sanctioningBody ||
-               'WTA' === r.event.tournament.sanctioningBody) {
-      return (1000 * r.externalRankingPoints).toString();
+      'WTA' === r.event.tournament.sanctioningBody) {
+      this.tcPoints = (1000 * this.getExternalPoints()).toString();
+      return;
     }
     logger.error('Could not compute external points for: ' + JSON.stringify(r));
-    return '?';
+    this.tcPoints = '?';
+    return;
   }
 }

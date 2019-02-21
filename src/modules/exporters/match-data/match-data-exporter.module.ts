@@ -1,8 +1,8 @@
 import { Module} from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UtrService } from './utr.service';
-import { UtrController } from './utr.controller';
+import { MatchDataExporterService } from './match-data-exporter.service';
+import { MatchDataExporterController } from './match-data-exporter.controller';
 import {VRAPIModule} from '../../VRAPI/vrapi.module';
 import {SeafileModule} from '../../Seafile/seafile.module';
 import {Tournament} from '../../vrtournaments/tournament/tournament.entity';
@@ -19,13 +19,13 @@ import {LicenseModule} from '../../vrtournaments/license/license.module';
     LicenseModule,
   ],
   providers: [
-    UtrService,
+    MatchDataExporterService,
   ],
   controllers: [
-    UtrController,
+    MatchDataExporterController,
   ],
   exports: [
-    UtrService,
+    MatchDataExporterService,
   ],
 })
-export class UtrModule {}
+export class MatchDataExporterModule {}

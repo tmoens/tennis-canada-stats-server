@@ -3,11 +3,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {configure} from 'log4js';
-import {UtrService} from './modules/reporters/UTRReports/utr.service';
+import {MatchDataExporterService} from './modules/exporters/match-data/match-data-exporter.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const service = app.get(UtrService);
+  const service = app.get(MatchDataExporterService);
 
   configure('log4js_config.json');
   await service.buildUTRReport();

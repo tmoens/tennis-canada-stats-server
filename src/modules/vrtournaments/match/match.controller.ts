@@ -1,4 +1,4 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
+import {Controller, Get, Query, UseGuards} from '@nestjs/common';
 import { MatchService } from './match.service';
 import { Match } from './match.entity';
 import {AuthGuard} from '@nestjs/passport';

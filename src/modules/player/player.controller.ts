@@ -7,7 +7,7 @@ import {
   UploadedFile, UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import {PlayerMergeRecord, PlayerService} from './player.service';
+import {ITFPlayerDataDTO, PlayerMergeRecord, PlayerService} from './player.service';
 import { Player } from './player.entity';
 import csv = require('csvtojson');
 import {AuthGuard} from '@nestjs/passport';
@@ -22,6 +22,12 @@ export class PlayerController {
   @UseGuards(AuthGuard('bearer'))
   async findAll(): Promise<Player[]> {
     return await this.playerService.findAll();
+  }
+
+  @Get('ITFPlayerData')
+  // @UseGuards(AuthGuard('bearer'))
+  async getITFPlayerData(): Promise<ITFPlayerDataDTO[]> {
+    return await this.playerService.getITFPlayerData();
   }
 
   @Get(':id')
