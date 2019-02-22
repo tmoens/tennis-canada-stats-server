@@ -4,14 +4,13 @@ import {Repository} from 'typeorm';
 import {ExternalEvent} from './external-event.entity';
 import {ExternalTournament} from '../external-tournament/external-tournament.entity';
 import {getLogger} from 'log4js';
-import {EventRatingService} from '../event-rating/event-rating.service';
+import {PointExchangeService} from '../point-exchange/point-exchange.service';
 
 @Injectable()
 export class ExternalEventService {
   constructor(
     @InjectRepository(ExternalEvent)
     private readonly repo: Repository<ExternalEvent>,
-    private readonly eventRatingService: EventRatingService,
   ) {}
 
   async findAll(): Promise<ExternalEvent[]> {
@@ -25,8 +24,6 @@ export class ExternalEventService {
     }
     if (await this.updateFromITFAPI(e, eventData)) {
       e.tournament = et;
-      const eventRating = await this.eventRatingService.rateEvent(et, e);
-      e.eventRating = eventRating;
       return await this.repo.save(e);
     } else {
       return null;
@@ -104,17 +101,5 @@ export class ExternalEventService {
       e.eventType = 'Open';
     }
     return true;
-  }
-
-  // Update the ratings for the events in a tournament.  This is generally
-  // triggerd by someone updating the tournament's subCategory.
-  // TODO This seems not to belong here but in the external tournament.
-  // TODO Probably broke this 2019-01-14 but that is good because it needs proper fixing.
-  async updateRating(et: ExternalTournament) {
-    for (const ee of et.externalEvents) {
-      const eventRating = await this.eventRatingService.rateEvent(et, ee);
-      if (eventRating) ee.eventRating = eventRating;
-      await this.repo.save(ee);
-    }
   }
 }

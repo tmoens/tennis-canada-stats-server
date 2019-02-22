@@ -9,7 +9,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import {ExternalTournament} from '../external-tournament/external-tournament.entity';
-import {EventRating} from '../event-rating/event-rating.entity';
 import {ExternalEventResult} from '../external-event-result/external-event-result.entity';
 import {ItfMatchResult} from '../itf-match-results/itf-match-result.entity';
 
@@ -32,14 +31,6 @@ export class ExternalEvent {
   })
   @JoinColumn({name: 'tournamentId'})
   tournament: ExternalTournament;
-
-  @ManyToOne(type => EventRating, {
-    nullable: true,
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  @JoinColumn({name: 'ratingId'})
-  eventRating: EventRating;
 
   @Column('varchar', {
     nullable: true,

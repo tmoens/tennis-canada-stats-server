@@ -55,7 +55,6 @@ export class ExternalTournamentService {
     // only the points earned by the player.
     const after2018: boolean = ('2018' < t.startDate.substr(0, 4));
     t.hostNation = d.HostNation;
-    t.manuallyCreated = false;
     t.name = d.PromoName;
     t.zone = d.Zone;
 
@@ -122,8 +121,17 @@ export class ExternalTournamentService {
           // The transition Tour is new in 2019 and sanctioned by the ITF, not the ATP.
           case 'ITF':
             t.sanctioningBody = 'ITF';
-            t.category = 'TT';
-            t.subCategory = 'TT';
+            // There is a problem right here.  The ITF offers two flavours
+            // of women's pro events.  "Pro" events that offer WTA points and
+            // "Transition Tour" events that offer ITF Entry points.
+            // The API does not distinguish between the two and so we call them
+            // all TT by default.
+            // Then there is a whole user app to change some of them to "Pro" category.
+            // Soooo, if the user has changed the category to pro, do not overwrite it.
+            if (!t.category || t.category !== 'Pro') {
+              t.category = 'TT';
+              t.subCategory = 'TT';
+            }
             break;
           case 'SL':
             // No sub categories
@@ -228,13 +236,10 @@ export class ExternalTournamentService {
 // The query contains a number of possible fields which are converted to an sql query.
   async getFilteredTournaments(query: any): Promise<ExternalTournament[] | null> {
     let q = this.repo.createQueryBuilder('t');
-    if (query.uncategorizedOnly ) {
-      q = q.where('t.subCategory IS NULL');
-    } else {
-      q = q.where('1');
-    }
     if (query.sanctioningBody) {
       q = q.andWhere('t.sanctioningBody = :sb', {sb: query.sanctioningBody});
+    } else {
+      q = q.where('1');
     }
     if (query.startPeriod) {
       q = q.andWhere('t.endDate >= :sp', {sp: query.startPeriod});
@@ -245,23 +250,38 @@ export class ExternalTournamentService {
     if (query.tournamentName) {
       q = q.andWhere('t.name LIKE :tn', {tn: '%' + query.tournamentName + '%'});
     }
-
-    return await q.orderBy('t.endDate').getMany();
+    if (query.category) {
+      if (query.category === 'Junior') {
+        q = q.andWhere('t.tournamentId LIKE "J"');
+      }
+      if (query.category === 'Open') {
+        if (query.gender) {
+          if (query.gender === 'F') {
+            q = q.andWhere('t.tournamentId LIKE "W%"');
+          }
+          if (query.category === 'M') {
+            q = q.andWhere('t.tournamentId LIKE "M%"');
+          }
+        } else {
+          q = q.andWhere('t.tournamentId NOT LIKE "J%"');
+        }
+      }
+    }
+    return await q.orderBy('t.endDate', 'DESC').getMany();
   }
 
-// Update the tournament subCategory.
-// This also means updating the rating of every event in the tournament.
-// Used by the GUI client for sub-categorization of external tournaments
-// when we could not do it automatically from the ITF API feed.
-  async updateSubCategory(tournamentId: string, subCategory: string): Promise<ExternalTournament | null> {
-    const logger = getLogger('External Tournament');
+  // Update the tournament category.
+  // Introduced when we could not do it automatically from the ITF API feed.
+  // Specifically ITF Women's pro events did not distinguish between pro
+  // events that award WTA points and Transition Tour events that offer
+  // ITF Entry.
+  async updateCategory(tournamentId: string, category: string): Promise<any> {
     const t = await this.repo.findOne(tournamentId, {relations: ['externalEvents']});
     if (!t) {
-      logger.error('Client asked to update subCategory of non existent tournament.');
-      return null;
+      // TODO should throw exception
+      return false;
     }
-    t.subCategory = subCategory;
-    this.externalEventService.updateRating(t);
+    t.category = category;
     await this.repo.save(t);
   }
 }

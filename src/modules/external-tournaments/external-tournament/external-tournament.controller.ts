@@ -21,9 +21,9 @@ export class ExternalTournamentController {
     return await this.service.getFilteredTournaments(query);
   }
 
-  @Post('UpdateSubCategory/:tournamentId/:subCategory')
+  @Post('UpdateCategory/:tournamentId/:category')
   @UseGuards(AuthGuard('bearer'))
-  async updateSubCategory(@Param() params): Promise<ExternalTournament> {
-    return await this.service.updateSubCategory(params.tournamentId, params.subCategory);
+  async updateCategory(@Param() params): Promise<any> {
+    return await this.service.updateCategory(params.tournamentId, params.category);
   }
 }

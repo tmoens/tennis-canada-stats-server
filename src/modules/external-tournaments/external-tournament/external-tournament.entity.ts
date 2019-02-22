@@ -74,15 +74,6 @@ export class ExternalTournament {
   })
   endDate: string;
 
-  @Column('tinyint', {
-    nullable: true,
-    width: 1,
-    default: '0',
-    name: 'manuallyCreated',
-    comment: 'The tournament may have been created programmatically or manually.',
-  })
-  manuallyCreated: boolean | null;
-
   @OneToMany(type => ExternalEvent, externalEvent => externalEvent.tournament, {
     onDelete: 'CASCADE' ,
     onUpdate: 'CASCADE' ,
@@ -93,4 +84,32 @@ export class ExternalTournament {
   updateDate: Date;
   @VersionColumn()
   version: number;
+
+  getTournamentYear(): number | null {
+    return Number(this.endDate.substr(0, 4));
+  }
+
+  getPointCurrency(): string {
+    // All ATP tournaments deal in ATP points.
+    if (this.sanctioningBody === 'ATP')  return 'ATP';
+    // ALL WTA Tournaments seal in WTA Points.
+    if (this.sanctioningBody === 'WTA')  return 'WTA';
+    // ITF tournaments can deal in ITF Junior points or TransitionTour points or WTA points.
+    if (this.sanctioningBody === 'ITF')  {
+      // All ITF Junior tournaments deal with ITF (junior points
+      if (this.tournamentId.substr(0, 1) === 'J') {
+        return 'ITF';
+      }
+      // All ITF Men's Open tournaments deal in transitionTour Points.
+      if (this.tournamentId.substr(0, 1) === 'M') {
+        return 'TT';
+      }
+      // ITF Women's Tournaments could deal in WTA or TT points
+      if (this.category === 'TT') {
+        return 'TT';
+      } else {
+        return 'WTA';
+      }
+    }
+  }
 }

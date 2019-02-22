@@ -11,7 +11,7 @@ import {JobState, JobStats} from '../../utils/jobstats';
 import {ExternalTournament} from '../external-tournaments/external-tournament/external-tournament.entity';
 import {ExternalEventService} from '../external-tournaments/external-event/external-event.service';
 import {ExternalEvent} from '../external-tournaments/external-event/external-event.entity';
-import {EventRatingService} from '../external-tournaments/event-rating/event-rating.service';
+import {PointExchangeService} from '../external-tournaments/point-exchange/point-exchange.service';
 import {ExternalEventResultService} from '../external-tournaments/external-event-result/external-event-result.service';
 import {ExternalEventResult} from '../external-tournaments/external-event-result/external-event-result.entity';
 import {ItfMatchResultsService} from '../external-tournaments/itf-match-results/itf-match-results.service';
@@ -39,7 +39,7 @@ export class ItfapiService {
 
   constructor(
     private readonly config: ConfigurationService,
-    private readonly eventRatingService: EventRatingService,
+    private readonly eventRatingService: PointExchangeService,
     private readonly externalTournamentService: ExternalTournamentService,
     private readonly externalPlayerService: ExternalPlayerService,
     private readonly externalEventService: ExternalEventService,

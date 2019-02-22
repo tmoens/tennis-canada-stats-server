@@ -1,7 +1,8 @@
 import {Body, Controller, Get, Post, Query, UseGuards} from '@nestjs/common';
 import {AuthGuard} from '@nestjs/passport';
-import {ExternalEventResultDTO, ExternalEventResultService} from './external-event-result.service';
+import {ExternalEventResultService} from './external-event-result.service';
 import {ExternalEventResult} from './external-event-result.entity';
+import {ExternalEventResultDTO} from './external-event-result.dto';
 
 @Controller('ExternalEventResult')
 export class ExternalEventResultController {

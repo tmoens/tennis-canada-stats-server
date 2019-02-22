@@ -26,8 +26,8 @@ import { ExternalTournamentService } from './modules/external-tournaments/extern
 import { ExternalTournamentController } from './modules/external-tournaments/external-tournament/external-tournament.controller';
 import { ExternalTournamentModule } from './modules/external-tournaments/external-tournament/external-tournament.module';
 import { ExternalEventModule } from './modules/external-tournaments/external-event/external-event.module';
-import { EventRatingService } from './modules/external-tournaments/event-rating/event-rating.service';
-import { EventRatingModule } from './modules/external-tournaments/event-rating/event-rating.module';
+import { PointExchangeService } from './modules/external-tournaments/point-exchange/point-exchange.service';
+import { PointExchangeModule } from './modules/external-tournaments/point-exchange/point-exchange.module';
 import { ExternalEventResultController } from './modules/external-tournaments/external-event-result/external-event-result.controller';
 import { ExternalEventResultModule } from './modules/external-tournaments/external-event-result/external-event-result.module';
 import { ItfMatchResultsService } from './modules/external-tournaments/itf-match-results/itf-match-results.service';
@@ -63,7 +63,7 @@ import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
     ExternalPlayerModule,
     ExternalTournamentModule,
     ExternalEventModule,
-    EventRatingModule,
+    PointExchangeModule,
     ExternalEventResultModule,
     ItfMatchResultsModule,
     ITFAPIModule,
@@ -76,7 +76,7 @@ import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
   ],
   providers: [
   ExternalTournamentService,
-  EventRatingService,
+  PointExchangeService,
   ItfMatchResultsService],
 })
 
