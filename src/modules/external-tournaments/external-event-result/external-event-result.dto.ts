@@ -48,8 +48,8 @@ export class ExternalEventResultDTO {
     if (r.event.ignoreResults) {
       this.tournamentName = this.tournamentName + ' (q)';
     }
+    this.computePoints(r, exchangeRate);
     if (this.eventType === 'Open') {
-      this.computeOpenPoints(r, exchangeRate);
       this.pointsCategory =
         ((this.eventGender === 'F') ? 'W' : 'M') +
         this.eventDiscipline.substr(0, 1) + ' - ' +
@@ -59,7 +59,6 @@ export class ExternalEventResultDTO {
         this.eventDiscipline.substr(0, 1),
       ].join('');
     } else if (this.eventType === 'U18') {
-      this.computeJuniorPoints(r, exchangeRate);
       this.pointsCategory = [
         ('M' === this.eventGender) ? 'Boys' : 'Girls',
         'Under 18',
@@ -88,23 +87,7 @@ export class ExternalEventResultDTO {
   // Also, if you change the rating of any tournament,
   // you have to go and change the ratings for the results of that tournament.
   // Soooo, let's just compute the points whenever we need them.
-  computeJuniorPoints(r: ExternalEventResult, exchangeRate: number) {
-
-    // Qualifiers and some other tournaments are not awarded junior points.
-    if (r.event.ignoreResults) {
-      this.tcPoints = '-';
-      return;
-    }
-    if (this.getExternalPoints() === null) {
-      // But it is not possible to do if the external points are not known
-      this.tcPoints = '0';
-    } else {
-      this.tcPoints = (this.getExternalPoints() * exchangeRate).toString();
-    }
-  }
-
-  // Compute how many open ranking points are due to the player for this external result
-  computeOpenPoints(r: ExternalEventResult, exchangeRate: number) {
+  computePoints(r: ExternalEventResult, exchangeRate: number) {
 
     if (this.getExternalPoints() === null) {
       // But it is not possible to do if the external points are not known

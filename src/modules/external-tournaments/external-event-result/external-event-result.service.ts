@@ -110,7 +110,7 @@ export class ExternalEventResultService {
       if (query.gender === 'F') {
         q = q.andWhere('t.tournamentId LIKE "W%"');
       }
-      if (query.category === 'M') {
+      if (query.gender === 'M') {
         q = q.andWhere('t.tournamentId LIKE "M%"');
       }
     }
@@ -149,6 +149,7 @@ export class ExternalEventResultService {
         const yob = (r.player.DOB) ? parseInt(r.player.DOB.substr(0, 4), 10) : 0;
         if (parseInt(r.event.tournament.endDate.substr(0, 4), 10) - yob < 19) {
           exchangeRate = await this.exchangeService.findExchaneRate(year, pointCurrency, gender, 'U18');
+          r.event.eventType = 'U18';
           returnData.push(new ExternalEventResultDTO(r, exchangeRate));
         }
       }
