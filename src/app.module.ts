@@ -34,6 +34,7 @@ import { ItfMatchResultsService } from './modules/external-tournaments/itf-match
 import { ItfMatchResultsController } from './modules/external-tournaments/itf-match-results/itf-match-results.controller';
 import { ItfMatchResultsModule } from './modules/external-tournaments/itf-match-results/itf-match-results.module';
 import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
+import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
     ExternalEventResultModule,
     ItfMatchResultsModule,
     ITFAPIModule,
+    ExternalapiModule,
   ],
   controllers: [
     AppController,
@@ -75,9 +77,12 @@ import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
     ItfMatchResultsController,
   ],
   providers: [
-  ExternalTournamentService,
-  PointExchangeService,
-  ItfMatchResultsService],
+    ExternalTournamentService,
+    PointExchangeService,
+    ItfMatchResultsService,
+  ],
+  exports: [
+  ],
 })
 
 export class AppModule {

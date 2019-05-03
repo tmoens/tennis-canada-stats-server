@@ -510,6 +510,7 @@ export class PlayerService {
     }
     return itfPlayers;
   }
+
 }
 
 export interface PlayerConfig {

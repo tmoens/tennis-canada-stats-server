@@ -1,9 +1,10 @@
 import {
+  Body,
   Controller,
   FileInterceptor,
   Get,
   HttpException, HttpStatus, Param,
-  Post, Req,
+  Post, Query, Req, Res,
   UploadedFile, UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -11,11 +12,15 @@ import {ITFPlayerDataDTO, PlayerMergeRecord, PlayerService} from './player.servi
 import { Player } from './player.entity';
 import csv = require('csvtojson');
 import {AuthGuard} from '@nestjs/passport';
+import {PlayerIdentityService} from './playerIdentity.service';
+import {getLogger} from "log4js";
 
 @Controller('Player')
 export class PlayerController {
   constructor(
-    private readonly playerService: PlayerService) {
+    private readonly playerService: PlayerService,
+    private readonly identityService: PlayerIdentityService,
+    ) {
   }
 
   @Get()
@@ -125,4 +130,37 @@ export class PlayerController {
     // Clients can watch the progress by polling importVRPersonsCSV/status
     this.playerService.importVRPersons(players);
   }
+
+  /* This is for Validating BC Club membership lists */
+  @Post('check')
+  @UseInterceptors(FileInterceptor('file',
+    {dest: 'uploads/players/VRPersonMerges'}))
+  @UseGuards(AuthGuard('bearer'))
+  async checkPlayers(@Req() request, @UploadedFile() file) {
+    const valid: boolean = await this.identityService.validateFile(file);
+    if (!valid) {
+      throw new HttpException('Member lists contained one or more errors: ' +
+        JSON.stringify(this.identityService.getCheckPlayerStatus().getHistory()),
+        HttpStatus.NOT_ACCEPTABLE);
+    }
+  }
+
+  @Get('check/status')
+  // @UseGuards(AuthGuard('bearer'))
+  checkPlayersStatus(): any {
+    return this.identityService.getCheckPlayerStatus();
+  }
+  @Get('check/downloadReport')
+  // TODO figure out how to guard this - client is an <a>...</a>
+  // which does not send auth headers. no private data so it is ok.
+  // @UseGuards(AuthGuard('bearer'))
+  async exportMemberCheckReport( @Res() response, @Query() query): Promise<any> {
+    const logger = getLogger('eventRatingsReport');
+    logger.info('Request to download ' + query.filename);
+    response.status(HttpStatus.OK);
+    await response.download(query.filename);
+    logger.info('Download complete');
+    // TODO THis might be a good place to clean the file up so no more downloads
+  }
+
 }

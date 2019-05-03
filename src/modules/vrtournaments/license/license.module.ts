@@ -12,8 +12,8 @@ import { License } from './license.entity';
     LicenseService,
   ],
   controllers: [
-    LicenseController
+    LicenseController,
   ],
-  exports: [LicenseService]
+  exports: [LicenseService],
 })
 export class LicenseModule {}

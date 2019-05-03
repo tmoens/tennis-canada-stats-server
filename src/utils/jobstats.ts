@@ -20,7 +20,7 @@ export class JobStats {
   history: string[] = [];
   toDo: number;
   // anything the client wants to remember about the job
-  data: any;
+  data: any = {};
   counters: any = {};
   percentComplete?: number;
 
@@ -37,6 +37,14 @@ export class JobStats {
     } else {
       this.counters[counterName] = this.counters[counterName] + amount;
     }
+    if (counterName === 'done' && this.toDo > 0) {
+      this.percentComplete = Math.trunc( (this.counters.done / this.toDo) * 100);
+    }
+    return this.counters[counterName];
+  }
+
+  setCounter(counterName: string, amount: number = 1): number {
+    this.counters[counterName] = amount;
     if (counterName === 'done' && this.toDo > 0) {
       this.percentComplete = Math.trunc( (this.counters.done / this.toDo) * 100);
     }
@@ -65,6 +73,10 @@ export class JobStats {
       this.endTime = new Date();
       logger.error('Job failed: ' + JSON.stringify(this));
     }
+  }
+
+  setData(name: string, whatever: any) {
+    this.data[name] = whatever;
   }
 
   getHistory(): string[] {

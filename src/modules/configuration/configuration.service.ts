@@ -58,6 +58,8 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
       UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
+      HOW_MANY_CANDIDATE_MATCHES: Joi.number().default(3),
+      CANDIDATE_MATCH_SCORE_THRESHOLD: Joi.number().default(-1),
     });
 
     const { error, value: validatedEnvConfig } = Joi.validate(
@@ -142,6 +144,14 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get typeORMSyncDatabase(): boolean {
     return Boolean(this.envConfig.TYPEORM_SYNCH_DATABASE);
+  }
+
+  get howManyCandidateMatches(): number {
+    return Number(this.envConfig.HOW_MANY_CANDIDATE_MATCHES);
+  }
+
+  get candidateMatchScoreThreshold(): number {
+    return Number(this.envConfig.CANDIDATE_MATCH_SCORE_THRESHOLD);
   }
 
   // This is used to build ORM configuration options
