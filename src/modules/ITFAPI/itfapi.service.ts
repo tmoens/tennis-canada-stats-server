@@ -68,7 +68,7 @@ export class ItfapiService {
   /* go get the data from the ITF API.
    * It comes back as a json array of players each with all results from that player nested like this:
    * Player
-   *   Disciplines for each player (practically speaking only ever for a given query)
+   *   Disciplines for each player (practically speaking only ever one discipline for a given query)
    *     Tournaments for each discipline
    *       Events for each Tournament (Draws, really)
    *         Matches in each Event

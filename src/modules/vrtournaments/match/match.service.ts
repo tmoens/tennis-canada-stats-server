@@ -41,14 +41,20 @@ export class MatchService {
       match.event = draw.event;
       match.matchPlayers = [];
       match.buildFromVRAPIObj(matchData);
-      await this.repo.save(match)
-        .catch(reason => {
-          logger.error('Failed to save match data. Reason: ' + reason +
-            ', Match Data: ' + JSON.stringify(matchData));
-          importStats.bump(CREATION_FAIL_COUNT);
-        });
-      await this.matchPlayerService.importMatchPlayersFromVR(match, matchData);
-      importStats.bump(CREATION_COUNT);
+      // do not try to save matches that do not have a score
+      // they are matches that have not been played or matches where
+      // the players are not yet determined.  These matches will be added
+      // as the tournament is updated and the scores are known.
+      if (match.score) {
+        await this.repo.save(match)
+          .catch(reason => {
+            logger.error('Failed to save match data. Reason: ' + reason +
+              ', Match Data: ' + JSON.stringify(matchData));
+            importStats.bump(CREATION_FAIL_COUNT);
+          });
+        await this.matchPlayerService.importMatchPlayersFromVR(match, matchData);
+        importStats.bump(CREATION_COUNT);
+      }
     }
     return true;
   }
