@@ -1,34 +1,44 @@
-1) look at the README
-
 Server to handle requests and API for Tennis Canada for tasks relating to
 play data. (Players, tournaments, matches mostly)
 
-This runs as a node server on port 3002 (for now).
+
+This runs as a node server.  The port number it uses is set in the configuration file.
+
+-- BUILD -------------------------
+Assumes Webstorm.
+
+Normally your Typescript files should compile to Java Script automatically and the
+the Java Script files and (and map files) should be generated/updated in /dist
+
+At some point if you need to build the /dist directory manually, just go to the
+Typescript window and do "compile all" (from the little menu icon)
+
+
+-- CONFIGURATION -----------------
+
+Application configuration is in the environment/*.env files.
+These are not and should not be committed to git (except for the sample one).
+
+
+-- Running on development machine ----------
+Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
+git-bash$ export NODE_ENV=production
+npm run start:prod
+
+TODO - running npm run start and npm run start:development are not working because
+TODO - of some issue with ts-node, but I have not done the troubleshooting yet.
+
+
+== DEPLOYMENT ====================================
+-- Apache Configuration ----------
 
 To get apache to forward request to and from the node server, we have to add
-the following lines to the httpd.conf file on the rogersrankings.com server:
+the following lines to the httpd.conf file on the rogersrankings.com server or
+the local build server file.
 
 ProxyPass /stats http://localhost:3002
 ProxyPassReverse /stats http://localhost:3002
 
-
--- Configuration -----------------
-
-
-Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
-> set NODE_ENV=production (this is the default, by the way)
-> npm run start:prod
-using git-bash it is
-git-bash$ export NODE_ENV=production
-
-OR
-
-> set NODE_ENV=development
-> npm run start:development
-I generally have two terminals (Production and Development) with the appropriate environments
-
-then in the environments directory, create a corresponding development.env or production.env file
-do not commit these to git
 
 == Dependencies/Design notes =====================
 
