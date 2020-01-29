@@ -31,7 +31,7 @@ const MEMBER_ID = 'MemberId';
 const PHONE_1 = 'HomePhone';
 const PHONE_2 = 'MobilePhone';
 const PHONE_3 = 'Phone3';
-const POSTAL_CODE = 'Postalcode';
+const POSTAL_CODE = 'PostalCode';
 const PROVINCE = 'Province';
 const TEST_PURPOSE = 'TestPurpose';
 

@@ -33,7 +33,7 @@ export class Player {
 
   @Column('varchar', {
     nullable: true,
-    length: 3,
+    length: 20,
   })
   province: string;
 
@@ -57,25 +57,25 @@ export class Player {
 
   @Column('varchar', {
     nullable: true,
-    length: 10,
+    length: 20,
   })
   phone: string;
 
   @Column('varchar', {
     nullable: true,
-    length: 10,
+    length: 20,
   })
   phone2: string;
 
   @Column('varchar', {
     nullable: true,
-    length: 10,
+    length: 20,
   })
   mobile: string;
 
   @Column('varchar', {
     nullable: true,
-    length: 50,
+    length: 250,
   })
   address: string;
 
