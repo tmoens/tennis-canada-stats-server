@@ -77,7 +77,7 @@ export class ItfapiService {
     this.stats = new JobStats('Load play data from ITF API');
     this.stats.setStatus(JobState.IN_PROGRESS);
     const endLoadingAt: Moment = moment();
-    const startLoadingFrom: Moment = moment().subtract(21, 'days');
+    const startLoadingFrom: Moment = moment().subtract(this.config.itfLoaderPeriod, 'days');
 
     // ITF disciplines include Professional, Junior , Senior, Wheelchair and Beach
     // We are only interested in Pro and Junior results for now.

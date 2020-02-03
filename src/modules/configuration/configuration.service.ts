@@ -50,6 +50,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       ITFAPI_URL: Joi.string().required(),
       ITFAPI_USER: Joi.string().required(),
       ITFAPI_PASSWORD: Joi.string().required(),
+      ITF_LOADER_PERIOD: Joi.number().required(),
 
       TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(0),
       TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(10),
@@ -90,6 +91,10 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
   get itfapiPassword(): string {
     return this.envConfig.ITFAPI_PASSWORD;
+  }
+
+  get itfLoaderPeriod(): number {
+    return Number(this.envConfig.ITF_LOADER_PERIOD);
   }
 
   get tournamentUploadStartYear(): number {

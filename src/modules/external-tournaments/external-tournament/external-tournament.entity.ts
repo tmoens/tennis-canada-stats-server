@@ -54,7 +54,7 @@ export class ExternalTournament {
 
   @Column('varchar', {
     nullable: true,
-    length: 16,
+    length: 20,
     name: 'subCategory',
     comment: 'sub-category body will necessarily be one from the event_rating table',
   })

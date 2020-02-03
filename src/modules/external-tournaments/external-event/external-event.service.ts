@@ -58,6 +58,9 @@ export class ExternalEventService {
         break;
       default:
         // not handling mixed doubles events for now. (MatchType = X believe it or not)
+        // FWIW, the ATP cup has both singles and doubles matches in the event
+        // so the match type of the event is given as null and the event
+        // discipline is neither singles nor doubles.
         logger.error('Skipping event: ' + d.EventId +
           '. Unknown MatchType: ' + d.MatchType +
           ' (probably mixed doubles).');
