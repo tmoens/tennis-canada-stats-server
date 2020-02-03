@@ -17,19 +17,6 @@ export class ExternalTournamentService {
     return await this.repo.find();
   }
 
-  async getMostRecentDate(): Promise<string> {
-    const t: ExternalTournament = await this.repo.findOne({
-      order: {
-        endDate: 'DESC',
-      },
-    });
-    if (t) {
-      return t.endDate;
-    } else {
-      return '2018-01-01';
-    }
-  }
-
   /**
    * We have a bunch of result data for a specific tournament for a specific player from
    * the ITF API. Create or update the tournament.
@@ -49,11 +36,16 @@ export class ExternalTournamentService {
     if (d.EndDate) t.endDate = d.EndDate.substr(0, 10);
     if (d.StartDate) t.startDate = d.StartDate.substr(0, 10);
 
-    // After 2019 - we care a lot less about sub categores as we have switched to
+    // After 2018 - we care a lot less about sub categories as we have switched to
     // a simple "exchange rate" method of of awarding canadian ranking points.
     // The new method does not care about Categories and subCategories of the tournament,
     // only the points earned by the player.
-    const after2018: boolean = ('2018' < t.startDate.substr(0, 4));
+    const after2018: boolean = ('2018' < t.endDate.substr(0, 4));
+
+    // In 2019, we had the introduction of the ITF Transition tour which awarded
+    // its own points which we had to convert.  This ended as quickly as it began.
+    const after2019: boolean = ('2019' < t.endDate.substr(0, 4));
+
     t.hostNation = d.HostNation;
     t.name = d.PromoName;
     t.zone = d.Zone;
@@ -73,10 +65,18 @@ export class ExternalTournamentService {
         t.sanctioningBody = 'ATP';
         switch (d.Category) {
           case 'ITF':
-            // The transition Tour is new in 2019 and sanctioned by the ITF, not the ATP.
+            // ITF events are sanctioned by the ITF, not the ATP
             t.sanctioningBody = 'ITF';
-            t.category = 'TT';
-            t.subCategory = 'TT';
+            if (after2018 && !after2019) {
+              // The transition Tour existed in 2019 only
+              // They awarded their own points (not ATP points)
+              t.category = 'TT';
+              t.subCategory = 'TT';
+            } else {
+              // before and after that they awarded ATP points, and are pro tournaments.
+              t.category = 'Pro';
+              t.subCategory = 'Pro';
+            }
             break;
           case 'SL':
             // No sub categories
@@ -108,29 +108,42 @@ export class ExternalTournamentService {
             t.category = 'Futures';
             if (after2018) t.subCategory = 'Futures';
             break;
+          case 'TC':
+            // I think this is the ATP Cup
+            // API does not distinguish subCategories
+            t.category = 'TC';
+            t.subCategory = 'TC';
+            break;
           default:
             logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d));
             break;
         }
         break;
       case 'W':
-        // The following is not strictly true as some women's pro events are
-        // sanctioned by the ITF.
+        // The following is not strictly true as some women's pro events are sanctioned by the ITF.
         t.sanctioningBody = 'WTA';
         switch (d.Category) {
-          // The transition Tour is new in 2019 and sanctioned by the ITF, not the ATP.
           case 'ITF':
             t.sanctioningBody = 'ITF';
-            // There is a problem right here.  The ITF offers two flavours
-            // of women's pro events.  "Pro" events that offer WTA points and
-            // "Transition Tour" events that offer ITF Entry points.
-            // The API does not distinguish between the two and so we call them
-            // all TT by default.
-            // Then there is a whole user app to change some of them to "Pro" category.
-            // Soooo, if the user has changed the category to pro, do not overwrite it.
-            if (!t.category || t.category !== 'Pro') {
-              t.category = 'TT';
-              t.subCategory = 'TT';
+            if (after2018 && !after2019) {
+              // The ITF Transition Tour existed only in 2019.
+
+              // There is a problem right here.  The ITF offers two flavours
+              // of women's pro events.  "Pro" events that offer WTA points and
+              // "Transition Tour" events that offer ITF Entry points.
+              // The API does not distinguish between the two and so we call them
+              // all TT by default.
+              // Then there is a whole user app to change some of them to "Pro" category manually.
+              // Soooo, if a user has changed the category of an event from TT to Pro, do not overwrite it.
+              if (!t.category || t.category !== 'Pro') {
+                t.category = 'TT';
+                t.subCategory = 'TT';
+              } else {
+                // The transition tour was gone in 2020 and the $15K and $20K events reverted
+                // to awarding WTA Points.  I.e. ITF Pro events.
+                t.category = 'Pro';
+                t.subCategory = 'Pro';
+              }
             }
             break;
           case 'SL':
@@ -170,11 +183,11 @@ export class ExternalTournamentService {
             break;
           case 'WITF':
             // API does not distinguish subCategories
+            // Category went away altogether in 2019.
             t.category = 'WITF';
             if (after2018) {
               t.subCategory = 'WITF';
             }
-            break;
           default:
             logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d));
             break;
