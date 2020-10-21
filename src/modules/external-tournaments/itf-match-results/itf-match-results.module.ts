@@ -15,6 +15,7 @@ import {ItfMatchResultsController} from './itf-match-results.controller';
     ItfMatchResultsController,
   ],
   exports: [
+    TypeOrmModule,
     ItfMatchResultsService,
   ],
 

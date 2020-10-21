@@ -15,6 +15,7 @@ import {PointExchange} from './point-exchange.entity';
     PointExchangeController,
   ],
   exports: [
+    TypeOrmModule,
     PointExchangeService,
   ],
 })

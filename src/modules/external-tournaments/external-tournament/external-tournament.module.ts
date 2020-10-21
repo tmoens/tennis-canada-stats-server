@@ -17,6 +17,7 @@ import {ExternalEventModule} from '../external-event/external-event.module';
     ExternalTournamentController,
   ],
   exports: [
+    TypeOrmModule,
     ExternalTournamentService,
   ],
 })

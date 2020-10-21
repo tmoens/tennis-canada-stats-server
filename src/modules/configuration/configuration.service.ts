@@ -63,9 +63,8 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       CANDIDATE_MATCH_SCORE_THRESHOLD: Joi.number().default(-1),
     });
 
-    const { error, value: validatedEnvConfig } = Joi.validate(
-      envConfig,
-      envVarsSchema,
+    const { error, value: validatedEnvConfig } = envVarsSchema.validate(
+      envConfig
     );
     if (error) {
       throw new Error(`Config validation error: ${error.message}`);

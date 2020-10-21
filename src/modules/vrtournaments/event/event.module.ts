@@ -9,6 +9,7 @@ import {Module} from '@nestjs/common';
 import {VRRankingsCategoryModule} from '../../vrrankings/category/category.module';
 import {VRRankingsPublicationModule} from '../../vrrankings/publication/publication.module';
 import {EventPlayerModule} from '../event_player/event_player.module';
+import {VRRankingsItemModule} from '../../vrrankings/item/item.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import {EventPlayerModule} from '../event_player/event_player.module';
     PlayerModule,
     VRRankingsCategoryModule,
     VRRankingsPublicationModule,
+    VRRankingsItemModule,
   ],
   providers: [
     EventService,

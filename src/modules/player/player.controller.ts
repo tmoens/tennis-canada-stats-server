@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  FileInterceptor,
   Get,
   HttpException, HttpStatus, Param,
   Post, Query, Req, Res,
@@ -13,7 +12,8 @@ import { Player } from './player.entity';
 import csv = require('csvtojson');
 import {AuthGuard} from '@nestjs/passport';
 import {PlayerIdentityService} from './playerIdentity.service';
-import {getLogger} from "log4js";
+import {getLogger} from 'log4js';
+import {FileInterceptor} from '@nestjs/platform-express';
 
 @Controller('Player')
 export class PlayerController {

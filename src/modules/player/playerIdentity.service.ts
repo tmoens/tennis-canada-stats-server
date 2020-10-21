@@ -158,6 +158,7 @@ export class PlayerIdentityService {
         this.checkPlayerStats.bump('membersDone');
         inputRow++; // skipping th header row which we have already processed
         outputRow++;
+        // stop on an empty row.
         if (inputWS.row(inputRow).maxUsedColumnNumber() < 1) break;
         // Output the input row.
         // At the same time, build an IdentityCheckDTO from the input row.
