@@ -162,5 +162,4 @@ export class PlayerController {
     logger.info('Download complete');
     // TODO THis might be a good place to clean the file up so no more downloads
   }
-
 }

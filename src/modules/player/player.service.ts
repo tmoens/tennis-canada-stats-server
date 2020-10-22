@@ -494,13 +494,13 @@ export class PlayerService {
    * or e-mail.
    */
   async getITFPlayerData(): Promise<ITFPlayerDataDTO[]> {
-    const players: Player[] = await this.repo.find();
+    const players: Player[] = await this.repo.find({where: {itfOptIn: true}});
     const itfPlayers: ITFPlayerDataDTO[] = [];
     for (const p of players) {
       /* looking at this you will ask "WTF? Why did you not simply join
        * external player to the vr player???
        * The answer is that a) i did not create that relation in the player entity
-       * and b) it is possible that two multiple external players could be mapped
+       * and b) it is possible that multiple external players could be mapped
        * to the same internal player.
        */
       const dto = new ITFPlayerDataDTO(p);
@@ -546,26 +546,37 @@ export interface PlayerMergeResult {
 export class ITFPlayerDataDTO {
   TennisID: string = null;
   IPIN: string = null;
-  PlayerID: string = null;
+  NationPlayerID: string = null;
   Gender: string = null;
   BirthDate: string = null;
-  PassportGivenName: string = null;
-  PassportFamilyName: string = null;
-  PreferredGivenName: string = null;
-  PreferredFamilyName: string = null;
-  Nationality: string = 'CA';
+  GivenName: string = null;
+  FamilyName: string = null;
+  StandardGivenName: string = null;
+  StandardFamilyName: string = null;
+  Nationality: string = 'CAN';
   NationalRating: string = null;
-  PostalCode: string = null;
-  Email: string = null;
-  Source: string = null;
+  PrimaryEmailAddress: string = null;
+  AddressCity: string = null;
+  AddressState: string = null;
+  AddressPostalCode: string = null;
 
   constructor(p: Player) {
-    this.PlayerID = p.playerId.toString();
-    this.PassportGivenName = p.firstName;
-    this.PassportFamilyName = p.lastName;
+    this.NationPlayerID = p.playerId.toString();
+    this.GivenName = p.firstName;
+    this.FamilyName = p.lastName;
     this.Gender = p.gender;
-    if (p.DOB) {
-      this.BirthDate = p.DOB.substr(0, 4) + '-01-01';
+    this.BirthDate = p.DOB;
+    if (p.city) {
+      this.AddressCity = p.city;
+    }
+    if (p.province) {
+      this.AddressState = p.province;
+    }
+    if (p.postalCode) {
+      this.AddressPostalCode = p.postalCode;
+    }
+    if (p.email) {
+      this.PrimaryEmailAddress = p.email;
     }
   }
 

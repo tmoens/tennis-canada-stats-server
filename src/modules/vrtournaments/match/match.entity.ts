@@ -2,7 +2,6 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, On
 import {Event} from '../event/event.entity';
 import {Draw} from '../draw/draw.entity';
 import {MatchPlayer} from '../match_player/match_player.entity';
-import {bool, boolean} from "joi";
 
 @Entity('Match')
 @Index('event', ['event'])

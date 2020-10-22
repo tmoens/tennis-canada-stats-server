@@ -5,6 +5,7 @@ import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeo
 @Index('lastName', ['lastName'])
 @Index('DOB', ['DOB'])
 @Index('renumberedToPlayer', ['renumberedToPlayer'])
+@Index('itfOptIn', ['itfOptIn'])
 export class Player {
 
   @PrimaryColumn()
@@ -86,18 +87,25 @@ export class Player {
   })
   source: string;
 
+  @Column('boolean', {
+    nullable: true,
+    default: null,
+    comment: 'If the player want to have an ITF Rating',
+  })
+  itfOptIn: boolean;
+
   @ManyToOne(type => Player, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'renumberedToPlayerId'})
   renumberedToPlayer: Player;
 
-  // This "column" just give access to the renumberedToPlayerId value
-  // without having to load the entire player object.
+// This "column" just give access to the renumberedToPlayerId value
+// without having to load the entire player object.
   @Column({ nullable: true })
   renumberedToPlayerId: number;
 
-  // Given an player object from the VR API, fill in our own fields
+// Given an player object from the VR API, fill in our own fields
   buildFromVRAPIObj(apiObj: any) {
     this.playerId = apiObj.MemberID;
     this.firstName = apiObj.Firstname;

@@ -141,8 +141,7 @@ export class MatchDataExporterService {
       d = new Date(d.setDate(d.getDate() - 14));
       updatedSinceString = d.toISOString().substr(0, 10);
     }
-    // const ed = "2018-12-31";
-    // const sd = "2018-01-01"
+
     logger.info('Starting match data export for ITF for tournaments updated since ' + updatedSinceString);
 
     const tournaments: Tournament[] = await this.repository
@@ -158,19 +157,7 @@ export class MatchDataExporterService {
       .andWhere(`t.lastUpdatedInVR > '${updatedSinceString}'`)
       .andWhere('t.level IN ("National","Provincial","Regional")')
       .getMany();
-    // const tournaments: Tournament[] = await this.repository
-    //   .createQueryBuilder('t')
-    //   .leftJoinAndSelect('t.events', 'e')
-    //   .leftJoinAndSelect('t.license', 'l')
-    //   .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
-    //   .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
-    //   .leftJoinAndSelect('e.matches', 'm')
-    //   .leftJoinAndSelect('m.matchPlayers', 'mp')
-    //   .leftJoinAndSelect('mp.player', 'p')
-    //   .where(`t.endDate <= '${ed}'`)
-    //   .andWhere(`t.endDate >= '${sd}'`)
-    //   .andWhere('t.level IN ("National","Provincial","Regional")')
-    //   .getMany();
+
 
     const reportData: ITFMatchDTO[] = [];
     for (const t of tournaments) {
@@ -263,7 +250,7 @@ export class UTRLine {
   constructor() {
   }
 
-  async dataFill(t: Tournament, e: Event, m: Match, stats: JobStats): Promise<boolean> {
+  dataFill(t: Tournament, e: Event, m: Match, stats: JobStats): boolean {
     // Not interested in byes
     // i.e. where there is less than two participants for singles or 4 for doubles
 
@@ -436,7 +423,6 @@ export class ITFMatchDTO {
       if (2 === mp.team && 1 === mp.position) p21 = mp;
       if (2 === mp.team && 2 === mp.position) p22 = mp;
     }
-
     // Not interested in byes
     // i.e. where there is less than two participants for singles or 4 for doubles
     if (!p11 || !p21) return false;
