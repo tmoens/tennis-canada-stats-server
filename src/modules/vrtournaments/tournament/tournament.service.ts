@@ -9,6 +9,8 @@ import { License } from '../license/license.entity';
 import { LicenseService } from '../license/license.service';
 import { ConfigurationService } from '../../configuration/configuration.service';
 import { JobStats, JobState } from '../../../utils/jobstats';
+import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
+import * as moment from 'moment';
 
 const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
 const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
@@ -151,5 +153,52 @@ export class TournamentService {
    */
   getImportStatus(): string {
     return JSON.stringify(this.importStats);
+  }
+
+  /*
+   * Create a report. Each row represents the fact that a particular player played in
+   * some singles event in some tournament in a given time period.
+   */
+  async getPlayReport(fromDate: Date = null, toDate: Date = null): Promise<any[]> {
+    // SELECT p.playerId, p.firstName, p.lastName, p.gender pGender, p.DOB, p.province,
+    //   c.categoryId, e.name eName, c.categoryName cName,
+    //   e.level eLevel, e.minAge, e.maxAge, e.genderId eGender, e.winnerPoints,
+    //   t.name tName, t.level tLevel, t.startDate, t.endDate, t.city,
+    //   l.licenseName license, l.province
+    // FROM tournament t
+    // LEFT JOIN license l on t.licenseName = l.licenseName
+    // LEFT JOIN event e on t.tournamentCode = e.tournamentCode
+    // LEFT JOIN vrrankingscategory c on e.vrCategoryCode = c.categoryCode
+    // LEFT JOIN `match` m on e.eventId = m.eventId
+    // LEFT JOIN matchplayer mp on m.matchId = mp.matchId
+    // LEFT JOIN player p on mp.playerId = p.playerId
+    // WHERE t.startDate >= '2020-01-01' AND t.startDate <= '2020-12-31'
+    // AND e.isSingles
+    // AND p.playerId IS NOT NULL
+    // GROUP BY e.eventId, p.playerId
+    // order by t.name;
+    let q = this.repository.createQueryBuilder('t')
+      .select(['p.playerId', 'p.firstName', 'p.lastName', 'p.DOB', 'p.gender', 'p.province'])
+      .addSelect(['c.categoryId', 'c.categoryName'])
+      .addSelect(['e.name', 'e.genderId', 'e.level', 'e.minAge', 'e.maxAge', 'e.winnerPoints'])
+      .addSelect(['t.name', 't.level', 't.startDate', 't.endDate', 't.city'])
+      .addSelect(['l.licenseName', 'l.province'])
+      .leftJoin('t.license', 'l')
+      .leftJoin('t.events', 'e')
+      .leftJoin('e.vrRankingsCategory', 'c')
+      .leftJoin('e.matches', 'm')
+      .leftJoin('m.matchPlayers', 'mp')
+      .leftJoin('mp.player', 'p')
+      .where('e.isSingles')
+      .andWhere('p.playerId')
+      // .andWhere('t.tournamentCode = "6bc18234-d09b-47d5-9149-4ef1193cbdaa"')
+      .andWhere(`t.endDate <= '${toDate}'`)
+      .andWhere(`t.endDate >= '${fromDate}'`)
+      .groupBy('e.eventId')
+      .addGroupBy('p.playerId')
+      .orderBy('t.name')
+
+    const data: any[] = await q.getRawMany();
+    return data;
   }
 }

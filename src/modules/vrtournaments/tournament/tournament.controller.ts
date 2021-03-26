@@ -1,7 +1,8 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {Controller, Get, Query, UseGuards} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TournamentService } from './tournament.service';
 import { Tournament } from './tournament.entity';
+import {getLogger} from 'log4js';
 
 @Controller('Tournament')
 export class TournamentController {
@@ -25,5 +26,13 @@ export class TournamentController {
   @UseGuards(AuthGuard('bearer'))
   async importTournamentsFromVR(): Promise<any> {
     return await this.tournamentService.importTournamentsFromVR();
+  }
+
+  @Get('/buildPlayReport')
+  @UseGuards(AuthGuard('bearer'))
+  async buildRatingsReport( @Query() query): Promise<any[]> {
+    const logger = getLogger('overallPlayReport');
+    logger.info('Request to generate report. Query: ' + JSON.stringify(query));
+    return this.tournamentService.getPlayReport(query.from, query.to);
   }
 }
