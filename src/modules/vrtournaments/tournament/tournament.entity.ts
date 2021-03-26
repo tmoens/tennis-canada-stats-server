@@ -104,4 +104,12 @@ export class Tournament {
     this.city = apiTournament.Venue.City;
     this.events = [];
   }
+
+  isTournament(): boolean {
+    return (this.typeId === 0);
+  }
+
+  isLeague(): boolean {
+    return (this.typeId === 1);
+  }
 }

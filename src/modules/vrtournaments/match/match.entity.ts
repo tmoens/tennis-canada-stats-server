@@ -78,8 +78,6 @@ export class Match {
   // they are showing up with a "NULL" score.  So, new code is added.
   buildFromVRAPIObj(apiMatch: any) {
     this.vrMatchCode = parseInt(apiMatch.Code, 10);
-    this.vrDrawCode = parseInt(apiMatch.DrawCode, 10);
-    this.vrEventCode = parseInt(apiMatch.EventCode, 10);
     this.winnerCode = parseInt(apiMatch.Winner, 10);
     this.scoreStatus = parseInt(apiMatch.ScoreStatus, 10);
 

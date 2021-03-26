@@ -10,9 +10,12 @@ import { LicenseService } from '../license/license.service';
 import { ConfigurationService } from '../../configuration/configuration.service';
 import { JobStats, JobState } from '../../../utils/jobstats';
 
-const CREATION_COUNT = 'tournaments_created';
-const UPDATE_COUNT = 'tournaments_updated';
-const UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
+const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
+const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
+const TOURNAMENT_UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
+const LEAGUE_CREATION_COUNT = 'leagues_created';
+const LEAGUE_UPDATE_COUNT = 'leagues_updated';
+const LEAGUE_UP_TO_DATE_COUNT = 'leagues_already_up_to_date';
 const SKIP_COUNT = 'tournaments_skipped';
 const DONE = 'done';
 const importLogger = getLogger('tournamentImport');
@@ -54,7 +57,7 @@ export class TournamentService {
     }
 
     for (year; year >= this.config.tournamentUploadStartYear; year-- ) {
-      if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
+      if (this.importStats.get(TOURNAMENT_CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
       await this.importTournamentsFromVRYear(year);
     }
 
@@ -81,9 +84,10 @@ export class TournamentService {
       const miniTournament = miniTournaments[i];
 
       // Skipping leagues and team tennis for now.
-      if ('0' !== miniTournament.TypeID) {
+      // TODO Leagues change to '0' or '1'
+      if ('0' !== miniTournament.TypeID && '1' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
-        importLogger.info('Skipping team tournament or league. ' + miniTournament.Name + ' Code: ' + miniTournament.Code);
+        importLogger.info('Tournament has unknown code. ' + miniTournament.Name + ' Code: ' + miniTournament.TypeID);
         continue;
       }
 
@@ -93,7 +97,8 @@ export class TournamentService {
       if (null == tournament) {
         importLogger.info('Creating: ' + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        this.importStats.bump(CREATION_COUNT);
+        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_CREATION_COUNT);
+        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
@@ -101,18 +106,20 @@ export class TournamentService {
         importLogger.info('Updating: ' + JSON.stringify(miniTournament));
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        this.importStats.bump(UPDATE_COUNT);
+        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
+        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UPDATE_COUNT);
       }
 
       // otherwise, our version is up to date and we can skip along.
       else {
-        this.importStats.bump(UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UP_TO_DATE_COUNT);
       }
 
       this.importStats.bump(DONE);
 
       // Break out early, but really only used during development.
-      if (this.importStats.get(CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
+      if (this.importStats.get(TOURNAMENT_CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
     }
     return;
   }

@@ -54,27 +54,34 @@ export class MatchDataExporterService {
       .leftJoinAndSelect('m.matchPlayers', 'mp')
       .leftJoinAndSelect('mp.player', 'p')
       .where(`t.endDate <= '${nowDateString}'`)
-      .andWhere(`t.lastUpdatedInVR > '${updatedSinceString}'`)
+      .andWhere(`t.tcUpdatedAt > '${updatedSinceString}'`)
       .andWhere('t.level IN ("National","Provincial","Regional")')
       .getMany();
 
     logger.info('Building UTR Report.');
     this.utrReportStats.setCurrentActivity('Building UTR Report');
     const reportData: any[] = [];
+
+    // loop through the tournaments (and leagues)
     for (const t of tournaments) {
       this.utrReportStats.bump('tournaments');
       for (const e of t.events) {
         this.utrReportStats.bump('events');
-        // skip events without a pointsCategory
-        if (null === e.vrRankingsCategory) {
+
+        // For Tournaments, skip events without a rankings category
+        // This should eliminate all under age (U10 and below) and co-ed events
+        // For Leagues - events do not have rankings categories and should not be skipped
+        if (t.isTournament() && null === e.vrRankingsCategory) {
           this.utrReportStats.bump('eventsWithoutCategoriesSkipped');
           continue;
         }
-        // Skip Junior events for ages U10 and below
-        if ('Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
+        // Just in case the TD created an event as a U12 rankings category event but put a
+        // age level restriction under 10 or below, skip the event.
+        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
           this.utrReportStats.bump('U10AndBelowSkipped');
           continue;
         }
+
         for (const m of e.matches) {
           this.utrReportStats.bump('matches');
           const reportLine = new UTRLine();
@@ -162,12 +169,16 @@ export class MatchDataExporterService {
     const reportData: ITFMatchDTO[] = [];
     for (const t of tournaments) {
       for (const e of t.events) {
-        // skip events without a pointsCategory
-        if (null === e.vrRankingsCategory) {
+        // For Tournaments, skip events without a rankings category
+        // This should eliminate all under age (U10 and below) and co-ed events
+        // For Leagues - events do not have rankings categories and should not be skipped
+        if (t.isTournament() && null === e.vrRankingsCategory) {
+          this.utrReportStats.bump('eventsWithoutCategoriesSkipped');
           continue;
         }
-        // Skip Junior events for ages U10 and below
-        if ('Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
+        // Just in case the TD created an event as a U12 rankings category event but put a
+        // age level restriction under 10 or below, skip the event.
+        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
           continue;
         }
         for (const m of e.matches) {
@@ -341,17 +352,19 @@ export class UTRLine {
     this.score = m.score;
     this.drawGender = e.genderId;
     this.drawTeamType = (e.isSingles) ? 'Singles' : 'Doubles';
-    this.drawBracketType = e.vrRankingsCategory.vrRankingsType.typeName;
-    switch (this.drawBracketType) {
-      case 'Senior':
-        this.drawBracketValue = e.minAge + ' & O';
-        break;
-      case 'Junior':
-        this.drawBracketValue = 'U' + e.maxAge;
-        break;
-      case 'Adult':
-        this.drawBracketValue = e.level.toString();
-        break;
+    if (e.vrRankingsCategory) {
+      this.drawBracketType = e.vrRankingsCategory.vrRankingsType.typeName;
+      switch (this.drawBracketType) {
+        case 'Senior':
+          this.drawBracketValue = e.minAge + ' & O';
+          break;
+        case 'Junior':
+          this.drawBracketValue = 'U' + e.maxAge;
+          break;
+        case 'Adult':
+          this.drawBracketValue = e.level.toString();
+          break;
+      }
     }
     this.tName = t.name;
     this.tURL = TOURNAMENT_URL_PREFIX + t.tournamentCode;
@@ -448,7 +461,9 @@ export class ITFMatchDTO {
     this.MatchEndDate = t.endDate;
     this.TournamentStartDate = t.startDate;
     this.TournamentEndDate = t.endDate;
-    this.AgeCategoryCode = e.vrRankingsCategory.categoryId;
+    if (e.vrRankingsCategory) {
+      this.AgeCategoryCode = e.vrRankingsCategory.categoryId;
+    }
     // Skipping this.IndoorCode - defaults to false;
     this.Grade = e.grade + '(' + e.winnerPoints.toString() + ')';
     return true;

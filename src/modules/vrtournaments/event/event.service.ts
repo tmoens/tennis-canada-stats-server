@@ -50,10 +50,21 @@ export class EventService {
       const e = new Event();
       e.buildFromVRAPIObj(eventData);
       e.tournament = tournament;
-      e.vrRankingsCategory = await this.categoryService.getRankingCategoryFromId(e.buildCategoryId());
-      if (null === e.vrRankingsCategory) {
-        logger.warn('Could not find ranking category for tournament: ' +
-        tournament.tournamentCode + ', ' + tournament.name + ' event: '  + e.name);
+      // For regular tournaments, figure out the rankings category for the event.
+      // For leagues, the rankings category for an event in a league is meaningless -
+      // even if it is in the data from VR.
+      // Why? Because matches between teams within an event in a league usually include several
+      // matches each of which can be in different rankings categories. For example, league matches
+      // in the Intercounty Junior league could involve a U16 Boys Single, a U16 Girls Singles
+      // and a U14 boys doubles.
+      if (tournament.isLeague()) {
+        e.vrRankingsCategory = null;
+      } else {
+        e.vrRankingsCategory = await this.categoryService.getRankingCategoryFromId(e.buildCategoryId());
+        if (null === e.vrRankingsCategory) {
+          logger.warn('Could not find ranking category for tournament: ' +
+            tournament.tournamentCode + ', ' + tournament.name + ' event: ' + e.name);
+        }
       }
       e.draws = [];
       e.matches = [];
@@ -76,8 +87,6 @@ export class EventService {
 
       // Load the roster - I.e. the players in the event.
       await this.rosterService.loadRoster(e, entries, importStats );
-
-      // TODO - I suspect I need to re-fetch the event at this point.
 
       // Now dig down and load the draws for this event.
       await this.drawService.importDrawsFromVR(e, importStats);
@@ -104,6 +113,7 @@ export class EventService {
    * Create a report which rates events based on the strength of the players
    * in the events.
    * The result is provided in an excel book with one page per event category.
+   * We rate Tournaments events only, not league events.
    */
   async rateEvents(fromDate: Date,
                    toDate: Date,
@@ -154,6 +164,9 @@ export class EventService {
       }
 
       for (const event of events) {
+        // skip events in leagues
+        if (event.tournament.isLeague()) continue;
+
         // console.log("Event: " + JSON.stringify(event));
         const pub = await this.getRankingsPublication(event);
         // if you cannot find a rankings publication for the event,
