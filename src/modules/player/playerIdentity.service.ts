@@ -11,9 +11,6 @@ import * as XlsxPopulate from 'xlsx-populate/lib/XlsxPopulate.js';
 import * as Workbook from 'xlsx-populate/lib/Workbook.js';
 import * as Cell from 'xlsx-populate/lib/Cell.js';
 import * as Sheet from 'xlsx-populate/lib/Sheet.js';
-import * as Column from 'xlsx-populate/lib/Column.js';
-import * as Row from 'xlsx-populate/lib/Row.js';
-import * as Range from 'xlsx-populate/lib/Range.js';
 
 // 2019-04-30 I am using xlsx-populate library instead of sheetjs for this one because it allows
 // me to format the output sheet as I need.  Sheet JS wanted $500 for a "pro" version to do that.
@@ -73,6 +70,13 @@ export class PlayerIdentityService {
       let hasLastName = false;
       let hasFirstName = false;
       const unexpectedHeaders: string[] = [];
+
+      // Empty worksheets are invalid
+      if (ws.row(1).maxUsedColumnNumber() < 1) {
+        this.checkPlayerStats.addNote(`${ws.name} - has no headers`);
+        isValid = false;
+        break;
+      }
       const headers = ws.range(1, 1, 1, ws.row(1).maxUsedColumnNumber());
       for (const cell of headers.cells()[0]) {
         if (MEMBER_ID === cell.value()) hasMemberId = true;
@@ -108,7 +112,7 @@ export class PlayerIdentityService {
     if (isValid) {
       // Note - we are deliberately NOT waiting to process the workbook before returning
       // The client can poll for status if they want.
-      this.processMembershipWB(membershipWB);
+      await this.processMembershipWB(membershipWB);
     } else {
       this.checkPlayerStats.addNote('Aborting, input membership book is invalid.');
       this.checkPlayerStats.setStatus(JobState.ERROR);
@@ -156,10 +160,19 @@ export class PlayerIdentityService {
       let outputRow = 1;
       while (true) {
         this.checkPlayerStats.bump('membersDone');
-        inputRow++; // skipping th header row which we have already processed
+        inputRow++; // skipping the header row which we have already processed
         outputRow++;
-        // stop on an empty row.
+
+        // stop on an empty row
         if (inputWS.row(inputRow).maxUsedColumnNumber() < 1) break;
+
+        // stop if last name is not present.
+        if (!inputWS.cell(inputRow, headerMap[LAST_NAME]).value()) {
+          ws.cell(outputRow, headerMap[LAST_NAME])
+            .value(`Skipping row ${inputRow} of ${this.checkPlayerStats.get('membersToDo')} with no last name`);
+          continue;
+        }
+
         // Output the input row.
         // At the same time, build an IdentityCheckDTO from the input row.
         const m: IdentityCheckDTO = new IdentityCheckDTO();
@@ -168,10 +181,8 @@ export class PlayerIdentityService {
           this.copyCell(inputWS.cell(inputRow, headerMap[MEMBER_ID]), ws.cell(outputRow, headerMap[MEMBER_ID]));
         }
 
-        if (headerMap[LAST_NAME]) {
-          m.lastName = inputWS.cell(inputRow, headerMap[LAST_NAME]).value();
-          this.copyCell(inputWS.cell(inputRow, headerMap[LAST_NAME]), ws.cell(outputRow, headerMap[LAST_NAME]));
-        }
+        m.lastName = inputWS.cell(inputRow, headerMap[LAST_NAME]).value();
+        this.copyCell(inputWS.cell(inputRow, headerMap[LAST_NAME]), ws.cell(outputRow, headerMap[LAST_NAME]));
 
         if (headerMap[FIRST_NAME]) {
           m.firstName = inputWS.cell(inputRow, headerMap[FIRST_NAME]).value();
