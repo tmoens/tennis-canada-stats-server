@@ -40,7 +40,7 @@ export class EventPlayerService {
   }
 
   async loadEntry(event: Event, entryData: any, jobStats: JobStats) {
-    if (entryData.MemberID) {
+    if (entryData && entryData.MemberID) {
       const player: Player = await
       this.playerService.findPlayerOrFacsimile(
         {playerId: entryData.MemberID}, false);
