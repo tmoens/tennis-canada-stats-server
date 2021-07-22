@@ -31,6 +31,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
 
       PORT: Joi.number().default(3002),
+      MYSQL_PORT: Joi.number().default(3306),
 
       DB_NAME: Joi.string().required(),
       DB_USER: Joi.string().required(),
@@ -158,16 +159,20 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     return Number(this.envConfig.CANDIDATE_MATCH_SCORE_THRESHOLD);
   }
 
+  get mysqlPort(): number {
+    return Number(this.envConfig.MYSQL_PORT);
+  }
+
   // This is used to build ORM configuration options
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
-
+    console.log ('Hey wait' + this.mysqlPort);
     const logOptions: string[] = ['error'];
     if (this.typeORMLogQueries) {
       return {
         type: 'mysql',
         host: 'localhost',
-        port: 3306,
+        port: this.mysqlPort,
         username: this.envConfig.DB_USER,
         password: this.envConfig.DB_PASSWORD,
         database: this.envConfig.DB_NAME,
@@ -181,7 +186,7 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
       return {
         type: 'mysql',
         host: 'localhost',
-        port: 3306,
+        port: this.mysqlPort,
         username: this.envConfig.DB_USER,
         password: this.envConfig.DB_PASSWORD,
         database: this.envConfig.DB_NAME,

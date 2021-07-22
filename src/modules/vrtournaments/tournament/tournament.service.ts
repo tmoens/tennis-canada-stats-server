@@ -49,7 +49,7 @@ export class TournamentService {
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
 
-    // If we are past June or late, load into next year
+    // If we are past June or later, load into next year
     const d = new Date();
     let year: number;
     if (d.getMonth() > 4 ) {
@@ -75,7 +75,7 @@ export class TournamentService {
     // Tournament which is an array of mini tournamentId records.
     const miniTournaments_json = await this.vrapi.get('Tournament/Year/' + year);
     const miniTournaments: any[] = VRAPIService.arrayify(miniTournaments_json.Tournament);
-    importLogger.info (miniTournaments.length + ' tournaments found');
+    importLogger.info (`${miniTournaments.length} tournaments found for ${year}`);
 
     const tournamentCount: number = miniTournaments.length;
     // the next line is not strictly true as many will be skipped and there
@@ -89,7 +89,7 @@ export class TournamentService {
       // TODO Leagues change to '0' or '1'
       if ('0' !== miniTournament.TypeID && '1' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
-        importLogger.info('Tournament has unknown code. ' + miniTournament.Name + ' Code: ' + miniTournament.TypeID);
+        importLogger.info(`Tournament has unknown code: ${miniTournament.Name} (${miniTournament.Code}). Code: ${miniTournament.TypeID}`);
         continue;
       }
 
@@ -177,7 +177,7 @@ export class TournamentService {
     // AND p.playerId IS NOT NULL
     // GROUP BY e.eventId, p.playerId
     // order by t.name;
-    let q = this.repository.createQueryBuilder('t')
+    const q = this.repository.createQueryBuilder('t')
       .select(['p.playerId', 'p.firstName', 'p.lastName', 'p.DOB', 'p.gender', 'p.province'])
       .addSelect(['c.categoryId', 'c.categoryName'])
       .addSelect(['e.name', 'e.genderId', 'e.level', 'e.minAge', 'e.maxAge', 'e.winnerPoints'])

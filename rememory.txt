@@ -2,24 +2,6 @@ Server to handle requests and API for Tennis Canada for tasks relating to
 play data. (Players, tournaments, matches mostly)
 
 
-This runs as a node server.  The port number it uses is set in the configuration file.
-
--- BUILD -------------------------
-Assumes Webstorm.
-
-Normally your Typescript files should compile to Java Script automatically and the
-the Java Script files and (and map files) should be generated/updated in /dist
-
-At some point if you need to build the /dist directory manually, just go to the
-Typescript window and do "compile all" (from the little menu icon)
-
-
--- CONFIGURATION -----------------
-
-Application configuration is in the environment/*.env files.
-These are not and should not be committed to git (except for the sample one).
-
-
 -- Running on development machine ----------
 Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
 git-bash$ export NODE_ENV=production
