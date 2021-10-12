@@ -1,7 +1,7 @@
 import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
-import {getLogger} from 'log4js';
+import {getLogger, Logger} from 'log4js';
 import {ConfigurationService} from '../../configuration/configuration.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
@@ -33,7 +33,7 @@ export class MatchDataExporterService {
   // at a national, regional or provincial level from any tournament
   // that has been uploaded in the last however many days
   async buildUTRReport(): Promise<JobStats> {
-    const logger = getLogger('UTRReporter');
+    const logger: Logger = getLogger('UTRReporter');
     logger.info('Querying UTR Data.');
     this.utrReportStats = new JobStats('BuildUTRReport');
     this.utrReportStats.setStatus(JobState.IN_PROGRESS);
@@ -65,6 +65,7 @@ export class MatchDataExporterService {
     // loop through the tournaments (and leagues)
     for (const t of tournaments) {
       this.utrReportStats.bump('tournaments');
+      logger.info(`UTR reporting: tournament ${t.tournamentCode} ${t.startDate}`)
       for (const e of t.events) {
         this.utrReportStats.bump('events');
 
@@ -85,7 +86,7 @@ export class MatchDataExporterService {
         for (const m of e.matches) {
           this.utrReportStats.bump('matches');
           const reportLine = new UTRLine();
-          if (await reportLine.dataFill(t, e, m, this.utrReportStats)) {
+          if (await reportLine.dataFill(t, e, m, this.utrReportStats, logger)) {
             reportData.push(JSON.parse(JSON.stringify(reportLine)));
           }
         }
@@ -261,7 +262,7 @@ export class UTRLine {
   constructor() {
   }
 
-  dataFill(t: Tournament, e: Event, m: Match, stats: JobStats): boolean {
+  dataFill(t: Tournament, e: Event, m: Match, stats: JobStats, logger: Logger): boolean {
     // Not interested in byes
     // i.e. where there is less than two participants for singles or 4 for doubles
 
@@ -298,7 +299,12 @@ export class UTRLine {
       this.w1Name = w1.player.lastName + ', ' + w1.player.firstName;
       this.w1Id = w1.playerId;
       this.w1Gender = w1.player.gender;
-      this.w1YOB = Number(w1.player.DOB.substr(0, 4));
+      if (w1.player.DOB) {
+        this.w1YOB = Number(w1.player.DOB.substr(0, 4));
+      } else {
+        logger.error(`UTR Reporter noticed player with no DOB. Id: ${w1.player.playerId}`);
+        stats.bump('player with no DOB');
+      }
       this.w1City = w1.player.city;
       this.w1State = w1.player.province;
     }
@@ -313,7 +319,12 @@ export class UTRLine {
       this.l1Name = l1.player.lastName + ', ' + l1.player.firstName;
       this.l1Id = l1.playerId;
       this.l1Gender = l1.player.gender;
-      this.l1YOB = Number(l1.player.DOB.substr(0, 4));
+      if (l1.player.DOB) {
+        this.l1YOB = Number(l1.player.DOB.substr(0, 4));
+      } else {
+        logger.error(`UTR Reporter noticed player with no DOB. Id: ${l1.player.playerId}`);
+        stats.bump('player with no DOB');
+      }
       this.l1City = l1.player.city;
       this.l1State = l1.player.province;
     }
@@ -329,7 +340,12 @@ export class UTRLine {
         this.w2Name = w2.player.lastName + ', ' + w2.player.firstName;
         this.w2Id = w2.playerId;
         this.w2Gender = w2.player.gender;
-        this.w2YOB = Number(w2.player.DOB.substr(0, 4));
+        if (w2.player.DOB) {
+          this.w2YOB = Number(w2.player.DOB.substr(0, 4));
+        } else {
+          logger.error(`UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`);
+          stats.bump('player with no DOB');
+        }
         this.w2City = w2.player.city;
         this.w2State = w2.player.province;
       }
@@ -344,7 +360,12 @@ export class UTRLine {
         this.l2Name = l2.player.lastName + ', ' + l2.player.firstName;
         this.l2Id = l2.playerId;
         this.l2Gender = l2.player.gender;
-        this.l2YOB = Number(l2.player.DOB.substr(0, 4));
+        if (l2.player.DOB) {
+          this.l2YOB = Number(l2.player.DOB.substr(0, 4));
+        } else {
+          logger.error(`UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`);
+          stats.bump('player with no DOB');
+        }
         this.l2City = l2.player.city;
         this.l2State = l2.player.province;
       }

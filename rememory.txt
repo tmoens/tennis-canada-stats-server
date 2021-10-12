@@ -5,11 +5,12 @@ play data. (Players, tournaments, matches mostly)
 -- Running on development machine ----------
 Before you run, please set the environment variable NODE_ENV to 'production' or 'development'
 git-bash$ export NODE_ENV=production
+
+For a production like run:
 npm run start:prod
 
-TODO - running npm run start and npm run start:development are not working because
-TODO - of some issue with ts-node, but I have not done the troubleshooting yet.
-
+For a run that watches your code and recompiles and restarts the server automatically all the time:
+npm run start:dev
 
 == DEPLOYMENT ====================================
 -- Apache Configuration ----------
