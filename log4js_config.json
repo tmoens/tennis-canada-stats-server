@@ -4,19 +4,19 @@
       "type": "stdout"
     },
     "tcStats": {
-      "type": "dateFile",
+      "type": "file",
       "filename": "log/tcStats.log",
-      "pattern": "-yyyy-MM-dd"
+      "maxLogSize": 20000000
     },
     "vrapi": {
-      "type":"dateFile",
+      "type":"file",
       "filename":"log/vrapi.log",
-      "pattern": "-yyyy-MM-dd"
+      "maxLogSize": 20000000
     },
     "itfapi": {
-      "type":"dateFile",
+      "type":"file",
       "filename":"log/itfapi.log",
-      "pattern": "-yyyy-MM-dd"
+      "maxLogSize": 20000000
     }
   },
   "categories": {
