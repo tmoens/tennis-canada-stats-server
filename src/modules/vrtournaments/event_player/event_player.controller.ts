@@ -1,14 +1,14 @@
 import {Controller, Get, UseGuards} from '@nestjs/common';
 import {EventPlayerService} from './event_player.service';
 import {EventPlayer} from './event_player.entity';
-import {AuthGuard} from '@nestjs/passport';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('EventPlayer')
 export class EventPlayerController {
   constructor(private readonly eventPlayerService: EventPlayerService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<EventPlayer[]> {
     return await this.eventPlayerService.findAll();
   }

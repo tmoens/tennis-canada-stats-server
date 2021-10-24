@@ -1,20 +1,39 @@
 import {Injectable} from '@nestjs/common';
-
-const OktaJwtVerifier = require('@okta/jwt-verifier');
-
-const authConfig = require('../../../auth.config.json');
-
-const oktaJwtVerifier = new OktaJwtVerifier({
-  issuer: authConfig.resourceServer.oidc.issuer,
-});
+import {User} from '../user/user.entity'
+import {JwtService} from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor() {}
+  private _loggedIn: { [userId: string]: string } = {};
 
-  async validateUser(token: string): Promise<any> {
-    // Validate if token passed along with HTTP request
-    // is associated with any registered account in the database
-    return await oktaJwtVerifier.verifyAccessToken(token, authConfig.resourceServer.assertClaims.aud);
+  constructor(
+    private jwtService: JwtService,
+  ) {
+  }
+
+  login(user: User): string {
+    return this.buildToken(user);
+  }
+
+  async logout(user: User): Promise<boolean> {
+    delete this._loggedIn[user.id];
+    return true;
+  }
+
+  buildToken(user: User): string {
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+      passwordChangeRequired: user.passwordChangeRequired,
+      name: user.name
+    };
+    const token = this.jwtService.sign(payload);
+    this._loggedIn[user.id] = token;
+    return token;
+  }
+
+  isLoggedIn(user: User) {
+    return !!(this._loggedIn[user.id]);
   }
 }

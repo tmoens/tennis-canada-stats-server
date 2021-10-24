@@ -1,15 +1,15 @@
 import {Controller, Get, HttpStatus, Query, Res, UseGuards} from '@nestjs/common';
 import { EventService } from './event.service';
 import { Event } from './event.entity';
-import {AuthGuard} from '@nestjs/passport';
 import {getLogger} from 'log4js';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('Event')
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<Event[]> {
     return await this.eventService.findAll();
   }
@@ -17,7 +17,7 @@ export class EventController {
   // TODO add a jobstatus thingy to track the status of the report generation
 
   @Get('buildRatingsReport')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async buildRatingsReport( @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to generate report. Query: ' + JSON.stringify(query));
@@ -30,7 +30,7 @@ export class EventController {
   @Get('downloadRatingsReport')
   // TODO figure out how to guard this - client is an <a>...</a>
   // which does not send auth headers. no private data so it is ok.
-  // @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(JwtAuthGuard)
   async exportRatingsReport( @Res() response, @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to download ' + query.filename);

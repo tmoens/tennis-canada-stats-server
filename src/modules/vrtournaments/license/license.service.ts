@@ -4,7 +4,6 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {License, LicenseDTO} from './license.entity';
 import {WorkBook, Properties, writeFile, utils, WorkSheet} from 'xlsx';
-import {INITIAL_LICENSES} from './initial_licenses';
 
 const logger = getLogger('licenseService');
 
@@ -44,22 +43,6 @@ export class LicenseService {
         logger.warn('Attempt to fix non-existent license!  LicenseName:' + fixedLicenses[i].licenseName);
       }
     }
-  }
-
-  // If there are no licenses in the database
-  // Only ever used during development.
-  async loadLicenses(): Promise<any> {
-    const testLicense: License = await this.repository.findOne();
-    if (testLicense == null) {
-      logger.info('Lodaing licenses.');
-      let l: License;
-      for (const initialLicense of INITIAL_LICENSES) {
-        l = new License(initialLicense.licenseName, initialLicense.province);
-        this.repository.save(l);
-      }
-      logger.info('Done loading licenses.');
-    }
-    return true;
   }
 
   async lookupOrCreate(licenseName: string): Promise<License> {

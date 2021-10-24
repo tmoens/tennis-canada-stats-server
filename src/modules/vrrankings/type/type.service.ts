@@ -5,7 +5,6 @@ import {VRRankingsType} from './type.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {VRRankingsPublicationService} from '../publication/publication.service';
 import {Injectable} from '@nestjs/common';
-import {INITIAL_TYPES_AND_CATEGORIES} from './initial_types_and_categories';
 import {VRRankingsCategoryService} from '../category/category.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 
@@ -45,25 +44,6 @@ export class VRRankingsTypeService {
     }
     this.rankingsImportStats.setStatus(JobState.DONE);
     logger.info('**** VR Ranking Import done.');
-  }
-
-  // If there are no rankings types and categories, load them.
-  async loadInitialRankingsTypes(): Promise<any> {
-    const test: VRRankingsType = await this.repository.findOne();
-    if (test == null) {
-      let rt: VRRankingsType;
-      let data: any;
-      for (data of INITIAL_TYPES_AND_CATEGORIES) {
-        logger.info('Loading ranking types and categories for ' +
-          data.typeName + 'code: ' + data.typeCode);
-        rt = new VRRankingsType(data.typeCode, data.typeName);
-        rt.vrRankingsCategories = [];
-        await this.repository.save(rt);
-        await this.rankingsCategoryService.loadCategories(rt, data.categories);
-        logger.info('Done loading ranking types and categories for ' + data.typeName);
-      }
-    }
-    return true;
   }
 
   getImportStatus(): JobStats {

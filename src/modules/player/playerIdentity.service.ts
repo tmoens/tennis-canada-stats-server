@@ -1,3 +1,8 @@
+/**
+ * Given a workbook (possibly containing many worksheets) each sheet containing a list of players
+ * with some amount of identifying information, return a new version of the workbook all nicely marked
+ * with our best guess at the tennis canada players that match the players in the original workbook.
+ */
 import {FieldMatch, IdentityCheckDTO, MatchCode, PlayerMatchCandidate} from './IdentityCheckDTO';
 import {Player} from './player.entity';
 import {ExternalapiService} from '../externalAPIModule/externalapi.service';
@@ -11,9 +16,8 @@ import * as XlsxPopulate from 'xlsx-populate/lib/XlsxPopulate.js';
 import * as Workbook from 'xlsx-populate/lib/Workbook.js';
 import * as Cell from 'xlsx-populate/lib/Cell.js';
 import * as Sheet from 'xlsx-populate/lib/Sheet.js';
+import {getLogger, Logger} from 'log4js';
 
-// 2019-04-30 I am using xlsx-populate library instead of sheetjs for this one because it allows
-// me to format the output sheet as I need.  Sheet JS wanted $500 for a "pro" version to do that.
 const ADDRESS = 'Address';
 const BIRTH_DATE = 'Birthdate';
 const CANDIDATE = 'Candidate';
@@ -32,13 +36,14 @@ const POSTAL_CODE = 'PostalCode';
 const PROVINCE = 'Province';
 const TEST_PURPOSE = 'TestPurpose';
 
+const logger: Logger = getLogger('PlayerIdentityService')
+
 export class PlayerIdentityService {
   private checkPlayerStats: JobStats;
 
   constructor(
     private readonly config: ConfigurationService,
-    @InjectRepository(Player)
-    private readonly repo: Repository<Player>,
+    @InjectRepository(Player) private readonly repo: Repository<Player>,
     private readonly externalAPIService: ExternalapiService,
     private readonly nicknameService: NickNameService,
   ) {
@@ -53,6 +58,7 @@ export class PlayerIdentityService {
    * header rows.
    */
   async validateFile(file): Promise<any> {
+    logger.info('validating identity check workbook');
     this.checkPlayerStats = new JobStats('checkPlayerStats');
     this.checkPlayerStats.setStatus(JobState.IN_PROGRESS);
     this.checkPlayerStats.setCurrentActivity('Validating membership workbook');
@@ -73,7 +79,7 @@ export class PlayerIdentityService {
 
       // Empty worksheets are invalid
       if (ws.row(1).maxUsedColumnNumber() < 1) {
-        this.checkPlayerStats.addNote(`${ws.name} - has no headers`);
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} has no headers`);
         isValid = false;
         break;
       }
@@ -88,33 +94,35 @@ export class PlayerIdentityService {
 
       // make sure the required headers are there
       if (!hasMemberId) {
-        this.checkPlayerStats.addNote(ws.name() + ' is missing ' + MEMBER_ID + ' column.');
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} is missing ${MEMBER_ID} column`);
         isValid = false;
       }
       if (!hasLastName) {
-        this.checkPlayerStats.addNote(ws.name() + ' is missing ' + LAST_NAME + ' column.');
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} is missing ${LAST_NAME} column`);
         isValid = false;
       }
       if (!hasFirstName) {
-        this.checkPlayerStats.addNote(ws.name() + ' is missing ' + FIRST_NAME + ' column.');
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} is missing ${FIRST_NAME} column`);
         isValid = false;
       }
       if (!hasClub) {
-        this.checkPlayerStats.addNote(ws.name() + ' is missing ' + CLUB_NUMBER + ' column.');
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} is missing ${FIRST_NAME} column`);
         isValid = false;
       }
       if (unexpectedHeaders.length > 0) {
-        this.checkPlayerStats.addNote(
-          ws.name() + ' has unexpected headers: ' + JSON.stringify(unexpectedHeaders));
+        this.checkPlayerStats.addNote(`worksheet ${ws.name()} has unexpected headers: ` + JSON.stringify(unexpectedHeaders));
         isValid = false;
+      }
+
+      if (isValid) {
+        logger.info(`Worksheet ${ws.name()} is valid`);
       }
     }
     if (isValid) {
       // Note - we are deliberately NOT waiting to process the workbook before returning
       // The client can poll for status if they want.
-      await this.processMembershipWB(membershipWB);
+      this.processMembershipWB(membershipWB).then();
     } else {
-      this.checkPlayerStats.addNote('Aborting, input membership book is invalid.');
       this.checkPlayerStats.setStatus(JobState.ERROR);
     }
     return isValid;
@@ -628,4 +636,5 @@ export class PlayerIdentityService {
       }
     }
   }
+
 }

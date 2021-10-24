@@ -10,10 +10,11 @@ import {
 import {ITFPlayerDataDTO, PlayerMergeRecord, PlayerService} from './player.service';
 import { Player } from './player.entity';
 import csv = require('csvtojson');
-import {AuthGuard} from '@nestjs/passport';
 import {PlayerIdentityService} from './playerIdentity.service';
 import {getLogger} from 'log4js';
 import {FileInterceptor} from '@nestjs/platform-express';
+import {JwtAuthGuard} from '../../guards/jwt-auth.guard';
+import * as fs from 'fs';
 
 @Controller('Player')
 export class PlayerController {
@@ -24,25 +25,25 @@ export class PlayerController {
   }
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<Player[]> {
     return await this.playerService.findAll();
   }
 
   @Get('ITFPlayerData')
-  // @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async getITFPlayerData(): Promise<ITFPlayerDataDTO[]> {
     return await this.playerService.getITFPlayerData();
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findById(@Param() params): Promise<Player> {
     return await this.playerService.findById(params.id);
   }
 
   @Get('importVRPersonMergesCSV/status')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   importVRPersonMergesStatus(): any {
     return this.playerService.getPersonMergesImportStatus();
   }
@@ -50,7 +51,7 @@ export class PlayerController {
   @Post('importVRPersonMergesCSV')
   @UseInterceptors(FileInterceptor('file',
     {dest: 'uploads/players/VRPersonMerges'}))
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async importVRPersonMergesCSV(@Req() request, @UploadedFile() file) {
     // Check the validity of the file.
     const expectedHeaders: Array<string> = ['fromPlayerId', 'fromFirstName',
@@ -86,7 +87,7 @@ export class PlayerController {
   }
 
   @Get('importVRPersonsCSV/status')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   importVRPersonsStatus(): any {
     return this.playerService.getPersonImportStatus();
   }
@@ -94,7 +95,7 @@ export class PlayerController {
   @Post('importVRPersonsCSV')
   @UseInterceptors(FileInterceptor('file',
     {dest: 'uploads/players/VRPersons'}))
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async importVRPersonsCSV(@Req() request, @UploadedFile() file) {
     // Check the validity of the file.
     const expectedHeaders: Array<string> = ['code', 'memberid', 'lastname', 'lastname2',
@@ -128,32 +129,33 @@ export class PlayerController {
     // We are intentionally not waiting for the promise to be returned here, because
     // it could take several minutes and we need to return from this handler.
     // Clients can watch the progress by polling importVRPersonsCSV/status
-    this.playerService.importVRPersons(players);
+    this.playerService.importVRPersons(players).then();
   }
 
   /* This is for Validating BC Club membership lists */
   @Post('check')
   @UseInterceptors(FileInterceptor('file',
-    {dest: 'uploads/players/VRPersonMerges'}))
-  @UseGuards(AuthGuard('bearer'))
+    {dest: 'uploads/players/BCMemberChecks'}))
+  @UseGuards(JwtAuthGuard)
   async checkPlayers(@Req() request, @UploadedFile() file) {
     const valid: boolean = await this.identityService.validateFile(file);
+    // fs.unlink(file.path, (err => {})); // Not deleting files so we can troubleshoot.
     if (!valid) {
       throw new HttpException('Member lists contained one or more errors: ' +
-        JSON.stringify(this.identityService.getCheckPlayerStatus().getHistory()),
+        JSON.stringify(this.identityService.getCheckPlayerStatus().getHistory(), null, 2),
         HttpStatus.NOT_ACCEPTABLE);
     }
   }
 
   @Get('check/status')
-  // @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   checkPlayersStatus(): any {
     return this.identityService.getCheckPlayerStatus();
   }
   @Get('check/downloadReport')
   // TODO figure out how to guard this - client is an <a>...</a>
   // which does not send auth headers. no private data so it is ok.
-  // @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(JwtAuthGuard)
   async exportMemberCheckReport( @Res() response, @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to download ' + query.filename);
@@ -163,3 +165,4 @@ export class PlayerController {
     // TODO THis might be a good place to clean the file up so no more downloads
   }
 }
+

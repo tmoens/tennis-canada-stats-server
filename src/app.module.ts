@@ -1,11 +1,14 @@
-import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/common/http';
+import {Logger, Module} from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { PassportModule } from '@nestjs/passport';
+import {JwtStrategy} from './guards/jwt.strategy';
+import {JwtStrategy2} from './guards/jwt.strategy2';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Connection } from 'typeorm';
 import { AppController } from './app.controller';
 import {AuthModule} from './modules/auth/auth.module';
 import {ConfigurationModule} from './modules/configuration/configuration.module';
+import {UserModule} from './modules/user/user.module';
 import {DrawModule} from './modules/vrtournaments/draw/draw.module';
 import {EventModule} from './modules/vrtournaments/event/event.module';
 import {LicenseModule} from './modules/vrtournaments/license/license.module';
@@ -15,6 +18,7 @@ import {PlayerModule} from './modules/player/player.module';
 import {SeafileModule} from './modules/Seafile/seafile.module';
 import {TennisAssociationModule} from './modules/tennis_association/tennis_association.module';
 import {TournamentModule} from './modules/vrtournaments/tournament/tournament.module';
+import {MailerModule} from '@nestjs-modules/mailer';
 import {VRAPIModule} from './modules/VRAPI/vrapi.module';
 import {VRRankingsTypeModule} from './modules/vrrankings/type/type.module';
 import {VRRankingsCategoryModule} from './modules/vrrankings/category/category.module';
@@ -35,6 +39,7 @@ import { ItfMatchResultsController } from './modules/external-tournaments/itf-ma
 import { ItfMatchResultsModule } from './modules/external-tournaments/itf-match-results/itf-match-results.module';
 import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
 import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module';
+import {LocalStrategy} from './guards/local.strategy';
 
 @Module({
   imports: [
@@ -43,9 +48,16 @@ import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module'
       imports: [ConfigurationModule],
       useExisting: ConfigurationService,
     }),
+    MailerModule.forRootAsync(
+      {
+        imports: [ConfigurationModule],
+        useExisting: ConfigurationService,
+      }),
     PassportModule,
     AuthModule,
+    MailerModule,
     ConfigurationModule,
+    UserModule,
     EventModule,
     DrawModule,
     HttpModule,
@@ -80,6 +92,9 @@ import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module'
     ExternalTournamentService,
     PointExchangeService,
     ItfMatchResultsService,
+    LocalStrategy,
+    JwtStrategy,
+    JwtStrategy2,
   ],
   exports: [
   ],

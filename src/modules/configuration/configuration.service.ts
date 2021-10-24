@@ -1,15 +1,23 @@
 import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
 import * as fs from 'fs';
-import { TypeOrmOptionsFactory, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import {TypeOrmModuleOptions, TypeOrmOptionsFactory} from '@nestjs/typeorm';
+import {LoggerOptions} from 'typeorm/logger/LoggerOptions';
+import {MailerOptions, MailerOptionsFactory} from '@nestjs-modules/mailer';
+import {HandlebarsAdapter} from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import {JwtModuleOptions, JwtOptionsFactory} from '@nestjs/jwt';
 
 export interface EnvConfig {
   [prop: string]: string;
 }
 
-export class ConfigurationService implements TypeOrmOptionsFactory {
+export class ConfigurationService implements
+  MailerOptionsFactory,
+  TypeOrmOptionsFactory,
+  JwtOptionsFactory
+{
   private readonly envConfig: EnvConfig;
-  private environment: string;
+  readonly environment: string;
 
   constructor() {
     this.environment = process.env.NODE_ENV;
@@ -19,15 +27,46 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
     }
 
     const filePath = `environments/${this.environment}.env`;
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`NODE_ENV is set to ${this.environment}, but
+      the expected configuration file was not found at ${filePath}`);
+    }
+
     const config = dotenv.parse(fs.readFileSync(filePath));
-    this.envConfig = this.validateInput(config);
+    this.envConfig = ConfigurationService.validateInput(config);
   }
+
+  get port(): number {
+    return Number(this.envConfig.PORT);
+  }
+
+  // This is so the system can set up a default admin user
+  get defaultAdminUserName(): string {
+    return this.envConfig.DEFAULT_ADMIN_USER_NAME;
+  }
+
+  get defaultAdminUserEmail(): string {
+    return this.envConfig.DEFAULT_ADMIN_USER_EMAIL;
+  }
+
+  get defaultAdminUserPassword(): string {
+    return this.envConfig.DEFAULT_ADMIN_USER_PASSWORD;
+  }
+
+  get jwtSecret(): string {
+    return this.envConfig.JWT_SECRET;
+  }
+
+  get jwtDuration(): string {
+    return this.envConfig.JWT_DURATION;
+  }
+
 
   /**
    * Ensures all needed variables are set, and returns the validated JavaScript object
    * including the applied default values.
    */
-  private validateInput(envConfig: EnvConfig): EnvConfig {
+  private static validateInput(envConfig: EnvConfig): EnvConfig {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
 
       PORT: Joi.number().default(3002),
@@ -62,6 +101,21 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
 
       HOW_MANY_CANDIDATE_MATCHES: Joi.number().default(3),
       CANDIDATE_MATCH_SCORE_THRESHOLD: Joi.number().default(-1),
+
+      JWT_SECRET: Joi.string().required(),
+      JWT_DURATION: Joi.string().required(),
+
+      MAIL_FROM: Joi.string().required(),
+      MAIL_REPLY_TO: Joi.string().required(),
+      MAIL_CC: Joi.string().required(),
+      MAIL_HOST: Joi.string().required(),
+      MAIL_USER: Joi.string().required(),
+      MAIL_PASSWORD: Joi.string().required(),
+
+      DEFAULT_ADMIN_USER_NAME: Joi.string().required(),
+      DEFAULT_ADMIN_USER_EMAIL: Joi.string().required(),
+      DEFAULT_ADMIN_USER_PASSWORD: Joi.string().required(),
+
     });
 
     const { error, value: validatedEnvConfig } = envVarsSchema.validate(
@@ -166,37 +220,58 @@ export class ConfigurationService implements TypeOrmOptionsFactory {
   // This is used to build ORM configuration options
   createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
-    console.log ('Hey wait' + this.mysqlPort);
-    const logOptions: string[] = ['error'];
+    const logOptions: LoggerOptions = ['error'];
     if (this.typeORMLogQueries) {
-      return {
-        type: 'mysql',
-        host: 'localhost',
-        port: this.mysqlPort,
-        username: this.envConfig.DB_USER,
-        password: this.envConfig.DB_PASSWORD,
-        database: this.envConfig.DB_NAME,
-        entities: [
-          `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
-        ],
-        synchronize: this.typeORMSyncDatabase,
-        logging: ['error', 'query'],
-      };
-    } else {
-      return {
-        type: 'mysql',
-        host: 'localhost',
-        port: this.mysqlPort,
-        username: this.envConfig.DB_USER,
-        password: this.envConfig.DB_PASSWORD,
-        database: this.envConfig.DB_NAME,
-        entities: [
-          `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
-        ],
-        synchronize: this.typeORMSyncDatabase,
-        logging: ['error'],
-      };
+      logOptions.push('query');
+    }
 
+    return {
+      type: 'mysql',
+      host: 'localhost',
+      port: this.mysqlPort,
+      username: this.envConfig.DB_USER,
+      password: this.envConfig.DB_PASSWORD,
+      database: this.envConfig.DB_NAME,
+      entities: [
+        `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
+      ],
+      synchronize: this.typeORMSyncDatabase,
+      logging: logOptions,
+    };
+  }
+
+  // For more information and options read https://nodemailer.com
+  createMailerOptions(): Promise<MailerOptions> | MailerOptions {
+    return {
+      defaults: {
+        from: this.envConfig.MAIL_FROM,
+        replyTo: this.envConfig.MAIL_REPLY_TO,
+        cc: this.envConfig.MAIL_CC,
+      },
+      transport: {
+        host: this.envConfig.MAIL_HOST,
+        port: 587,
+        secure: false, // the session will use STARTTLS
+        auth: {
+          user: this.envConfig.MAIL_USER,
+          pass: this.envConfig.MAIL_PASSWORD,
+        }
+      },
+      template: {
+        dir: __dirname + '/templates',
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
+      },
+    }
+  }
+
+  createJwtOptions(): Promise<JwtModuleOptions> | JwtModuleOptions {
+    return {
+      secret: this.jwtSecret,
+      signOptions: {expiresIn: this.jwtDuration},
     }
   }
 }
+

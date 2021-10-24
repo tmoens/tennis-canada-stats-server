@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import {HttpModule} from '@nestjs/common/http';
+import {HttpModule} from '@nestjs/axios';
 import {ItfapiService} from './itfapi.service';
 import {ItfapiController} from './itfapi.controller';
 import {ExternalTournamentModule} from '../external-tournaments/external-tournament/external-tournament.module';

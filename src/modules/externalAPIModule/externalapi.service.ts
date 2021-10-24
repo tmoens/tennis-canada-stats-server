@@ -1,6 +1,7 @@
-import {HttpService, Injectable} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {Observable, of} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
+import {HttpService} from '@nestjs/axios';
 
 @Injectable()
 export class ExternalapiService {

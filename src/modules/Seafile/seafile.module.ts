@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SeafileService } from './seafile.service';
-import {HttpModule} from '@nestjs/common/http';
+import {HttpModule} from '@nestjs/axios';
 
 @Module({
   providers: [

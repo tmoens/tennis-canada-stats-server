@@ -9,8 +9,6 @@ import { License } from '../license/license.entity';
 import { LicenseService } from '../license/license.service';
 import { ConfigurationService } from '../../configuration/configuration.service';
 import { JobStats, JobState } from '../../../utils/jobstats';
-import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
-import * as moment from 'moment';
 
 const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
 const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
@@ -20,7 +18,8 @@ const LEAGUE_UPDATE_COUNT = 'leagues_updated';
 const LEAGUE_UP_TO_DATE_COUNT = 'leagues_already_up_to_date';
 const SKIP_COUNT = 'tournaments_skipped';
 const DONE = 'done';
-const importLogger = getLogger('tournamentImport');
+
+const logger = getLogger('tournamentService');
 
 @Injectable()
 export class TournamentService {
@@ -45,7 +44,7 @@ export class TournamentService {
   // Add any ones we did not know about and update any ones we
   // did know about, if our version is out of date.
   async importTournamentsFromVR() {
-    importLogger.info('**** VR Tournament Import started.');
+    logger.info('**** VR Tournament Import started.');
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
 
@@ -64,8 +63,8 @@ export class TournamentService {
     }
 
     this.importStats.setStatus(JobState.DONE);
-    importLogger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
-    importLogger.info('**** VR Tournament Import done.');
+    logger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
+    logger.info('**** VR Tournament Import done.');
     return;
   }
 
@@ -75,7 +74,7 @@ export class TournamentService {
     // Tournament which is an array of mini tournamentId records.
     const miniTournaments_json = await this.vrapi.get('Tournament/Year/' + year);
     const miniTournaments: any[] = VRAPIService.arrayify(miniTournaments_json.Tournament);
-    importLogger.info (`${miniTournaments.length} tournaments found for ${year}`);
+    logger.info (`${miniTournaments.length} tournaments found for ${year}`);
 
     const tournamentCount: number = miniTournaments.length;
     // the next line is not strictly true as many will be skipped and there
@@ -89,7 +88,7 @@ export class TournamentService {
       // TODO Leagues change to '0' or '1'
       if ('0' !== miniTournament.TypeID && '1' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
-        importLogger.info(`Tournament has unknown code: ${miniTournament.Name} (${miniTournament.Code}). Code: ${miniTournament.TypeID}`);
+        logger.info(`Tournament has unknown code: ${miniTournament.Name} (${miniTournament.Code}). Code: ${miniTournament.TypeID}`);
         continue;
       }
 
@@ -97,7 +96,7 @@ export class TournamentService {
       const tournament: Tournament = await
         this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
-        importLogger.info('Creating: ' + JSON.stringify(miniTournament));
+        logger.info('Creating: ' + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
         if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_CREATION_COUNT);
         if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_CREATION_COUNT);
@@ -105,7 +104,7 @@ export class TournamentService {
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
-        importLogger.info('Updating: ' + JSON.stringify(miniTournament));
+        logger.info('Updating: ' + JSON.stringify(miniTournament));
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
         if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
@@ -160,23 +159,6 @@ export class TournamentService {
    * some singles event in some tournament in a given time period.
    */
   async getPlayReport(fromDate: Date = null, toDate: Date = null): Promise<any[]> {
-    // SELECT p.playerId, p.firstName, p.lastName, p.gender pGender, p.DOB, p.province,
-    //   c.categoryId, e.name eName, c.categoryName cName,
-    //   e.level eLevel, e.minAge, e.maxAge, e.genderId eGender, e.winnerPoints,
-    //   t.name tName, t.level tLevel, t.startDate, t.endDate, t.city,
-    //   l.licenseName license, l.province
-    // FROM tournament t
-    // LEFT JOIN license l on t.licenseName = l.licenseName
-    // LEFT JOIN event e on t.tournamentCode = e.tournamentCode
-    // LEFT JOIN vrrankingscategory c on e.vrCategoryCode = c.categoryCode
-    // LEFT JOIN `match` m on e.eventId = m.eventId
-    // LEFT JOIN matchplayer mp on m.matchId = mp.matchId
-    // LEFT JOIN player p on mp.playerId = p.playerId
-    // WHERE t.startDate >= '2020-01-01' AND t.startDate <= '2020-12-31'
-    // AND e.isSingles
-    // AND p.playerId IS NOT NULL
-    // GROUP BY e.eventId, p.playerId
-    // order by t.name;
     const q = this.repository.createQueryBuilder('t')
       .select(['p.playerId', 'p.firstName', 'p.lastName', 'p.DOB', 'p.gender', 'p.province'])
       .addSelect(['c.categoryId', 'c.categoryName'])
@@ -191,7 +173,6 @@ export class TournamentService {
       .leftJoin('mp.player', 'p')
       .where('e.isSingles')
       .andWhere('p.playerId')
-      // .andWhere('t.tournamentCode = "6bc18234-d09b-47d5-9149-4ef1193cbdaa"')
       .andWhere(`t.endDate <= '${toDate}'`)
       .andWhere(`t.endDate >= '${fromDate}'`)
       .groupBy('e.eventId')

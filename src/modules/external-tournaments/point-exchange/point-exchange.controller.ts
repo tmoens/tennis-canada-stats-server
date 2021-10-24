@@ -2,6 +2,7 @@ import {Controller, Get, UseGuards} from '@nestjs/common';
 import {AuthGuard} from '@nestjs/passport';
 import {PointExchange} from './point-exchange.entity';
 import {PointExchangeService} from './point-exchange.service';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('PointExchange')
 export class PointExchangeController {
@@ -10,7 +11,7 @@ export class PointExchangeController {
   ) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<PointExchange[]> {
     return await this.service.findAll();
   }

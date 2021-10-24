@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import {HttpModule} from '@nestjs/common/http';
+import {HttpModule} from '@nestjs/axios';
 import {ExternalapiService} from './externalapi.service';
 import {NickNameService} from './nicknameService';
 

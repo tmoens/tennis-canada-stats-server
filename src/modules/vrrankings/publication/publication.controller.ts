@@ -1,27 +1,27 @@
 import {Controller, Get, Param, Query, UseGuards} from '@nestjs/common';
 import { VRRankingsPublicationService } from './publication.service';
 import { VRRankingsPublication } from './publication.entity';
-import {AuthGuard} from '@nestjs/passport';
 import moment = require('moment');
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('VRRankingsPublication')
 export class VRRankingsPublicationController {
   constructor(private readonly vrrankingspublicationService: VRRankingsPublicationService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<VRRankingsPublication[]> {
     return await this.vrrankingspublicationService.findAll();
   }
 
   @Get('/code/:code')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findBycode(@Param() params): Promise<VRRankingsPublication> {
     return await this.vrrankingspublicationService.findByCode(params.code);
   }
 
   @Get('/list/')
-  // @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(JwtAuthGuard)
   async getRankingList(@Query() params): Promise<any> {
     // the date query parameter tells us the date year and week we are interested in
     const d = moment(params.date);
@@ -36,7 +36,7 @@ export class VRRankingsPublicationController {
   }
 
   @Get('/WhatsBeenLoaded')
-  // @UseGuards(AuthGuard('bearer'))
+  // @UseGuards(JwtAuthGuard)
   async getLoadedRankingsData(): Promise<any[]> {
     return await this.vrrankingspublicationService.getLoadedRankingsData();
   }

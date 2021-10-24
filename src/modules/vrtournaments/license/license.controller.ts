@@ -1,20 +1,20 @@
 import {Body, Controller, Get, HttpStatus, Param, Post, Req, Res, UseGuards} from '@nestjs/common';
 import { LicenseService } from './license.service';
 import { License, LicenseDTO } from './license.entity';
-import { AuthGuard } from '@nestjs/passport';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('License')
 export class LicenseController {
   constructor(private readonly licenseService: LicenseService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<License[]> {
     return await this.licenseService.findAll();
   }
 
   @Get('missingProvince')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findLicensesWithMissingProvince(): Promise<License[]> {
     return await this.licenseService.findLicensesWithMissingProvince();
   }
@@ -34,14 +34,14 @@ export class LicenseController {
   }
 
   @Get(':licenseName')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param() params): Promise<License> {
 
     return await this.licenseService.findOne(params.licenseName);
   }
 
   @Post('fixLicensesWithoutProvinces')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async fixLicensesWithMissingProvinces(@Body() fixedLicenses: LicenseDTO[]): Promise<License[]> {
     return await this.licenseService.fixLicensesWithMissingProvinces(fixedLicenses);
   }

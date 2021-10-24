@@ -1,26 +1,26 @@
 import {Controller, Get, UseGuards} from '@nestjs/common';
 import { VRRankingsTypeService } from './type.service';
 import { VRRankingsType } from './type.entity';
-import {AuthGuard} from '@nestjs/passport';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('VRRankingsType')
 export class VRRankingsTypeController {
   constructor(private readonly vrrankingstypeService: VRRankingsTypeService) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<VRRankingsType[]> {
     return await this.vrrankingstypeService.findAll();
   }
 
   @Get('/import/status')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   importVRPersonsStatus(): any {
     return this.vrrankingstypeService.getImportStatus();
   }
 
   @Get('/import')
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async importRankingsFromVR(): Promise<any> {
     return await this.vrrankingstypeService.importVRRankingsFromVR();
   }

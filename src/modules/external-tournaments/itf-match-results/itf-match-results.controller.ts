@@ -1,7 +1,7 @@
 import {Controller, Get, UseGuards} from '@nestjs/common';
-import {AuthGuard} from '@nestjs/passport';
 import {ItfMatchResultsService} from './itf-match-results.service';
 import {ItfMatchResult} from './itf-match-result.entity';
+import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 
 @Controller('ITFMatchResults')
 export class ItfMatchResultsController {
@@ -10,7 +10,7 @@ export class ItfMatchResultsController {
   ) {}
 
   @Get()
-  @UseGuards(AuthGuard('bearer'))
+  @UseGuards(JwtAuthGuard)
   async findAll(): Promise<ItfMatchResult[]> {
     return await this.service.findAll();
   }
