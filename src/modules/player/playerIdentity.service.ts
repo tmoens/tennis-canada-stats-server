@@ -132,7 +132,12 @@ export class PlayerIdentityService {
   // add a list of candidates for that member with color coding for quality of match in each field
   async processMembershipWB(membershipWB: Workbook): Promise<string> {
     const wb = await Workbook.fromBlankAsync();
-    this.makeInstructionsWS(wb);
+
+    await this.makeInstructionsWS(wb);
+
+    // Delete the "Sheet1" that gets created automatically.
+    wb.deleteSheet('Sheet1');
+
     this.checkPlayerStats.setCurrentActivity('Processing workbook');
     for (const inputWS of membershipWB.sheets()) {
       this.checkPlayerStats.setCurrentActivity('Processing sheet: ' + inputWS.name());
@@ -348,9 +353,6 @@ export class PlayerIdentityService {
         }
       }
     }
-
-    // Delete the "Sheet1" that gets created automatically.
-    if (wb.sheets().length > 0) wb.deleteSheet(0);
 
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/MemberCheck${now}.xlsx`;
