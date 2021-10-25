@@ -59,7 +59,7 @@ export class TCMailerService {
         subject: 'Welcome to Tennis Canada Stats Tools', // Subject line
         html: `<p>Greetings ${user.name}: <\p>
           <p>Welcome to the Tennis Canada Statistics Tools Site.
-          <p>Login here: TBD</p>
+          <p>Login here: https://rogersrankings.com/TCStatsAdminClient</p>
           <p>Your new user id is <b>${user.username}</b></p>
           <p>Your new password is:
           <b>${newPassword}</b>. You will be required to change it when you log in.
