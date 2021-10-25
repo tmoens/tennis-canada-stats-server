@@ -17,6 +17,7 @@ import {EventPlayerService} from '../event_player/event_player.service';
 import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
 import {VRRankingsItemService} from '../../vrrankings/item/item.service';
 import {Player} from '../../player/player.entity';
+import {Query} from 'typeorm/driver/Query';
 
 const CREATION_COUNT = 'event_creation';
 const logger = getLogger('eventService');
@@ -135,39 +136,26 @@ export class EventService {
         await this.categoryService.getRankingCategoryFromId(categoryId);
       if (!category) break;
       let events: Event[] = [];
+      let q = await this.repository
+        .createQueryBuilder('event')
+        .leftJoinAndSelect('event.tournament', 'tournament')
+        .leftJoinAndSelect('tournament.license', 'license')
+        .leftJoinAndSelect('event.vrRankingsCategory', 'category')
+        .leftJoinAndSelect('event.players', 'players')
+        .leftJoinAndSelect('players.player', 'player')
+        .where(`event.vrCategoryCode = '${category.categoryCode}'`)
+        .andWhere(`event.numberOfEntries > 0`)
+        .andWhere(`tournament.typeId = 0`)
+        .andWhere(`tournament.endDate <= '${toDate}'`)
+        .andWhere(`tournament.endDate >= '${fromDate}'`)
       if (province) {
-        events = await this.repository
-          .createQueryBuilder('event')
-          .leftJoinAndSelect('event.tournament', 'tournament')
-          .leftJoinAndSelect('tournament.license', 'license')
-          .leftJoinAndSelect('event.vrRankingsCategory', 'category')
-          .leftJoinAndSelect('event.players', 'players')
-          .leftJoinAndSelect('players.player', 'player')
-          .where(`event.vrCategoryCode = '${category.categoryCode}'`)
-          .andWhere(`tournament.endDate <= '${toDate}'`)
-          .andWhere(`tournament.endDate >= '${fromDate}'`)
-          .andWhere(`license.province = '${province}'`)
-          .getMany();
+        q = q.andWhere(`license.province = '${province}'`)
       }
-      else {
-        events = await this.repository
-          .createQueryBuilder('event')
-          .leftJoinAndSelect('event.tournament', 'tournament')
-          .leftJoinAndSelect('tournament.license', 'license')
-          .leftJoinAndSelect('event.vrRankingsCategory', 'category')
-          .leftJoinAndSelect('event.players', 'players')
-          .leftJoinAndSelect('players.player', 'player')
-          .where(`event.vrCategoryCode = '${category.categoryCode}'`)
-          .andWhere(`tournament.endDate <= '${toDate}'`)
-          .andWhere(`tournament.endDate >= '${fromDate}'`)
-          .getMany();
-      }
+      console.log(q.getSql());
+      events = await q.getMany();
 
       for (const event of events) {
-        // skip events in leagues
-        if (event.tournament.isLeague()) continue;
-
-        // console.log("Event: " + JSON.stringify(event));
+        // console.log(`event: ${event.eventId}, entries: ${event.numberOfEntries}, province: ${event.tournament.license.province}`)
         const pub = await this.getRankingsPublication(event);
         // if you cannot find a rankings publication for the event,
         // you cannot rate the event.
