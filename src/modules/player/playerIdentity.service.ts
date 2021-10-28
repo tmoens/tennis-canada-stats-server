@@ -48,6 +48,7 @@ export class PlayerIdentityService {
     private readonly nicknameService: NickNameService,
   ) {
     this.checkPlayerStats = new JobStats('checkPlayerStats');
+    this.checkPlayerStats.setStatus(JobState.NOT_STARTED);
   }
 
   getCheckPlayerStatus() {
@@ -70,6 +71,7 @@ export class PlayerIdentityService {
     ];
     const membershipWB: Workbook = await XlsxPopulate.fromFileAsync(file.path);
     this.checkPlayerStats.toDo = membershipWB.sheets().length;
+    this.checkPlayerStats.setCounter('done', 0);
     for (const ws of membershipWB.sheets()) {
       let hasMemberId = false;
       let hasClub = false;
@@ -141,7 +143,7 @@ export class PlayerIdentityService {
     this.checkPlayerStats.setCurrentActivity('Processing workbook');
     for (const inputWS of membershipWB.sheets()) {
       this.checkPlayerStats.setCurrentActivity('Processing sheet: ' + inputWS.name());
-      this.checkPlayerStats.bump('done');
+      this.checkPlayerStats.setCounter('done',0);
       const ws = wb.addSheet(inputWS.name());
 
       // copy the headers to the output sheet
@@ -352,6 +354,7 @@ export class PlayerIdentityService {
           ws.cell(outputRow, numHeaders + 1).value(candidate.score);
         }
       }
+      this.checkPlayerStats.bump('done');
     }
 
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
