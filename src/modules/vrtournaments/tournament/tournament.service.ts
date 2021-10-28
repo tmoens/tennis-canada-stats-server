@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository} from 'typeorm';
-import { Tournament } from './tournament.entity';
-import { VRAPIService } from '../../VRAPI/vrapi.service';
-import { EventService } from '../event/event.service';
-import { getLogger } from 'log4js';
-import { License } from '../license/license.entity';
-import { LicenseService } from '../license/license.service';
-import { ConfigurationService } from '../../configuration/configuration.service';
-import { JobStats, JobState } from '../../../utils/jobstats';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {Tournament} from './tournament.entity';
+import {VRAPIService} from '../../VRAPI/vrapi.service';
+import {EventService} from '../event/event.service';
+import {getLogger} from 'log4js';
+import {License} from '../license/license.entity';
+import {LicenseService} from '../license/license.service';
+import {ConfigurationService} from '../../configuration/configuration.service';
+import {JobState, JobStats} from '../../../utils/jobstats';
 
 const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
 const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
@@ -179,7 +179,22 @@ export class TournamentService {
       .addGroupBy('p.playerId')
       .orderBy('t.name')
 
-    const data: any[] = await q.getRawMany();
-    return data;
+    return await q.getRawMany();
+  }
+
+  async getTournamentsUpdatedSince(date: string): Promise<Tournament[]> {
+    return this.repository.createQueryBuilder('t')
+      .leftJoinAndSelect('t.license', 'l')
+      .where(`t.lastUpdatedInVR >= '${date}'`)
+      .getMany();
+  }
+
+  async getTournamentWithEventsAndLicense(tournamentCode: string): Promise<Tournament> {
+    return this.repository.createQueryBuilder('t')
+      .leftJoinAndSelect('t.license', 'l')
+      .leftJoinAndSelect(`t.events`, 'e')
+      .leftJoinAndSelect('e.vrRankingsCategory', 'c')
+      .where(`t.tournamentCode = '${tournamentCode}'`)
+      .getOne();
   }
 }

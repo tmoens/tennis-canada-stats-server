@@ -1,16 +1,16 @@
-import {Entity, PrimaryColumn, Column, OneToMany} from "typeorm";
-import {VRRankingsCategory} from "../category/category.entity";
+import {Entity, PrimaryColumn, Column, OneToMany} from 'typeorm';
+import {VRRankingsCategory} from '../category/category.entity';
 
-@Entity("VRRankingsType")
+@Entity('VRRankingsType')
 export class VRRankingsType {
 
-  @PrimaryColumn("varchar",{
+  @PrimaryColumn('varchar',{
     length:255,
-    comment: "VR UUID for the ranking type (adult/junior/Senior)"
+    comment: 'VR UUID for the ranking type (adult/junior/Senior)'
   })
   typeCode:string;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   typeName:string;

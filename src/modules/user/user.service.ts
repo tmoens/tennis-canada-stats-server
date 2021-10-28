@@ -3,9 +3,8 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {User} from './user.entity';
 import {plainToClass} from 'class-transformer';
 import {JwtService} from '@nestjs/jwt';
-import {UserRepository} from './user.repository';
 import {UserFilter} from './user-filter';
-import {Brackets, SelectQueryBuilder} from 'typeorm';
+import {Brackets, Repository, SelectQueryBuilder} from 'typeorm';
 import {TCMailerService} from '../mailer/mailer-service';
 import {ConfigurationService} from '../configuration/configuration.service';
 import {ADMIN_ROLE} from '../auth/roles';
@@ -17,7 +16,7 @@ const logger: Logger = getLogger('UserService');
 @Injectable()
 export class UserService  {
   constructor(
-    @InjectRepository(UserRepository) private readonly repo: UserRepository,
+    @InjectRepository(User) private readonly repo: Repository<User>,
     private jwtService: JwtService,
     private mailerService: TCMailerService,
     private configService: ConfigurationService,

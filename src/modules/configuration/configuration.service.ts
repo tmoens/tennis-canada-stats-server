@@ -1,11 +1,36 @@
 import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
 import * as fs from 'fs';
-import {TypeOrmModuleOptions, TypeOrmOptionsFactory} from '@nestjs/typeorm';
+import {TypeOrmModuleOptions} from '@nestjs/typeorm';
 import {LoggerOptions} from 'typeorm/logger/LoggerOptions';
 import {MailerOptions, MailerOptionsFactory} from '@nestjs-modules/mailer';
 import {HandlebarsAdapter} from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import {JwtModuleOptions, JwtOptionsFactory} from '@nestjs/jwt';
+import {VRRankingsItem} from '../vrrankings/item/item.entity';
+import {VRRankingsCategory} from '../vrrankings/category/category.entity';
+import {ExternalEventResult} from '../external-tournaments/external-event-result/external-event-result.entity';
+import {ExternalEvent} from '../external-tournaments/external-event/external-event.entity';
+import {ExternalPlayer} from '../external-tournaments/external-player/external-player.entity';
+import {ExternalTournament} from '../external-tournaments/external-tournament/external-tournament.entity';
+import {ItfMatchResult} from '../external-tournaments/itf-match-results/itf-match-result.entity';
+import {VRRankingsPublication} from '../vrrankings/publication/publication.entity';
+import {VRRankingsType} from '../vrrankings/type/type.entity';
+import {Draw} from '../vrtournaments/draw/draw.entity';
+import {Event} from '../vrtournaments/event/event.entity';
+import {User} from '../user/user.entity';
+import {EventPlayer} from '../vrtournaments/event_player/event_player.entity';
+import {License} from '../vrtournaments/license/license.entity';
+import {MatchPlayer} from '../vrtournaments/match_player/match_player.entity';
+import {Player} from '../player/player.entity';
+import {Match} from '../vrtournaments/match/match.entity';
+import {PointExchange} from '../external-tournaments/point-exchange/point-exchange.entity';
+import {TennisAssociation} from '../tennis_association/tennis_association.entity';
+import {Tournament} from '../vrtournaments/tournament/tournament.entity';
+import {CalendarEvent} from '../calendar-support/calendar-event.entity';
+import {CalendarTournament} from '../calendar-support/calendar-tournament.entity';
+
+export const TC_STATS_DB = 'tc_stats';
+export const CALENDAR_DB = 'calendar_db';
 
 export interface EnvConfig {
   [prop: string]: string;
@@ -13,7 +38,6 @@ export interface EnvConfig {
 
 export class ConfigurationService implements
   MailerOptionsFactory,
-  TypeOrmOptionsFactory,
   JwtOptionsFactory
 {
   private readonly envConfig: EnvConfig;
@@ -99,6 +123,8 @@ export class ConfigurationService implements
 
       UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
+      CALENDAR_BD_SYNC_PERIOD: Joi.number().default(5),
+
       HOW_MANY_CANDIDATE_MATCHES: Joi.number().default(3),
       CANDIDATE_MATCH_SCORE_THRESHOLD: Joi.number().default(-1),
 
@@ -180,6 +206,10 @@ export class ConfigurationService implements
     return Number(this.envConfig.UTR_REPORT_GOES_BACK_IN_DAYS);
   }
 
+  get calendarDbSyncPeriod(): number {
+    return Number(this.envConfig.CALENDAR_BD_SYNC_PERIOD);
+  }
+
   // The seafile configuration is used to upload files to a server for UTR.
   get seafileURL(): string {
     return this.envConfig.SEAFILE_URL;
@@ -218,27 +248,65 @@ export class ConfigurationService implements
   }
 
   // This is used to build ORM configuration options
-  createTypeOrmOptions(): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
-    const SOURCE_PATH = this.environment === 'production' ? 'dist' : 'src';
+  generateTypeOrmOptions(db: string): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
+    const tcStatsEntities = [
+      Draw,
+      Event,
+      EventPlayer,
+      ExternalEvent,
+      ExternalEventResult,
+      ExternalPlayer,
+      ExternalTournament,
+      ItfMatchResult,
+      License,
+      Match,
+      MatchPlayer,
+      Player,
+      PointExchange,
+      TennisAssociation,
+      Tournament,
+      User,
+      VRRankingsCategory,
+      VRRankingsItem,
+      VRRankingsPublication,
+      VRRankingsType,
+    ];
+    const calendarEntities = [
+      CalendarEvent,
+      CalendarTournament,
+    ]
     const logOptions: LoggerOptions = ['error'];
     if (this.typeORMLogQueries) {
       logOptions.push('query');
     }
-
-    return {
+    const defaultOptions: TypeOrmModuleOptions = {
       type: 'mysql',
       host: 'localhost',
       port: this.mysqlPort,
       username: this.envConfig.DB_USER,
       password: this.envConfig.DB_PASSWORD,
-      database: this.envConfig.DB_NAME,
-      entities: [
-        `${SOURCE_PATH}/**/*.entity{.ts,.js}`,
-      ],
       synchronize: this.typeORMSyncDatabase,
       logging: logOptions,
-    };
+    }
+    switch(db) {
+      case TC_STATS_DB:
+        return {
+          ...defaultOptions,
+          database: this.envConfig.DB_NAME,
+          entities: tcStatsEntities,
+        };
+      case CALENDAR_DB:
+        return {
+          ...defaultOptions,
+          name: 'calendar',
+          database: 'vrtournaments',
+          entities: calendarEntities,
+        };
+      default:
+        throw new Error(`Cannot generate TypeORM options for unknown database: ${db}.`);
+    }
   }
+  // entities: [`${SOURCE_PATH}/**/*.entity{.ts,.js}`],
 
   // For more information and options read https://nodemailer.com
   createMailerOptions(): Promise<MailerOptions> | MailerOptions {

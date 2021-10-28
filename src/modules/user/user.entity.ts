@@ -5,7 +5,7 @@ import {random_password_generate} from './pasword-generator'
 
 const crypto = require('crypto');
 
-@Entity()
+@Entity('User')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
