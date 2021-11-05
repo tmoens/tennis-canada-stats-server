@@ -123,7 +123,7 @@ export class ConfigurationService implements
 
       UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
-      CALENDAR_BD_SYNC_PERIOD: Joi.number().default(5),
+      CALENDAR_DB_SYNC_PERIOD: Joi.number().default(5),
 
       HOW_MANY_CANDIDATE_MATCHES: Joi.number().default(3),
       CANDIDATE_MATCH_SCORE_THRESHOLD: Joi.number().default(-1),
@@ -207,7 +207,7 @@ export class ConfigurationService implements
   }
 
   get calendarDbSyncPeriod(): number {
-    return Number(this.envConfig.CALENDAR_BD_SYNC_PERIOD);
+    return Number(this.envConfig.CALENDAR_DB_SYNC_PERIOD);
   }
 
   // The seafile configuration is used to upload files to a server for UTR.

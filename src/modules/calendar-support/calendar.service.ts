@@ -8,6 +8,7 @@ import {ConfigurationService} from '../configuration/configuration.service';
 import {JobState, JobStats} from '../../utils/jobstats';
 import {CalendarEvent} from './calendar-event.entity';
 import {getLogger, Logger} from 'log4js';
+import {Event} from '../vrtournaments/event/event.entity';
 
 const logger: Logger = getLogger('calendarDbSync');
 
@@ -107,11 +108,8 @@ export class CalendarService {
     ct =  await this.tournamentRepo.save(ct);
     for (const e of t.events) {
       // we only deal with events that have a known rankings category
-      if (!e.vrRankingsCategory) {
-        continue;
-      }
       let ce = new CalendarEvent();
-      ce.categoryId = e.vrRankingsCategory.categoryId;
+      ce.categoryId = this.computeEventCategoryId(e);
       ce.tournament = ct;
       ce.eventCode = e.eventCode;
       ce.name = e.name;
@@ -126,5 +124,31 @@ export class CalendarService {
       ce = await this.eventRepo.save(ce);
     }
     return await this.tournamentRepo.findOne(ct.tournamentId);
+  }
+
+  computeEventCategoryId(event: Event): string {
+    let categoryId: string;
+    if (event.vrRankingsCategory) {
+      // In most cases the event category code is associated with the category of the event,
+      // so we use that directly.
+      categoryId = event.vrRankingsCategory.categoryId;
+    } else {
+      // However, VR has no event categories for for non-ranked events such as U10, U8 and so on.
+      // In these cases we construct a category code in the spirit of the VR category code.
+      const singlesOrDoubles = (event.isSingles) ? 'S' : 'D';
+
+      // Figure out what type of event is is based
+      if (event.minAge > 28) {
+        // looks like a senior event
+        categoryId = `S${event.genderId}${singlesOrDoubles}O${event.maxAge}`;
+      } else if (event.maxAge < 19 && event.maxAge > 1) {
+        // looks like a junior event
+        categoryId = `J${event.genderId}${singlesOrDoubles}U${event.maxAge}`;
+      } else {
+        // adult event
+        categoryId = `A${event.genderId}${singlesOrDoubles}L${event.level}`;
+      }
+    }
+    return categoryId;
   }
 }

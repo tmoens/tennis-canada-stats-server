@@ -151,7 +151,7 @@ export class EventService {
       if (province) {
         q = q.andWhere(`license.province = '${province}'`)
       }
-      console.log(q.getSql());
+      // console.log(q.getSql());
       events = await q.getMany();
 
       for (const event of events) {
