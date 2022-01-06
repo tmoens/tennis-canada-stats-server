@@ -93,6 +93,11 @@ export class ExternalEventService {
         case '12U':
           e.eventType = 'U12';
           break;
+        case 'XXX':
+          // Somewhere around Nov 18, 2021 ITF started presenting AgeCategory: 'XXX' in their JSON
+          // for Pro events.
+          e.eventType = 'Open'
+          break;
         default:
           // we only deal with events for the above age categories so
           // log the fact that we hit an unexpected one and cancel loading

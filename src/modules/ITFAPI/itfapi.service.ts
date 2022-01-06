@@ -166,7 +166,6 @@ export class ItfapiService {
         }
       }
     }
-    this.stats.setStatus(JobState.DONE);
-    logger.info(JSON.stringify(this.stats));
+    this.stats.setStatus(JobState.DONE); // causes stats to be logged.
   }
 }

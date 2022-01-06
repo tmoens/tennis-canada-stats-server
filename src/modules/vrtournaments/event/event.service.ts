@@ -182,6 +182,7 @@ export class EventService {
                 lastName: player.lastName,
                 rank: rankItem.rank,
                 points: rankItem.points,
+                birthYear: player.DOB.substr(0,4),
                 rating,
               });
               eventRating = eventRating + rating;
@@ -192,6 +193,7 @@ export class EventService {
           const e = {
             tournamentCode: event.tournament.tournamentCode,
             eventCode: event.eventCode,
+            eventId: event.eventId,
             tournamentName: event.tournament.name,
             startDate: event.tournament.startDate,
             endDate: event.tournament.endDate,
