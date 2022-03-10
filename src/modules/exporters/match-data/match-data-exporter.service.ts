@@ -78,7 +78,13 @@ export class MatchDataExporterService {
         }
         // Just in case the TD created an event as a U12 rankings category event but put a
         // age level restriction under 10 or below, skip the event.
-        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
+        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 12) {
+          this.utrReportStats.bump('U10AndBelowSkipped');
+          continue;
+        }
+
+        // For leagues don't take any "events" that are younger than under 12
+        if (!t.isTournament() && e.maxAge < 11) {
           this.utrReportStats.bump('U10AndBelowSkipped');
           continue;
         }

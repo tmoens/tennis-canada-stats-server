@@ -17,7 +17,6 @@ import {EventPlayerService} from '../event_player/event_player.service';
 import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
 import {VRRankingsItemService} from '../../vrrankings/item/item.service';
 import {Player} from '../../player/player.entity';
-import {Query} from 'typeorm/driver/Query';
 
 const CREATION_COUNT = 'event_creation';
 const logger = getLogger('eventService');
