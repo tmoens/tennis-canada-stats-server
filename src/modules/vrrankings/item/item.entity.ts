@@ -2,7 +2,7 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn} fr
 import {Player} from '../../player/player.entity';
 import {VRRankingsPublication} from '../publication/publication.entity';
 
-@Entity('VRRankingsItem')
+@Entity('vrrankingsitem')
 @Index('publication', ['publication'])
 @Index('player', ['player'])
 export class VRRankingsItem {

@@ -2,7 +2,7 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
 import {VRRankingsType} from '../type/type.entity';
 import {VRRankingsPublication} from '../publication/publication.entity';
 
-@Entity('VRRankingsCategory')
+@Entity('vrrankingscategory')
 @Index('categoryId', ['categoryId'], {unique: true})
 @Index('vrRankingsType', ['vrRankingsType'])
 export class VRRankingsCategory {

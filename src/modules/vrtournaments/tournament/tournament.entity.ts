@@ -2,7 +2,7 @@ import {Index, Entity, Column, OneToMany, UpdateDateColumn, ManyToOne, JoinColum
 import {Event} from '../event/event.entity';
 import {License} from '../license/license.entity';
 
-@Entity('Tournament')
+@Entity()
 @Index('tournamentCode', ['tournamentCode'])
 @Index('startDate', ['startDate'])
 @Index('endDate', ['endDate'])

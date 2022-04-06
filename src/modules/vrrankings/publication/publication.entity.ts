@@ -20,7 +20,7 @@ import {VRRankingsItem} from '../item/item.entity';
  *
  */
 
-@Entity('VRRankingsPublication')
+@Entity('vrrankingspublication')
 @Index('publicationCode', ['publicationCode'])
 export class VRRankingsPublication {
 

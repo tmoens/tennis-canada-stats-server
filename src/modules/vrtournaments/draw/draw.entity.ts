@@ -2,7 +2,7 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, On
 import {Event} from "../event/event.entity";
 import {Match} from "../match/match.entity";
 
-@Entity("Draw")
+@Entity()
 @Index("event",["event",])
 export class Draw {
 

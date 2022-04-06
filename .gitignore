@@ -392,5 +392,6 @@ docker-compose.yml
 !/environments/example.env
 dist/**
 reports/**
+Reports/**
 uploads
 

@@ -7,7 +7,7 @@ import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
 
 // TODO possibly renaming Event to something else because "Event" means something else too
 
-@Entity('Event')
+@Entity()
 @Index('tournament', ['tournament'])
 
 export class Event {

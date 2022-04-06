@@ -3,7 +3,7 @@ import {Event} from '../event/event.entity';
 import {Draw} from '../draw/draw.entity';
 import {MatchPlayer} from '../match_player/match_player.entity';
 
-@Entity('Match')
+@Entity()
 @Index('event', ['event'])
 @Index('draw', ['draw'])
 export class Match {

@@ -1,6 +1,6 @@
 import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeorm';
 
-@Entity('Player')
+@Entity()
 @Index('firstName', ['firstName'])
 @Index('lastName', ['lastName'])
 @Index('DOB', ['DOB'])

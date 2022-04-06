@@ -2,7 +2,7 @@ import {Entity, Column, ManyToOne, JoinColumn, Index, PrimaryColumn, PrimaryGene
 import {Player} from '../../player/player.entity';
 import {Event} from '../event/event.entity';
 
-@Entity('EventPlayer')
+@Entity('eventplayer')
 @Index(['event', 'player'], { unique: true })
 
 export class EventPlayer {

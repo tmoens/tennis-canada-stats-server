@@ -1,7 +1,7 @@
 import {Column, Entity, OneToMany, PrimaryColumn} from 'typeorm';
 import {Tournament} from '../tournament/tournament.entity';
 
-@Entity('License')
+@Entity()
 export class License {
   @PrimaryColumn('varchar', {
     length: 255,

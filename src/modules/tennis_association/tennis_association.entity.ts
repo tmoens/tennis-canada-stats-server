@@ -1,6 +1,6 @@
 import {Entity, Column, PrimaryGeneratedColumn} from "typeorm";
 
-@Entity("TennisAssociation")
+@Entity('tennisassociation')
 export class TennisAssociation {
 
   @PrimaryGeneratedColumn()

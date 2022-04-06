@@ -2,7 +2,7 @@ import {Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, Index} fr
 import {Player} from '../../player/player.entity';
 import {Match} from '../match/match.entity';
 
-@Entity('MatchPlayer')
+@Entity('matchplayer')
 @Index(['match', 'team', 'position'], { unique: true })
 
 export class MatchPlayer {
