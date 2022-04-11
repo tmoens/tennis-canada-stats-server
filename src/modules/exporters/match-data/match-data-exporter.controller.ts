@@ -1,8 +1,7 @@
-import {Controller, Get, Query, UseGuards} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import {ITFMatchDTO, MatchDataExporterService} from './match-data-exporter.service';
+import {Controller, Get, UseGuards} from '@nestjs/common';
 import {JobStats} from '../../../utils/jobstats';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import {MatchDataExporterService} from './match-data-exporter.service';
 
 @Controller('Exports')
 export class MatchDataExporterController {
@@ -18,11 +17,5 @@ export class MatchDataExporterController {
   @UseGuards(JwtAuthGuard)
   async buildUTRReport(): Promise<JobStats> {
     return await this.service.buildUTRReport();
-  }
-
-  @Get('/ITFMatchData')
-  @UseGuards(JwtAuthGuard)
-  async getITFMatchData(@Query() query): Promise<ITFMatchDTO[]> {
-    return await this.service.buildITFMatchData(query.updatedSince);
   }
 }

@@ -85,7 +85,6 @@ export class TournamentService {
       const miniTournament = miniTournaments[i];
 
       // Skipping leagues and team tennis for now.
-      // TODO Leagues change to '0' or '1'
       if ('0' !== miniTournament.TypeID && '1' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
         logger.info(`Tournament has unknown code: ${miniTournament.Name} (${miniTournament.Code}). Code: ${miniTournament.TypeID}`);

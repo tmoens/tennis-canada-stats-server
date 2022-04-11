@@ -1,7 +1,7 @@
 import {Entity, PrimaryColumn, Column, OneToMany} from 'typeorm';
 import {VRRankingsCategory} from '../category/category.entity';
 
-@Entity()
+@Entity('vrrankingstype')
 export class VRRankingsType {
 
   @PrimaryColumn('varchar',{

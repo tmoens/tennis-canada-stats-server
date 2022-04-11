@@ -12,17 +12,18 @@ import {Event} from '../../vrtournaments/event/event.entity';
 import {SeafileService} from '../../Seafile/seafile.service';
 import * as moment from 'moment';
 
-const TOURNAMENT_URL_PREFIX = 'http://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
+const TOURNAMENT_URL_PREFIX = 'https://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
 
 @Injectable()
 export class MatchDataExporterService {
   private utrReportStats: JobStats;
   private itfReportStats: JobStats;
+
   constructor(
-    private readonly config: ConfigurationService,
-    @InjectRepository(Tournament)
-    private readonly repository: Repository<Tournament>,
-    private readonly seafileAPI: SeafileService,
+      private readonly config: ConfigurationService,
+      @InjectRepository(Tournament)
+      private readonly repository: Repository<Tournament>,
+      private readonly seafileAPI: SeafileService,
   ) {
     this.utrReportStats = new JobStats('BuildUTRReport');
     this.itfReportStats = new JobStats('ITFMatchExport');
@@ -39,24 +40,24 @@ export class MatchDataExporterService {
     this.utrReportStats.setStatus(JobState.IN_PROGRESS);
     this.utrReportStats.setCurrentActivity('Querying UTR Data Report');
     let d = new Date();
-    const nowDateString = d.toISOString().substr(0, 10);
+    const nowDateString = d.toISOString().slice(0, 10);
     d = new Date(d.setDate(d.getDate() - this.config.utrReportGoesBackInDays));
-    const updatedSinceString = d.toISOString().substr(0, 10);
+    const updatedSinceString = d.toISOString().slice(0, 10);
     logger.info('Querying UTR Data for tournaments updated since ' + updatedSinceString);
 
     const tournaments: Tournament[] = await this.repository
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.events', 'e')
-      .leftJoinAndSelect('t.license', 'l')
-      .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
-      .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
-      .leftJoinAndSelect('e.matches', 'm')
-      .leftJoinAndSelect('m.matchPlayers', 'mp')
-      .leftJoinAndSelect('mp.player', 'p')
-      .where(`t.endDate <= '${nowDateString}'`)
-      .andWhere(`t.tcUpdatedAt > '${updatedSinceString}'`)
-      .andWhere('t.level IN ("National","Provincial","Regional")')
-      .getMany();
+        .createQueryBuilder('t')
+        .leftJoinAndSelect('t.events', 'e')
+        .leftJoinAndSelect('t.license', 'l')
+        .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
+        .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
+        .leftJoinAndSelect('e.matches', 'm')
+        .leftJoinAndSelect('m.matchPlayers', 'mp')
+        .leftJoinAndSelect('mp.player', 'p')
+        .where(`t.endDate <= '${nowDateString}'`)
+        .andWhere(`t.tcUpdatedAt > '${updatedSinceString}'`)
+        .andWhere('t.level IN ("National","Provincial","Regional")')
+        .getMany();
 
     logger.info('Building UTR Report.');
     this.utrReportStats.setCurrentActivity('Building UTR Report');
@@ -69,14 +70,14 @@ export class MatchDataExporterService {
       for (const e of t.events) {
         this.utrReportStats.bump('events');
 
-        // For Tournaments, skip events without a rankings category
-        // This should eliminate all under age (U10 and below) and co-ed events
+        // For Tournaments, skip events without a ranking category
+        // This should eliminate all underage (U10 and below) and co-ed events
         // For Leagues - events do not have rankings categories and should not be skipped
         if (t.isTournament() && null === e.vrRankingsCategory) {
           this.utrReportStats.bump('eventsWithoutCategoriesSkipped');
           continue;
         }
-        // Just in case the TD created an event as a U12 rankings category event but put a
+        // Just in case the TD created an event as a U12 rankings category event but put an
         // age level restriction under 10 or below, skip the event.
         if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 12) {
           this.utrReportStats.bump('U10AndBelowSkipped');
@@ -84,7 +85,7 @@ export class MatchDataExporterService {
         }
 
         // For leagues don't take any "events" that are younger than under 12
-        if (!t.isTournament() && e.maxAge < 11) {
+        if (t.isLeague() && e.maxAge && e.maxAge < 11) {
           this.utrReportStats.bump('U10AndBelowSkipped');
           continue;
         }
@@ -92,7 +93,7 @@ export class MatchDataExporterService {
         for (const m of e.matches) {
           this.utrReportStats.bump('matches');
           const reportLine = new UTRLine();
-          if (await reportLine.dataFill(t, e, m, this.utrReportStats, logger)) {
+          if (reportLine.dataFill(t, e, m, this.utrReportStats, logger)) {
             reportData.push(JSON.parse(JSON.stringify(reportLine)));
           }
         }
@@ -106,22 +107,22 @@ export class MatchDataExporterService {
     };
     let reportSheet: WorkSheet = await utils.json_to_sheet([], {
       header:
-        ['Match ID', 'Date',
-          'Winner 1 Name', 'Winner 1 Third Party ID', 'Winner 1 Gender', 'Winner 1 DOB',
-          'Winner 1 City', 'Winner 1 State', 'Winner 1 Country', 'Winner 1 College',
-          'Winner 2 Name', 'Winner 2 Third Party ID', 'Winner 2 Gender', 'Winner 2 DOB',
-          'Winner 2 City', 'Winner 2 State', 'Winner 2 Country', 'Winner 2 College',
-          'Loser 1 Name', 'Loser 1 Third Party ID', 'Loser 1 Gender', 'Loser 1 DOB',
-          'Loser 1 City', 'Loser 1 State', 'Loser 1 Country', 'Loser 1 College',
-          'Loser 2 Name', 'Loser 2 Third Party ID', 'Loser 2 Gender', 'Loser 2 DOB',
-          'Loser 2 City', 'Loser 2 State', 'Loser 2 Country', 'Loser 2 College',
-          'Score', 'Id Type',
-          'Draw Name', 'Draw Gender', 'Draw Team Type', 'Draw Bracket Type', 'Draw Bracket Value', 'Draw Type',
-          'Tournament Name', 'Tournament URL', 'Tournament Start Date', 'Tournament End Date',
-          'Tournament City', 'Tournament State', 'Tournament Country', 'Tournament Country Code',
-          'Tournament Host', 'Tournament Location Type', 'Tournament Surface', 'Tournament Event Type',
-          'Tournament Event Category', 'Tournament Event Grade', 'Tournament Import Source', 'Tournament Sanction Body',
-        ],
+          ['Match ID', 'Date',
+            'Winner 1 Name', 'Winner 1 Third Party ID', 'Winner 1 Gender', 'Winner 1 DOB',
+            'Winner 1 City', 'Winner 1 State', 'Winner 1 Country', 'Winner 1 College',
+            'Winner 2 Name', 'Winner 2 Third Party ID', 'Winner 2 Gender', 'Winner 2 DOB',
+            'Winner 2 City', 'Winner 2 State', 'Winner 2 Country', 'Winner 2 College',
+            'Loser 1 Name', 'Loser 1 Third Party ID', 'Loser 1 Gender', 'Loser 1 DOB',
+            'Loser 1 City', 'Loser 1 State', 'Loser 1 Country', 'Loser 1 College',
+            'Loser 2 Name', 'Loser 2 Third Party ID', 'Loser 2 Gender', 'Loser 2 DOB',
+            'Loser 2 City', 'Loser 2 State', 'Loser 2 Country', 'Loser 2 College',
+            'Score', 'Id Type',
+            'Draw Name', 'Draw Gender', 'Draw Team Type', 'Draw Bracket Type', 'Draw Bracket Value', 'Draw Type',
+            'Tournament Name', 'Tournament URL', 'Tournament Start Date', 'Tournament End Date',
+            'Tournament City', 'Tournament State', 'Tournament Country', 'Tournament Country Code',
+            'Tournament Host', 'Tournament Location Type', 'Tournament Surface', 'Tournament Event Type',
+            'Tournament Event Category', 'Tournament Event Grade', 'Tournament Import Source', 'Tournament Sanction Body',
+          ],
     });
     reportSheet = await utils.sheet_add_json(reportSheet, reportData, {
       skipHeader: true,
@@ -131,7 +132,7 @@ export class MatchDataExporterService {
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/UTR_Report_${now}.xlsx`;
     await writeFile(wb, filename);
-    this.utrReportStats.data = { filename };
+    this.utrReportStats.data = {filename};
 
     logger.info('Uploading UTR Report.');
     this.utrReportStats.setCurrentActivity('Uploading UTR Report');
@@ -143,68 +144,10 @@ export class MatchDataExporterService {
     return this.utrReportStats;
   }
 
-  // ================= For The ITF ============================
-  // Build a report of all the matches in all the tournaments
-  // at a national, regional or provincial level from any tournament
-  // that has been uploaded in the last however many days
-  async buildITFMatchData(updatedSinceString: string): Promise<ITFMatchDTO[]> {
-    const logger = getLogger('ITFMatchData');
-    let d = new Date();
-    const nowDateString = d.toISOString().substr(0, 10);
-    if (!updatedSinceString) {
-      d = new Date(d.setDate(d.getDate() - 14));
-      updatedSinceString = d.toISOString().substr(0, 10);
-    }
-
-    logger.info('Starting match data export for ITF for tournaments updated since ' + updatedSinceString);
-
-    const tournaments: Tournament[] = await this.repository
-      .createQueryBuilder('t')
-      .leftJoinAndSelect('t.events', 'e')
-      .leftJoinAndSelect('t.license', 'l')
-      .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
-      .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
-      .leftJoinAndSelect('e.matches', 'm')
-      .leftJoinAndSelect('m.matchPlayers', 'mp')
-      .leftJoinAndSelect('mp.player', 'p')
-      .where(`t.endDate <= '${nowDateString}'`)
-      .andWhere(`t.lastUpdatedInVR > '${updatedSinceString}'`)
-      .andWhere('t.level IN ("National","Provincial","Regional")')
-      .getMany();
-
-
-    const reportData: ITFMatchDTO[] = [];
-    for (const t of tournaments) {
-      for (const e of t.events) {
-        // For Tournaments, skip events without a rankings category
-        // This should eliminate all under age (U10 and below) and co-ed events
-        // For Leagues - events do not have rankings categories and should not be skipped
-        if (t.isTournament() && null === e.vrRankingsCategory) {
-          this.utrReportStats.bump('eventsWithoutCategoriesSkipped');
-          continue;
-        }
-        // Just in case the TD created an event as a U12 rankings category event but put a
-        // age level restriction under 10 or below, skip the event.
-        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 10) {
-          continue;
-        }
-        for (const m of e.matches) {
-          const itfMatchDTO = new ITFMatchDTO();
-          if (itfMatchDTO.dataFill(t, e, m)) {
-            reportData.push(itfMatchDTO);
-          }
-        }
-      }
-    }
-    logger.info('Finished match data export for ITF. Matches found: ' + reportData.length);
-    return reportData;
-  }
-
   getBuildReportStats(): JobStats {
     return this.utrReportStats;
   }
 }
-
 export class UTRLine {
   matchId: string = null;
   date: string = null;
@@ -306,7 +249,7 @@ export class UTRLine {
       this.w1Id = w1.playerId;
       this.w1Gender = w1.player.gender;
       if (w1.player.DOB) {
-        this.w1YOB = Number(w1.player.DOB.substr(0, 4));
+        this.w1YOB = Number(w1.player.DOB.slice(0, 4));
       } else {
         logger.error(`UTR Reporter noticed player with no DOB. Id: ${w1.player.playerId}`);
         stats.bump('player with no DOB');
@@ -326,7 +269,7 @@ export class UTRLine {
       this.l1Id = l1.playerId;
       this.l1Gender = l1.player.gender;
       if (l1.player.DOB) {
-        this.l1YOB = Number(l1.player.DOB.substr(0, 4));
+        this.l1YOB = Number(l1.player.DOB.slice(0, 4));
       } else {
         logger.error(`UTR Reporter noticed player with no DOB. Id: ${l1.player.playerId}`);
         stats.bump('player with no DOB');
@@ -334,7 +277,61 @@ export class UTRLine {
       this.l1City = l1.player.city;
       this.l1State = l1.player.province;
     }
-    if (!e.isSingles) {
+
+    /* 2022-04-06
+     * The "events" in leagues are really divisions in which the "matches" are in fact
+     * groups of matches between teams. So, events in leagues cannot be designated as
+     * singles or doubles because the groups of matches in the event may contain both
+     * singles and doubles matches.
+     * Consequently, for 4 players, because we cannot know apriori if the match is
+     * singles or doubles.
+     */
+    if (t.isLeague()) {
+      if (w2) {
+        if (0 === w2.playerId) {
+          stats.bump('unknown w2');
+          return false;
+        } else {
+          this.w2City = w2.player.city;
+          this.w2Name = w2.player.lastName + ', ' + w2.player.firstName;
+          this.w2Id = w2.playerId;
+          this.w2Gender = w2.player.gender;
+          if (w2.player.DOB) {
+            this.w2YOB = Number(w2.player.DOB.slice(0, 4));
+          } else {
+            logger.error(`UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`);
+            stats.bump('player with no DOB');
+          }
+          this.w2City = w2.player.city;
+          this.w2State = w2.player.province;
+        }
+      }
+      if (l2) {
+        if (0 === l2.playerId) {
+          stats.bump('unknown l2');
+          return false;
+        } else {
+          this.l2City = l2.player.city;
+          this.l2Name = l2.player.lastName + ', ' + l2.player.firstName;
+          this.l2Id = l2.playerId;
+          this.l2Gender = l2.player.gender;
+          if (l2.player.DOB) {
+            this.l2YOB = Number(l2.player.DOB.slice(0, 4));
+          } else {
+            logger.error(`UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`);
+            stats.bump('player with no DOB');
+          }
+          this.l2City = l2.player.city;
+          this.l2State = l2.player.province;
+        }
+      }
+    }
+
+    /*
+     * It's not a league, it's a tournament, so we know there should be a w2 and a l2 for
+     * doubles (i.e. non singles) events.
+     */
+    else if (!e.isSingles) {
       if (!w2) {
         stats.bump('no w2');
         return false;
@@ -347,7 +344,7 @@ export class UTRLine {
         this.w2Id = w2.playerId;
         this.w2Gender = w2.player.gender;
         if (w2.player.DOB) {
-          this.w2YOB = Number(w2.player.DOB.substr(0, 4));
+          this.w2YOB = Number(w2.player.DOB.slice(0, 4));
         } else {
           logger.error(`UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`);
           stats.bump('player with no DOB');
@@ -367,7 +364,7 @@ export class UTRLine {
         this.l2Id = l2.playerId;
         this.l2Gender = l2.player.gender;
         if (l2.player.DOB) {
-          this.l2YOB = Number(l2.player.DOB.substr(0, 4));
+          this.l2YOB = Number(l2.player.DOB.slice(0, 4));
         } else {
           logger.error(`UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`);
           stats.bump('player with no DOB');
