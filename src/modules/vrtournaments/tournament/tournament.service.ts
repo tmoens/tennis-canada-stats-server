@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {BadRequestException, Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {Tournament} from './tournament.entity';
@@ -9,6 +9,8 @@ import {License} from '../license/license.entity';
 import {LicenseService} from '../license/license.service';
 import {ConfigurationService} from '../../configuration/configuration.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
+import {GradingDTO} from './grading-dto';
+import {TournamentGradeApprovalService} from '../../tournament-grade-approval/tournament-grade-approval.service';
 
 const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
 const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
@@ -24,14 +26,15 @@ const logger = getLogger('tournamentService');
 @Injectable()
 export class TournamentService {
   private importStats: JobStats;
-  constructor(
-    private readonly config: ConfigurationService,
-    @InjectRepository(Tournament)
-    private readonly repository: Repository<Tournament>,
-    private readonly eventService: EventService,
-    private readonly licenseService: LicenseService,
-    private readonly vrapi: VRAPIService,
 
+  constructor(
+      private readonly config: ConfigurationService,
+      @InjectRepository(Tournament)
+      private readonly repository: Repository<Tournament>,
+      private readonly eventService: EventService,
+      private readonly licenseService: LicenseService,
+      private readonly vrapi: VRAPIService,
+      private readonly tournamentGradingApprovalService: TournamentGradeApprovalService,
   ) {
     this.importStats = new JobStats('tournamentImport');
   }
@@ -42,7 +45,7 @@ export class TournamentService {
 
   // update the ts_stats_server database wrt tournaments.
   // Add any ones we did not know about and update any ones we
-  // did know about, if our version is out of date.
+  // did know about if our version is out of date.
   async importTournamentsFromVR() {
     logger.info('**** VR Tournament Import started.');
     this.importStats = new JobStats('tournamentImport');
@@ -51,13 +54,13 @@ export class TournamentService {
     // If we are past June or later, load into next year
     const d = new Date();
     let year: number;
-    if (d.getMonth() > 4 ) {
+    if (d.getMonth() > 4) {
       year = d.getFullYear() + 1;
     } else {
       year = d.getFullYear();
     }
 
-    for (year; year >= this.config.tournamentUploadStartYear; year-- ) {
+    for (year; year >= this.config.tournamentUploadStartYear; year--) {
       if (this.importStats.get(TOURNAMENT_CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
       await this.importTournamentsFromVRYear(year);
     }
@@ -74,11 +77,11 @@ export class TournamentService {
     // Tournament which is an array of mini tournamentId records.
     const miniTournaments_json = await this.vrapi.get('Tournament/Year/' + year);
     const miniTournaments: any[] = VRAPIService.arrayify(miniTournaments_json.Tournament);
-    logger.info (`${miniTournaments.length} tournaments found for ${year}`);
+    logger.info(`${miniTournaments.length} tournaments found for ${year}`);
 
     const tournamentCount: number = miniTournaments.length;
     // the next line is not strictly true as many will be skipped and there
-    // may be an import limit (but only during testing.  But it is a reasonable guess.
+    // may be an import limit (but only during testing).  But it is a reasonable guess.
     this.importStats.toDo = tournamentCount;
 
     for (let i = tournamentCount - 1; i >= 0; i--) {
@@ -93,7 +96,7 @@ export class TournamentService {
 
       // go see if we already have a record of the tournamentId.  If not make a new one
       const tournament: Tournament = await
-        this.repository.findOne({tournamentCode: miniTournament.Code});
+          this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
         logger.info('Creating: ' + JSON.stringify(miniTournament));
         await this.createTournamentFromVRAPI(miniTournament.Code);
@@ -110,7 +113,7 @@ export class TournamentService {
         if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UPDATE_COUNT);
       }
 
-      // otherwise, our version is up to date and we can skip along.
+      // otherwise, our version is up-to-date, and we can skip along.
       else {
         if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
         if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UP_TO_DATE_COUNT);
@@ -159,41 +162,69 @@ export class TournamentService {
    */
   async getPlayReport(fromDate: Date = null, toDate: Date = null): Promise<any[]> {
     const q = this.repository.createQueryBuilder('t')
-      .select(['p.playerId', 'p.firstName', 'p.lastName', 'p.DOB', 'p.gender', 'p.province'])
-      .addSelect(['c.categoryId', 'c.categoryName'])
-      .addSelect(['e.name', 'e.genderId', 'e.level', 'e.minAge', 'e.maxAge', 'e.winnerPoints'])
-      .addSelect(['t.name', 't.level', 't.startDate', 't.endDate', 't.city'])
-      .addSelect(['l.licenseName', 'l.province'])
-      .leftJoin('t.license', 'l')
-      .leftJoin('t.events', 'e')
-      .leftJoin('e.vrRankingsCategory', 'c')
-      .leftJoin('e.matches', 'm')
-      .leftJoin('m.matchPlayers', 'mp')
-      .leftJoin('mp.player', 'p')
-      .where('e.isSingles')
-      .andWhere('p.playerId')
-      .andWhere(`t.endDate <= '${toDate}'`)
-      .andWhere(`t.endDate >= '${fromDate}'`)
-      .groupBy('e.eventId')
-      .addGroupBy('p.playerId')
-      .orderBy('t.name')
+        .select(['p.playerId', 'p.firstName', 'p.lastName', 'p.DOB', 'p.gender', 'p.province'])
+        .addSelect(['c.categoryId', 'c.categoryName'])
+        .addSelect(['e.name', 'e.genderId', 'e.level', 'e.minAge', 'e.maxAge', 'e.winnerPoints'])
+        .addSelect(['t.name', 't.level', 't.startDate', 't.endDate', 't.city'])
+        .addSelect(['l.licenseName', 'l.province'])
+        .leftJoin('t.license', 'l')
+        .leftJoin('t.events', 'e')
+        .leftJoin('e.vrRankingsCategory', 'c')
+        .leftJoin('e.matches', 'm')
+        .leftJoin('m.matchPlayers', 'mp')
+        .leftJoin('mp.player', 'p')
+        .where('e.isSingles')
+        .andWhere('p.playerId')
+        .andWhere(`t.endDate <= '${toDate}'`)
+        .andWhere(`t.endDate >= '${fromDate}'`)
+        .groupBy('e.eventId')
+        .addGroupBy('p.playerId')
+        .orderBy('t.name')
 
     return await q.getRawMany();
   }
 
   async getTournamentsUpdatedSince(date: string): Promise<Tournament[]> {
     return this.repository.createQueryBuilder('t')
-      .leftJoinAndSelect('t.license', 'l')
-      .where(`t.lastUpdatedInVR >= '${date}'`)
-      .getMany();
+        .leftJoinAndSelect('t.license', 'l')
+        .where(`t.lastUpdatedInVR >= '${date}'`)
+        .getMany();
   }
 
   async getTournamentWithEventsAndLicense(tournamentCode: string): Promise<Tournament> {
     return this.repository.createQueryBuilder('t')
-      .leftJoinAndSelect('t.license', 'l')
-      .leftJoinAndSelect(`t.events`, 'e')
-      .leftJoinAndSelect('e.vrRankingsCategory', 'c')
-      .where(`t.tournamentCode = '${tournamentCode}'`)
-      .getOne();
+        .leftJoinAndSelect('t.license', 'l')
+        .leftJoinAndSelect(`t.events`, 'e')
+        .leftJoinAndSelect('e.vrRankingsCategory', 'c')
+        .where(`t.tournamentCode = '${tournamentCode}'`)
+        .getOne();
+  }
+
+  async getCurrentGradings(query: any): Promise<GradingDTO[]> {
+    let q = this.repository.createQueryBuilder('t')
+        .where('t.endDate >= :ed', {ed: query.since})
+        .orderBy('t.endDate');
+
+    // normally the client just want s Leagues, but they might ask for tournaments too
+    if (!query.showTournaments) {
+      q = q.andWhere('t.typeId = 1');
+    }
+
+    const tournaments: Tournament[] = await q.getMany();
+    const gradings: GradingDTO[] = [];
+    for (const t of tournaments) {
+      const mostRecentApprovedGrading = await this.tournamentGradingApprovalService.getMostRecentApproval(t.tournamentCode);
+      if (query.showAll ||
+          !mostRecentApprovedGrading ||
+          mostRecentApprovedGrading.approvedLevel !== t.level) {
+        gradings.push(new GradingDTO(t, mostRecentApprovedGrading))
+      }
+    }
+    return gradings;
+  }
+
+  logAndThrowException(msg: string) {
+    logger.error(msg);
+    throw new BadRequestException(msg);
   }
 }

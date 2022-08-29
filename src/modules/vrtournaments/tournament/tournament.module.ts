@@ -8,6 +8,7 @@ import {VRAPIModule} from '../../VRAPI/vrapi.module';
 import {EventModule} from '../event/event.module';
 import {LicenseModule} from '../license/license.module';
 import {SeafileModule} from '../../Seafile/seafile.module';
+import {TournamentGradeApprovalModule} from '../../tournament-grade-approval/tournament-grade-approval.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import {SeafileModule} from '../../Seafile/seafile.module';
     SeafileModule,
     EventModule,
     LicenseModule,
+    TournamentGradeApprovalModule,
   ],
   providers: [
     TournamentService,

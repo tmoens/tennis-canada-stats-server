@@ -5,8 +5,6 @@ import {Match} from '../match/match.entity';
 import {EventPlayer} from '../event_player/event_player.entity';
 import {VRRankingsCategory} from '../../vrrankings/category/category.entity';
 
-// TODO possibly renaming Event to something else because "Event" means something else too
-
 @Entity()
 @Index('tournament', ['tournament'])
 

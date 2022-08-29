@@ -3,7 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Delete,
-  Get, Inject,
+  Get,
   Param,
   Post,
   Put,

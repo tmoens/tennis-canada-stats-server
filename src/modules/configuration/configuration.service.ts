@@ -28,6 +28,7 @@ import {TennisAssociation} from '../tennis_association/tennis_association.entity
 import {Tournament} from '../vrtournaments/tournament/tournament.entity';
 import {CalendarEvent} from '../calendar-support/calendar-event.entity';
 import {CalendarTournament} from '../calendar-support/calendar-tournament.entity';
+import {TournamentGradeApproval} from '../tournament-grade-approval/tournament-grade-approval.entity';
 
 export const TC_STATS_DB = 'tc_stats';
 export const CALENDAR_DB = 'calendar_db';
@@ -270,6 +271,7 @@ export class ConfigurationService implements
       VRRankingsItem,
       VRRankingsPublication,
       VRRankingsType,
+      TournamentGradeApproval,
     ];
     const calendarEntities = [
       CalendarEvent,

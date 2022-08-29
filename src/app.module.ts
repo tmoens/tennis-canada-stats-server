@@ -42,6 +42,7 @@ import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module'
 import {LocalStrategy} from './guards/local.strategy';
 import {CalendarModule} from './modules/calendar-support/calendar.module';
 import {CalendarService} from './modules/calendar-support/calendar.service';
+import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval/tournament-grade-approval.module';
 
 @Module({
   imports: [
@@ -106,6 +107,7 @@ import {CalendarService} from './modules/calendar-support/calendar.service';
     ITFAPIModule,
     ExternalapiModule,
     CalendarModule,
+    TournamentGradeApprovalModule,
   ],
   controllers: [
     AppController,
