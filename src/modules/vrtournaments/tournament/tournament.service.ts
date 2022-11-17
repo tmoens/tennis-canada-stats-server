@@ -12,13 +12,18 @@ import {JobState, JobStats} from '../../../utils/jobstats';
 import {GradingDTO} from './grading-dto';
 import {TournamentGradeApprovalService} from '../../tournament-grade-approval/tournament-grade-approval.service';
 
-const TOURNAMENT_CREATION_COUNT = 'tournaments_created';
-const TOURNAMENT_UPDATE_COUNT = 'tournaments_updated';
-const TOURNAMENT_UP_TO_DATE_COUNT = 'tournaments_already_up_to_date';
-const LEAGUE_CREATION_COUNT = 'leagues_created';
-const LEAGUE_UPDATE_COUNT = 'leagues_updated';
-const LEAGUE_UP_TO_DATE_COUNT = 'leagues_already_up_to_date';
-const SKIP_COUNT = 'tournaments_skipped';
+const TOURNAMENT_CREATION_COUNT = 'Tournaments created';
+const TOURNAMENT_UPDATE_COUNT = 'Tournaments updated';
+const TOURNAMENT_UP_TO_DATE_COUNT = 'Tournaments already up to date';
+const LP_LEAGUE_CREATION_COUNT = 'League Planner leagues created';
+const LP_LEAGUE_UPDATE_COUNT = 'League Planner leagues updated';
+const LP_LEAGUE_UP_TO_DATE_COUNT = 'League Planner leagues already up to date';
+const OL_LEAGUE_CREATION_COUNT = 'Online leagues created';
+const OL_LEAGUE_UPDATE_COUNT = 'Online leagues updated';
+const OL_LEAGUE_UP_TO_DATE_COUNT = 'Online leagues already up to date';
+const BOX_LEAGUE_UPDATE_COUNT = 'Box leagues updated';
+const BOX_LEAGUE_UP_TO_DATE_COUNT = 'Box leagues already up to date';
+const SKIP_COUNT = 'Leagues and Tournaments skipped';
 const DONE = 'done';
 
 const logger = getLogger('tournamentService');
@@ -51,7 +56,7 @@ export class TournamentService {
     this.importStats = new JobStats('tournamentImport');
     this.importStats.setStatus(JobState.IN_PROGRESS);
 
-    // If we are past June or later, load into next year
+    // If the current date is past June, load into next year
     const d = new Date();
     let year: number;
     if (d.getMonth() > 4) {
@@ -103,24 +108,30 @@ export class TournamentService {
           this.repository.findOne({tournamentCode: miniTournament.Code});
       if (null == tournament) {
         logger.info('Creating: ' + JSON.stringify(miniTournament));
+        if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_CREATION_COUNT);
+        if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_CREATION_COUNT);
+        if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_CREATION_COUNT);
+        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UPDATE_COUNT);
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_CREATION_COUNT);
-        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_CREATION_COUNT);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
         logger.info('Updating: ' + JSON.stringify(miniTournament));
+        if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
+        if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UPDATE_COUNT);
+        if (miniTournament.TypeID === '31') this.importStats.bump(OL_LEAGUE_UPDATE_COUNT);
+        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UPDATE_COUNT);
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
-        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
-        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UPDATE_COUNT);
       }
 
       // otherwise, our version is up-to-date, and we can skip along.
       else {
-        if (miniTournament.TypeID === 0) this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
-        if (miniTournament.TypeID === 1) this.importStats.bump(LEAGUE_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '31') this.importStats.bump(OL_LEAGUE_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UP_TO_DATE_COUNT);
       }
 
       this.importStats.bump(DONE);
