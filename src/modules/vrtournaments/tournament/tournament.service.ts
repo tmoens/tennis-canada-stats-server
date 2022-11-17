@@ -120,7 +120,7 @@ export class TournamentService {
         logger.info('Updating: ' + JSON.stringify(miniTournament));
         if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
         if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UPDATE_COUNT);
-        if (miniTournament.TypeID === '31') this.importStats.bump(OL_LEAGUE_UPDATE_COUNT);
+        if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_UPDATE_COUNT);
         if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UPDATE_COUNT);
         await this.repository.remove(tournament);
         await this.createTournamentFromVRAPI(miniTournament.Code);
@@ -130,7 +130,7 @@ export class TournamentService {
       else {
         if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
         if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UP_TO_DATE_COUNT);
-        if (miniTournament.TypeID === '31') this.importStats.bump(OL_LEAGUE_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_UP_TO_DATE_COUNT);
         if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UP_TO_DATE_COUNT);
       }
 
