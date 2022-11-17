@@ -87,8 +87,12 @@ export class TournamentService {
     for (let i = tournamentCount - 1; i >= 0; i--) {
       const miniTournament = miniTournaments[i];
 
-      // Skipping leagues and team tennis for now.
-      if ('0' !== miniTournament.TypeID && '1' !== miniTournament.TypeID) {
+      // 2022-10-20 add support for box leagues.
+      // 2022-11-17 add support for on-line leagues
+      if ('0' !== miniTournament.TypeID &&
+          '1' !== miniTournament.TypeID &&
+          '3' !== miniTournament.TypeID &&
+          '10' !== miniTournament.TypeID) {
         this.importStats.bump(SKIP_COUNT);
         logger.info(`Tournament has unknown code: ${miniTournament.Name} (${miniTournament.Code}). Code: ${miniTournament.TypeID}`);
         continue;
