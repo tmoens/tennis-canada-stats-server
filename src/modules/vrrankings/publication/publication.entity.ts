@@ -62,15 +62,14 @@ export class VRRankingsPublication {
   })
   items: VRRankingsItem[];
 
-  // Check if our view of when the publication was published in VR
-  // is older than the provided date string - in which case we are out of date.
-  isOutOfDate(lastUpdateInVR: string): boolean {
-    // We have to truncate milliseconds from the incoming "LastUpdated" time
-    // Because mysql does the same when it stores the value and we need to
-    // compare the two so we know if ours is out of date.
-    const lu: Date = new Date(lastUpdateInVR);
-    lu.setMilliseconds(0);
-    return (null == this.publicationDate || this.publicationDate < lu);
+  // Check if our copy of the publication is older than when the rankings were generated in VR
+  isOutOfDate(generatedDate: string): boolean {
+    // We have to truncate milliseconds from the incoming "generatedDate" time
+    // Because mysql does the same when it stores the value, and we need to
+    // compare the two, so we know if ours is out of date.
+    const gd: Date = new Date(generatedDate);
+    gd.setMilliseconds(0);
+    return (null == this.tcCreatedAt || this.tcCreatedAt < gd);
   }
 
   // Given a publication object from the VR API, fill in our own fields

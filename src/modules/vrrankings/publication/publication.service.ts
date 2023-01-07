@@ -69,23 +69,35 @@ export class VRRankingsPublicationService {
       .getRawMany();
   }
 
-  // update the ts_stats_server database wrt vrrankingspublications for a given ranking Type
+  // update the ts_stats_server database wrt vr rankings publications for a given ranking Type
+  // The types are Adult, Junior, Masters (Seniors) and Wheelchair
   async importVRRankingsPublicationFromVR(rankingType: VRRankingsType): Promise<JobStats>{
     let message: string;
     const importStats: JobStats = new JobStats(`rankingsImport`);
 
     importStats.setCurrentActivity(`Loading ${rankingType.typeName} publications from VR`);
     // Ask the API for a list of vr rankings publications for this type of ranking
+    // The publications list goes back 100 weeks.
     const pubs_json = await this.vrapi.get('Ranking/' + rankingType.typeCode + '/Publication');
-    const list = await VRAPIService.arrayify(pubs_json.RankingPublication);
+    const publicationList = await VRAPIService.arrayify(pubs_json.RankingPublication);
 
-    logger.info(list.length + ' publications found for ' + rankingType.typeName);
+    logger.info(publicationList.length + ' publications found for ' + rankingType.typeName);
 
-    for (const apiPublication of list) {
-      // If we do not already have a record of the vrrankingspublicationId, make one
-      const publications: VRRankingsPublication[] =
+    // Each element of the list we get back from the API is a record of a particular
+    // "publication".  A "publication" is an id for a set of rankings. For example
+    // one "publication" would be for ALL the junior categories in week 14 of 2022.
+    // Another would be for ALL the wheelchair categories in week 51 of 2014.
+    for (const apiPublication of publicationList) {
+      // For a given publication, get a list of all the "sub-publications" in our database.
+      // So for the publication for Juniors for week 14 of 2022, there would be
+      // a sub-publication for Each junior category (boys singles under 18, mixed doubles
+      // under 14, girls doubles under 14, and so on).
+      const subPublications: VRRankingsPublication[] =
         await this.repository.find({publicationCode: apiPublication.Code});
-      if (0 === publications.length) {
+
+      // If we do not already have a record of a particular publication, make one
+      // and load the rankings for that publication
+      if (0 === subPublications.length) {
         message = `Loading rankings publication: ${apiPublication.Name}`;
         logger.info(message);
         importStats.addNote(message);
@@ -93,12 +105,12 @@ export class VRRankingsPublicationService {
         importStats.bump(CREATION_COUNT);
       }
 
-      // if our version is out of date, torch it and rebuild
-      else if (publications[0].isOutOfDate(apiPublication.PublicationDate)) {
-        message = `Updating rankings publication: ${apiPublication.Name}`;
+      // if our version is out of date, torch it and reload it
+      else if (subPublications[0].isOutOfDate(apiPublication.GeneratedDate)) {
+        message = `Updating rankings publication: ${apiPublication.Name}. Rankings generated: ${apiPublication.GeneratedDate}, Local version: ${subPublications[0].tcCreatedAt.toLocaleString()}`;
         logger.info(message);
         importStats.addNote(message);
-        for (const outdatedPub of publications) {
+        for (const outdatedPub of subPublications) {
           await this.repository.remove(outdatedPub);
         }
         await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
@@ -106,28 +118,28 @@ export class VRRankingsPublicationService {
       }
 
       // *sometimes* the rankings loader dies on the AWS server because
-      // of an OS bug. For example it might die after loading U16 Girls Singles
-      // and just before the U14Boys Singles.
+      // of an OS bug. For example, it might die after loading U16 Girls Singles
+      // and just before the U14 Boys Singles.
       // In such a situation, the strength report and historical rankings
       // for that week would be broken.
       // So we take a remedial action here - if we have not loaded every category
       // for a particular publication, we delete all the categories of that
       // publication and re-load it.
-      else if (rankingType.vrRankingsCategories.length !== publications.length) {
+      else if (rankingType.vrRankingsCategories.length !== subPublications.length) {
         message = 'Detected incomplete rankings upload for: ' +
-          rankingType.typeName + ' for ' + publications[0].year + ' week: ' +
-          publications[0].week + '. Expected ' + rankingType.vrRankingsCategories.length +
-          ' categories, found ' + publications.length + '. Reloading this publication.';
+          rankingType.typeName + ' for ' + subPublications[0].year + ' week: ' +
+          subPublications[0].week + '. Expected ' + rankingType.vrRankingsCategories.length +
+          ' categories, found ' + subPublications.length + '. Reloading this publication.';
         logger.info(message);
         importStats.addNote(message);
-        for (const brokenPub of publications) {
+        for (const brokenPub of subPublications) {
           await this.repository.remove(brokenPub);
         }
         await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
         importStats.bump(FIX_COUNT);
       }
 
-      // the normal case: our version is up to date and we can skip along.
+      // the normal case: our version is up-to-date, and we can skip along.
       else {
         importStats.bump(UP_TO_DATE_COUNT);
       }
