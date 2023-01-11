@@ -162,7 +162,7 @@ export class EventService {
         if (!pub) {
           logger.warn(
             'Can not rate event because can not find a ranking publication for it: ' +
-            JSON.stringify(event));
+            JSON.stringify(event, null, 2));
         } else {
           // console.log('Rankings Publication: ' + JSON.stringify(pub));
           let numRatedPlayers: number = 0;
