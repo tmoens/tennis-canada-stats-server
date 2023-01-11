@@ -106,7 +106,11 @@ export class EventService {
       year = 2013;
       week = 53;
     }
-    return await this.rankingsPubService.findByCategoryYearWeek(event.vrRankingsCategory, year, week);
+    const pub: VRRankingsPublication | null = await this.rankingsPubService.findByCategoryYearWeek(event.vrRankingsCategory, year, week);
+    if(!pub) {
+      console.log(`Failed looking for rankings for event: ${event.eventId} year: ${year} week: ${week}`)
+    }
+    return pub;
   }
 
   /*

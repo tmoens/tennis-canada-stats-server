@@ -177,7 +177,7 @@ export class VRRankingsPublicationService {
     return true;
   }
 
-  // Find a rankings a rankings list for a particular category , year and week
+  // Find a rankings list for a particular category , year and week
   // in some cases we filter out players below a minimum age to support
   // Quebec's strict age groups like 14-15 instead of U16
   async getRankingList(
