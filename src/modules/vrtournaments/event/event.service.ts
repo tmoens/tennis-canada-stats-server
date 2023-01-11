@@ -125,12 +125,12 @@ export class EventService {
       Title: 'Tennis Canada Event Ratings',
     };
     for (const categoryId of categoryIds) {
-      // For every category we build a list of events in that category and '
-      // a list of the players in those events complete with their ranking at
+      // For every category we build a list of events in that category and
+      // a list of the players in those events complete with their ranking
       // at the time of the event.
       const playerList: any[] = [];
       const eventList: any[] = [];
-      // look up the rankings category object based on the given Id string
+      // look up the rankings category object based on the given categoryId
       const category: VRRankingsCategory =
         await this.categoryService.getRankingCategoryFromId(categoryId);
       if (!category) break;
@@ -156,6 +156,7 @@ export class EventService {
       for (const event of events) {
         // console.log(`event: ${event.eventId}, entries: ${event.numberOfEntries}, province: ${event.tournament.license.province}`)
         const pub = await this.getRankingsPublication(event);
+        // console.log(`publication: ${JSON.stringify(pub)}`);
         // if you cannot find a rankings publication for the event,
         // you cannot rate the event.
         if (!pub) {
@@ -188,6 +189,9 @@ export class EventService {
             } else {
               numUnratedPlayers++;
             }
+          }
+          if (event.numberOfEntries === numUnratedPlayers) {
+            logger.warn(`No rated players found for event ${event.eventId} using rankings (sub)publication: ${pub.publicationId}`);
           }
           const e = {
             tournamentCode: event.tournament.tournamentCode,
