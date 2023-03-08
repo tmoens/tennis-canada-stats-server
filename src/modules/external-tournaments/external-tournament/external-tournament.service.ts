@@ -115,7 +115,7 @@ export class ExternalTournamentService {
             t.subCategory = 'TC';
             break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d));
+            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
             break;
         }
         break;
@@ -188,8 +188,9 @@ export class ExternalTournamentService {
             if (after2018) {
               t.subCategory = 'WITF';
             }
+            break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d));
+            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
             break;
         }
         break;
@@ -233,13 +234,55 @@ export class ExternalTournamentService {
             t.category = 'Grade 5';
             t.subCategory = 'Grade 5';
             break;
+          case 'J500':
+            // Formerly grand slam
+            t.category = 'J500';
+            if (after2018) {
+              t.subCategory = 'J500';
+            }
+            break;
+          case 'J300':
+            // formerly Grades B1 and 1
+            t.category = 'J300';
+            if (after2018) {
+              t.subCategory = 'J300';
+            }
+            break;
+          case 'J200':
+            // formerly grade 2
+            t.category = 'J200';
+            if (after2018) {
+              t.subCategory = 'J200';
+            }
+            break;
+          case 'J100':
+            // formerly grade 3
+            t.category = 'J100';
+            if (after2018) {
+              t.subCategory = 'J100';
+            }
+            break;
+          case 'J60':
+            // formerly grade 4
+            t.category = 'J60';
+            if (after2018) {
+              t.subCategory = 'J60';
+            }
+            break;
+          case 'J30':
+            // formerly grade 5
+            t.category = 'J30';
+            if (after2018) {
+              t.subCategory = 'J30';
+            }
+            break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d));
+            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
             break;
         }
         break;
       default:
-        logger.error('Failed to identify tournament sanctioning body from: ' + JSON.stringify(d));
+        logger.error('Failed to identify tournament sanctioning body from: ' + JSON.stringify(d, null, 2));
         break;
     }
 
