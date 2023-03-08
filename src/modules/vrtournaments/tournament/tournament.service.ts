@@ -222,7 +222,7 @@ export class TournamentService {
 
     // normally the client just want s Leagues, but they might ask for tournaments too
     if (!query.showTournaments) {
-      q = q.andWhere('t.typeId = 1');
+      q = q.andWhere('t.typeId > 0');
     }
 
     const tournaments: Tournament[] = await q.getMany();
