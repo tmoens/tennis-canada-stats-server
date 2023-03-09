@@ -394,7 +394,7 @@ export class PlayerIdentityService {
   async findCandidatePlayers(p: IdentityCheckDTO): Promise<Player[]> {
     /*
      * Look up all the players with the same last name and they all
-     * become candidates for the a match.
+     * become candidates for a match.
      *
      * When we search the database automatically ignores case.  It also
      * is insensitive to accented characters (thankfully).
@@ -575,7 +575,16 @@ export class PlayerIdentityService {
   }
 
   stripSpecialCharacters(s: string): string {
-    return s.replace(/[\-\'\s]/g, '');
+    // 2023-03-08 A spreadsheet came in with rich text in a cell rather than a string.
+    // That got passed here, and the code tried to do s.replace() it broke good.
+    // Rather than FIX the problem by trying clean worksheet data as it is read in,
+    // I applied this rather clumsy one-size-fits-all band-aid that ignores anything
+    // that isn't a string.
+    if (typeof s !== 'string') {
+      return '';
+    }  else {
+      return s.replace(/[\-'\s]/g, '');
+    }
   }
 
   accentMap = {
