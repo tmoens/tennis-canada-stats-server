@@ -7,7 +7,6 @@ import { Tournament } from './tournament.entity';
 import {VRAPIModule} from '../../VRAPI/vrapi.module';
 import {EventModule} from '../event/event.module';
 import {LicenseModule} from '../license/license.module';
-import {SeafileModule} from '../../Seafile/seafile.module';
 import {TournamentGradeApprovalModule} from '../../tournament-grade-approval/tournament-grade-approval.module';
 
 @Module({
@@ -15,7 +14,6 @@ import {TournamentGradeApprovalModule} from '../../tournament-grade-approval/tou
     TypeOrmModule.forFeature([Tournament]),
     PassportModule,
     VRAPIModule,
-    SeafileModule,
     EventModule,
     LicenseModule,
     TournamentGradeApprovalModule,

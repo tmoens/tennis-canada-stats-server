@@ -101,11 +101,6 @@ export class ConfigurationService implements
       DB_USER: Joi.string().required(),
       DB_PASSWORD: Joi.string().required(),
 
-      SEAFILE_URL: Joi.string().required(),
-      SEAFILE_ID: Joi.string().required(),
-      SEAFILE_PASSWORD: Joi.string().required(),
-      SEAFILE_REPO_NAME: Joi.string().required(),
-
       TYPEORM_SYNCH_DATABASE: Joi.boolean().default(false),
       TYPEORM_LOG_QUERIES: Joi.boolean().default(false),
 
@@ -122,6 +117,7 @@ export class ConfigurationService implements
 
       RANKING_PUBLICATION_UPLOAD_LIMIT: Joi.number().default(10),
 
+      UTR_REPORT_DIRECTORY: Joi.string().required(),
       UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
       CALENDAR_DB_SYNC_PERIOD: Joi.number().default(5),
@@ -207,25 +203,12 @@ export class ConfigurationService implements
     return Number(this.envConfig.UTR_REPORT_GOES_BACK_IN_DAYS);
   }
 
+  get utrReportDirectory(): string {
+    return String(this.envConfig.UTR_REPORT_DIRECTORY);
+  }
+
   get calendarDbSyncPeriod(): number {
     return Number(this.envConfig.CALENDAR_DB_SYNC_PERIOD);
-  }
-
-  // The seafile configuration is used to upload files to a server for UTR.
-  get seafileURL(): string {
-    return this.envConfig.SEAFILE_URL;
-  }
-
-  get seafileUserId(): string {
-    return this.envConfig.SEAFILE_ID;
-  }
-
-  get seafilePassword(): string {
-    return this.envConfig.SEAFILE_PASSWORD;
-  }
-
-  get seafileRepoName(): string {
-    return this.envConfig.SEAFILE_REPO_NAME;
   }
 
   get typeORMLogQueries(): boolean {

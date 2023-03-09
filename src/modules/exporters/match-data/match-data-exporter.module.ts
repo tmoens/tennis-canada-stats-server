@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatchDataExporterService } from './match-data-exporter.service';
 import { MatchDataExporterController } from './match-data-exporter.controller';
 import {VRAPIModule} from '../../VRAPI/vrapi.module';
-import {SeafileModule} from '../../Seafile/seafile.module';
 import {Tournament} from '../../vrtournaments/tournament/tournament.entity';
 import {EventModule} from '../../vrtournaments/event/event.module';
 import {LicenseModule} from '../../vrtournaments/license/license.module';
@@ -14,7 +13,6 @@ import {LicenseModule} from '../../vrtournaments/license/license.module';
     TypeOrmModule.forFeature([Tournament]),
     PassportModule,
     VRAPIModule,
-    SeafileModule,
     EventModule,
     LicenseModule,
   ],

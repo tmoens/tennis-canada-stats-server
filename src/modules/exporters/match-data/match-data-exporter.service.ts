@@ -9,7 +9,6 @@ import {MatchPlayer} from '../../vrtournaments/match_player/match_player.entity'
 import {Match} from '../../vrtournaments/match/match.entity';
 import {Tournament} from '../../vrtournaments/tournament/tournament.entity';
 import {Event} from '../../vrtournaments/event/event.entity';
-import {SeafileService} from '../../Seafile/seafile.service';
 import * as moment from 'moment';
 
 const TOURNAMENT_URL_PREFIX = 'https://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
@@ -23,7 +22,6 @@ export class MatchDataExporterService {
       private readonly config: ConfigurationService,
       @InjectRepository(Tournament)
       private readonly repository: Repository<Tournament>,
-      private readonly seafileAPI: SeafileService,
   ) {
     this.utrReportStats = new JobStats('BuildUTRReport');
     this.itfReportStats = new JobStats('ITFMatchExport');
@@ -130,13 +128,9 @@ export class MatchDataExporterService {
     });
     utils.book_append_sheet(wb, reportSheet, 'Matches');
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
-    const filename = `Reports/UTR_Report_${now}.xlsx`;
+    const filename = `${this.config.utrReportDirectory}/UTR_Report_${now}.xlsx`;
     await writeFile(wb, filename);
     this.utrReportStats.data = {filename};
-
-    logger.info('Uploading UTR Report.');
-    this.utrReportStats.setCurrentActivity('Uploading UTR Report');
-    await this.seafileAPI.uploadFile(filename);
 
     logger.info('Finished UTR Report');
     this.utrReportStats.setCurrentActivity('Finished UTR Report');

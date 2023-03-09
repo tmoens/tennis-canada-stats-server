@@ -15,7 +15,6 @@ import {LicenseModule} from './modules/vrtournaments/license/license.module';
 import {MatchModule} from './modules/vrtournaments/match/match.module';
 import {MatchPlayerModule} from './modules/vrtournaments/match_player/match_player.module';
 import {PlayerModule} from './modules/player/player.module';
-import {SeafileModule} from './modules/Seafile/seafile.module';
 import {TennisAssociationModule} from './modules/tennis_association/tennis_association.module';
 import {TournamentModule} from './modules/vrtournaments/tournament/tournament.module';
 import {MailerModule} from '@nestjs-modules/mailer';
@@ -90,7 +89,6 @@ import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval
     MatchModule,
     MatchPlayerModule,
     PlayerModule,
-    SeafileModule,
     TennisAssociationModule,
     TournamentModule,
     MatchDataExporterModule,
