@@ -235,6 +235,7 @@ export class ExternalTournamentService {
             t.subCategory = 'Grade 5';
             break;
           case 'J500':
+          case 'JGS':
             // Formerly grand slam
             t.category = 'J500';
             if (after2018) {
