@@ -144,7 +144,7 @@ export class PlayerService {
     // and in the logically unreachable code department
     // TODO 2018-06-13 which was of course reached immediately when loading vrRankingsItem
     // and failing because of duplicate Ids
-    logger.error('2799810923 failed to findPlayerOrFacsimile with configuration: ' + JSON.stringify(config));
+    logger.error('2799810923 failed to findPlayerOrFacsimile with configuration: ' + JSON.stringify(config, null, 2));
     return this.getPlayerZero();
   }
 
@@ -448,7 +448,7 @@ export class PlayerService {
       }
       catch (e) {
         logger.error('656120901 Failed to save/update player during import.\n' +
-          JSON.stringify(playerData));
+          JSON.stringify(playerData, null, 2));
         this.importStats.bump('player save errors');
       }
       count++;

@@ -67,14 +67,14 @@ export class Match {
 
   // 2019-06-24 For tournaments and matches that have not yet been played,
   // the vr API still sends a match record - with a score status of 0 (Normal)!!!
-  // If one of the players is missing, it could be a Bye or it could simply
+  // If one of the players is missing, it could be a Bye, or it could simply
   // mean that the other player is TBD.  If BOTH players are missing, it
-  // could mean that both players are TBD (e.g. a SF when the QF has not yet
+  // could mean that both players are TBD (e.g. a SF when the QF has not
   // yet been played.
   // As time goes by and the tournament is updated, these results will
   // be updated.
   // Problem is that we are getting match records in the db for matches that
-  // are yet to be played and we do not really want these, especially since
+  // are yet to be played, and we do not really want these, especially since
   // they are showing up with a "NULL" score.  So, new code is added.
   buildFromVRAPIObj(apiMatch: any) {
     this.vrMatchCode = parseInt(apiMatch.Code, 10);
@@ -94,7 +94,7 @@ export class Match {
             // report the score as null
             this.score = null;
           } else {
-            // exactly one of the players has been identified so it may be
+            // exactly one of the players has been identified, so it may be
             // a) a Bye
             // b) a match where the second player is TBD
             // Since we cannot distinguish between the two - report it as a bye.
@@ -151,5 +151,12 @@ export class Match {
       }
     }
     return score.join(', ');
+  }
+  getMatchCompetitiveness(): number | null {
+    if (this.scoreStatus === 0 && this.score && this.score !== 'Bye') {
+      return Math.random();
+    } else {
+      return null;
+    }
   }
 }

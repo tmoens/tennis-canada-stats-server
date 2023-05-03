@@ -87,7 +87,7 @@ export class MatchService {
         await this.repo.save(match)
           .catch(reason => {
             logger.error('Failed to save match data. Reason: ' + reason +
-              ', Match Data: ' + JSON.stringify(match_json));
+              ', Match Data: ' + JSON.stringify(match_json, null, 2));
             importStats.bump(CREATION_FAIL_COUNT);
           });
         await this.matchPlayerService.importMatchPlayersFromVR(match, match_json);

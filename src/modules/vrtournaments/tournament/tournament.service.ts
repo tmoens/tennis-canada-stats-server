@@ -21,6 +21,7 @@ const LP_LEAGUE_UP_TO_DATE_COUNT = 'League Planner leagues already up to date';
 const OL_LEAGUE_CREATION_COUNT = 'Online leagues created';
 const OL_LEAGUE_UPDATE_COUNT = 'Online leagues updated';
 const OL_LEAGUE_UP_TO_DATE_COUNT = 'Online leagues already up to date';
+const BOX_LEAGUE_CREATION_COUNT = 'Box leagues created';
 const BOX_LEAGUE_UPDATE_COUNT = 'Box leagues updated';
 const BOX_LEAGUE_UP_TO_DATE_COUNT = 'Box leagues already up to date';
 const SKIP_COUNT = 'Leagues and Tournaments skipped';
@@ -71,7 +72,7 @@ export class TournamentService {
     }
 
     this.importStats.setStatus(JobState.DONE);
-    logger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats));
+    logger.info('VR Tournament Import info: ' + JSON.stringify(this.importStats, null, 2));
     logger.info('**** VR Tournament Import done.');
     return;
   }
@@ -111,13 +112,13 @@ export class TournamentService {
         if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_CREATION_COUNT);
         if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_CREATION_COUNT);
         if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_CREATION_COUNT);
-        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UPDATE_COUNT);
+        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_CREATION_COUNT);
         await this.createTournamentFromVRAPI(miniTournament.Code);
       }
 
       // if our version is out of date, torch it and rebuild
       else if (tournament.isOutOfDate(miniTournament.LastUpdated)) {
-        logger.info('Updating: ' + JSON.stringify(miniTournament));
+        logger.info('Updating: ' + JSON.stringify(miniTournament, null, 2));
         if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UPDATE_COUNT);
         if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UPDATE_COUNT);
         if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_UPDATE_COUNT);

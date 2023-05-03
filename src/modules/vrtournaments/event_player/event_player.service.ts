@@ -48,7 +48,7 @@ export class EventPlayerService {
         jobStats.bump('EventEntryCreated');
         const entry: EventPlayer = new EventPlayer(event, player);
         this.repository.save(entry).catch(reason => {
-          logger.error('Failed to save an EventPlayer: ' + JSON.stringify(entryData));
+          logger.error('Failed to save an EventPlayer: ' + JSON.stringify(entryData, null, 2));
         });
       } else {
         jobStats.bump('EventEntryPlayerNotFound');
@@ -71,7 +71,7 @@ export class EventPlayerService {
         .catch(reason => {
           logger.error('Failed to renumber eventPlayer record. ' +
             'Reason: ' + reason +
-            'eventPlayer: ' + JSON.stringify(entry));
+            'eventPlayer: ' + JSON.stringify(entry, null, 2));
         });
     }
     logger.info('Renumbered player in Event Data (' +

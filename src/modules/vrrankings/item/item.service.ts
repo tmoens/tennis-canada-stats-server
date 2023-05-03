@@ -86,7 +86,7 @@ export class VRRankingsItemService {
         await this.repository.save(item);
       }
       catch (e) {
-        logger.error('281312450 saving rankings item: ' + JSON.stringify(item));
+        logger.error('281312450 saving rankings item: ' + JSON.stringify(item, null, 2));
       }
     }
     return true;

@@ -32,7 +32,7 @@ export class LicenseService {
   async fixLicensesWithMissingProvinces(fixedLicenses: LicenseDTO[]): Promise<any> {
 
     for (let i = 0; i < fixedLicenses.length; i++) {
-      logger.info('Fixing license: ' + JSON.stringify(fixedLicenses[i]));
+      logger.info('Fixing license: ' + JSON.stringify(fixedLicenses[i], null, 2));
       const l = await this.findOne(fixedLicenses[i].licenseName);
       if (null != l) {
         // TODO Check that this province is valid.

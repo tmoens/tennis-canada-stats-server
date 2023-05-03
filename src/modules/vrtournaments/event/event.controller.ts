@@ -20,7 +20,7 @@ export class EventController {
   @UseGuards(JwtAuthGuard)
   async buildRatingsReport( @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
-    logger.info('Request to generate report. Query: ' + JSON.stringify(query));
+    logger.info('Request to generate report. Query: ' + JSON.stringify(query, null, 2));
     const filename: string = await this.eventService.rateEvents(
       query.from, query.to, query.province, query.categories.split(','));
     logger.info('Report generation complete.');
