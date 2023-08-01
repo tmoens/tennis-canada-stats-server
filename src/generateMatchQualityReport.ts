@@ -12,19 +12,6 @@ async function bootstrap() {
   configure('log4js_config.json');
   await service.buildMatchQualityReport();
 
-  /* Forgiveness requested.  I tired to get the seafile API
-   * to wait for the upload to complete before returning. I failed.
-   * If the UTR report was being generated from a
-   * main.js (which never exits) - no big deal.
-   *
-   * But this executable DOES exit and it does so after the report
-   * writer returns but before the file is actually uploaded.
-   *
-   * Consequently the upload gets aborted.
-   *
-   * So I am kludging things so that this process waits a minute before
-   * returning.
-   */
 
   await delay(60000);
 

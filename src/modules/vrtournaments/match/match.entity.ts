@@ -2,6 +2,7 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, On
 import {Event} from '../event/event.entity';
 import {Draw} from '../draw/draw.entity';
 import {MatchPlayer} from '../match_player/match_player.entity';
+import {JobStats} from '../../../utils/jobstats';
 
 @Entity()
 @Index('event', ['event'])
@@ -63,6 +64,13 @@ export class Match {
   })
   score: string;
 
+  @Column('date', {
+    nullable: false,
+    name: 'date',
+  })
+  date: string;
+
+
   // Given a match object from the VR API, fill in our own fields
 
   // 2019-06-24 For tournaments and matches that have not yet been played,
@@ -79,6 +87,9 @@ export class Match {
   buildFromVRAPIObj(apiMatch: any) {
     this.vrMatchCode = parseInt(apiMatch.Code, 10);
     this.winnerCode = parseInt(apiMatch.Winner, 10);
+    if (apiMatch.MatchTime) {
+      this.date = apiMatch.MatchTime.substring(0, 10);
+    }
     this.scoreStatus = parseInt(apiMatch.ScoreStatus, 10);
 
     switch (this.scoreStatus) {
@@ -152,11 +163,69 @@ export class Match {
     }
     return score.join(', ');
   }
-  getMatchCompetitiveness(): number | null {
-    if (this.scoreStatus === 0 && this.score && this.score !== 'Bye') {
-      return Math.random();
+  // Score lines are strings look like "6-7, 7-6, 10-3", but it gets pretty whacky sometimes.
+  getMatchCompetitiveness(): number | string {
+
+    // Break the score up in to the chunks that are separated by ", " (i.e. the set scores)
+    const sets: string[] = this.score.split(', ');
+
+    // If there are no sets (i.e. the score string was empty)
+    if (sets.length === 0) return `scoreStringHadNoSets(ShouldNotHappen)`;
+
+    // isolate the scores of each side
+    const side1Scores: number[] = [];
+    const side2Scores: number[] = [];
+
+    for (const set of sets) {
+      // split the set into two numbers
+      const sideScores: string[] = set.split('-');
+
+      // it's a wonky score if there are not exactly two side scores in every set
+      if (sideScores.length !== 2) return `wonkySetScore ${this.score} (Should Not Happen)`;
+
+      // it's a wonky score if either side's score is not a number
+      const s1score = Number(sideScores[0]);
+      const s2score = Number(sideScores[1]);
+      if (Number.isNaN(s1score) || Number.isNaN(s2score)) {
+        return `wonkySetScore ${this.score} (Should Not Happen)`;
+      }
+
+      // looks like it is a good set score
+      side1Scores.push(s1score);
+      side2Scores.push(s2score);
+    }
+
+    // Identify a superbreaker in the last set of a 3 set match
+    if (side1Scores.length === 3) {
+      // find the maximum score in the first two sets
+      const setOneAndTwoMax: number = Math.max(side1Scores[0], side1Scores[1], side2Scores[0], side2Scores[1]);
+
+      // find the max score in thte third set
+      const setThreeMax: number = Math.max(side1Scores[2], side2Scores[2]);
+
+      // If the thrid set max is more than two greater than the first two sets max,
+      // I figure this is a super breaker.  In that case, the first two sets are measured
+      // in games but the third is measured in points.  So we normalize the third set to
+      // games by dividing the points by 5. (why not?)
+      if ((setThreeMax - 1) > setOneAndTwoMax) {
+        side1Scores[2] = side1Scores[2] / 5;
+        side2Scores[2] = side2Scores[2] / 5;
+      }
+    }
+
+    let side1Total: number = 0;
+    let side2Total: number = 0;
+
+    side1Scores.map((score: number) => side1Total += score);
+    side2Scores.map((score: number) => side2Total += score);
+
+    // Being a little careful
+    if (side1Total === 0 && side2Total === 0) return null;
+
+    if (side1Total >= side2Total ) {
+      return side2Total/side1Total;
     } else {
-      return null;
+      return side1Total/side2Total;
     }
   }
 }

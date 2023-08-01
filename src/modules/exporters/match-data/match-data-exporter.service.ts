@@ -143,6 +143,10 @@ export class MatchDataExporterService {
   // ================= For Match Quality Report ============================
   // build a report of all the matches in all the tournaments, leagues and box leagues
   // since a given date
+  // TODO set the date rnge in the query.
+  // TODO make the query
+  // TODO make the Client
+  // TODO the initial query should be based on match dates.
   async buildMatchQualityReport(): Promise<JobStats> {
     const logger: Logger = getLogger('MatchQualityReporter');
     logger.info('Querying Data.');
@@ -150,10 +154,7 @@ export class MatchDataExporterService {
     this.mqReportStats.setStatus(JobState.IN_PROGRESS);
     this.mqReportStats.setCurrentActivity('Querying Data');
     let d = new Date();
-    const nowDateString = d.toISOString().slice(0, 10);
-    d = new Date(d.setDate(d.getDate() - this.config.utrReportGoesBackInDays));
-    const updatedSinceString = d.toISOString().slice(0, 10);
-    logger.info('Querying MQ Data for tournaments updated since ' + updatedSinceString);
+    logger.info('Querying MQ Data for tournaments since 2022-01-01');
 
     const tournaments: Tournament[] = await this.repository
       .createQueryBuilder('t')
@@ -164,11 +165,7 @@ export class MatchDataExporterService {
       .leftJoinAndSelect('e.matches', 'm')
       .leftJoinAndSelect('m.matchPlayers', 'mp')
       .leftJoinAndSelect('mp.player', 'p')
-      .where(`t.tournamentCode in (` +
-        `'3f1efac2-8c14-4828-8852-3f9de5cdaa80', ` +
-        `'07374308-B6CA-44A7-B144-00547CC6FA9D', ` +
-        `'253F4A39-0069-422F-A7FD-BB72D58EB44F')`
-      )
+      .where(`t.endDate > '2021-12-31' AND t.typeId != 1`)
       .getMany();
 
     logger.info('Building MW Report.');
@@ -179,34 +176,25 @@ export class MatchDataExporterService {
     for (const t of tournaments) {
       this.mqReportStats.bump('tournaments');
       // console.log(JSON.stringify(t, null, 2));
-      logger.info(`Match Quality reporting: tournament ${t.tournamentCode} ${t.startDate}`)
+      // logger.info(`Match Quality reporting: tournament ${t.tournamentCode} ${t.startDate}`)
       for (const e of t.events) {
         this.mqReportStats.bump('events');
 
-        // For Tournaments, skip events without a ranking category
-        // This should eliminate all underage (U10 and below) and co-ed events
-        // For Leagues - events do not have rankings categories and should not be skipped
-        if (t.isTournament() && null === e.vrRankingsCategory) {
-          this.mqReportStats.bump('eventsWithoutCategoriesSkipped');
-          continue;
-        }
-        // Just in case the TD created an event as a U12 rankings category event but put an
-        // age level restriction under 10 or below, skip the event.
-        if (t.isTournament() && 'Junior' === e.vrRankingsCategory.vrRankingsType.typeName && e.maxAge < 12) {
-          this.mqReportStats.bump('U10AndBelowSkipped');
-          continue;
-        }
-
         for (const m of e.matches) {
-          this.mqReportStats.bump('matches');
           const reportLine = new MatchQualityLine();
-          if (reportLine.dataFill(t, e, m)) {
+          const res: string = reportLine.dataFill(t, e, m)
+          if (res) {
+            this.mqReportStats.bump(res);
+            if (res.includes('MissingMatchDateCount')) this.mqReportStats.bump('TotalMissingDates');
+          } else {
+            this.mqReportStats.bump('validMatchAndScore');
             reportData.push(JSON.parse(JSON.stringify(reportLine, null, 2)));
           }
         }
       }
     }
-    logger.info('Writing Match Quality Report.');
+    this.mqReportStats.log();
+
     // this.mqReportStats.setCurrentActivity('Writing UTR Report');
     // const wb: WorkBook = utils.book_new();
     // wb.Props = {
