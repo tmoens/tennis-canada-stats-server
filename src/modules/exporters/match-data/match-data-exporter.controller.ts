@@ -1,7 +1,8 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
+import {Controller, Get, HttpStatus, Query, Res, UseGuards} from '@nestjs/common';
 import {JobStats} from '../../../utils/jobstats';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
 import {MatchDataExporterService} from './match-data-exporter.service';
+import {getLogger} from 'log4js';
 
 @Controller('Exports')
 export class MatchDataExporterController {
@@ -10,7 +11,7 @@ export class MatchDataExporterController {
   @Get('/buildUTRReport/status')
   @UseGuards(JwtAuthGuard)
   async buildUTRReportStatus(): Promise<JobStats> {
-    return this.service.getBuildReportStats();
+    return this.service.getBuildUTRReportStats();
   }
 
   @Get('/UTRReport')
@@ -18,4 +19,30 @@ export class MatchDataExporterController {
   async buildUTRReport(): Promise<JobStats> {
     return await this.service.buildUTRReport();
   }
+
+  @Get('/buildMatchCompetitivenessReport/status')
+  @UseGuards(JwtAuthGuard)
+  async buildMatchCompetitivenessReportStatus(): Promise<JobStats> {
+    return this.service.getBuildMatchCompetitivenessReportStats();
+  }
+
+  @Get('/MatchCompetitivenessReport')
+  @UseGuards(JwtAuthGuard)
+  async buildMatchQUalityReport(): Promise<JobStats> {
+    return await this.service.buildMatchCompetitivenessReport();
+  }
+
+  @Get('downloadMatchCompetitivenessReport')
+  // TODO figure out how to guard this - client is an <a>...</a>
+  // which does not send auth headers. no private data so it is ok.
+  // @UseGuards(JwtAuthGuard)
+  async exportRatingsReport( @Res() response, @Query() query): Promise<any> {
+    const logger = getLogger('eventRatingsReport');
+    logger.info('Request to download ' + query.filename);
+    response.status(HttpStatus.OK);
+    await response.download(query.filename);
+    logger.info('Download complete');
+    // TODO THis might be a good place to clean stuff up.
+  }
+
 }

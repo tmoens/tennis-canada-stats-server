@@ -106,10 +106,32 @@ export class Tournament {
   }
 
   isTournament(): boolean {
-    return (this.typeId === 0);
+    return (
+      this.typeId === 0 ||
+      this.typeId === 10
+    );
   }
 
   isLeague(): boolean {
-    return (this.typeId === 1);
+    return (
+      this.typeId === 1 ||
+      this.typeId === 2 ||
+      this.typeId === 3
+    );
+  }
+
+  getType(): string {
+    switch (this.typeId) {
+      case 0:
+        return 'Tournament';
+      case 1:
+        return 'League';
+      case 3:
+        return 'Online League';
+      case 10:
+        return 'Box Ladder';
+      default:
+        return `Unknown (${this.typeId})`;
+    }
   }
 }

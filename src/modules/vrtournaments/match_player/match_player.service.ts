@@ -56,7 +56,7 @@ export class MatchPlayerService {
   failedToSaveMatchPlayer(mp: MatchPlayer, reason: any) {
     logger.error('Failed to save matchPlayer record. ' +
       'Reason: ' + reason +
-      'matchPlayer: ' + JSON.stringify(mp));
+      'matchPlayer: ' + JSON.stringify(mp, null, 2));
   }
 
   async findPlayer(matchPlayerData: any): Promise<Player> {
@@ -80,7 +80,7 @@ export class MatchPlayerService {
         .catch(reason => {
           logger.error('Failed to renumber matchPlayer record. ' +
             'Reason: ' + reason +
-            'matchPlayer: ' + JSON.stringify(mp));
+            'matchPlayer: ' + JSON.stringify(mp, null, 2));
         });
     }
     logger.info('Renumbered player in Match Data (' +

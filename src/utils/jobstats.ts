@@ -101,6 +101,10 @@ export class JobStats {
       this.bump(name, otherCounters[name]);
     }
   }
+
+  log() {
+    logger.info(JSON.stringify(this, null, 2));
+  }
 }
 
 export enum JobState {

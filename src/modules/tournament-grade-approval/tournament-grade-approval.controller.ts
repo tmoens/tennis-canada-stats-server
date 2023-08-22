@@ -41,7 +41,7 @@ export class TournamentGradeApprovalController {
         @Param('tournamentCode')  tournamentCode: string,
         @Request()  req,
         ): Promise<TournamentGradeApproval[]> {
-        console.log(JSON.stringify(req.user));
+        console.log(JSON.stringify(req.user, null, 2));
         return await this.service.getApprovalHistory(tournamentCode);
     }
 
