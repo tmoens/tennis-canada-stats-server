@@ -10,7 +10,7 @@ async function bootstrap() {
   const service = app.get(MatchDataExporterService);
 
   configure('log4js_config.json');
-  await service.buildMatchQualityReport();
+  await service.buildMatchCompetitivenessReport();
 
 
   await delay(60000);

@@ -10,6 +10,10 @@ import {getLogger} from 'log4js';
 
 const CREATION_COUNT = 'match_creation';
 const CREATION_FAIL_COUNT = 'match_creation_fail';
+const TOURNAMENT_MATCH_DATE_ESTIMATED = 'tournament_match_date_estimated';
+const LEAGUE_MATCH_MISSING_DATE = 'league_match_missing_date';
+const LEAGUE_MATCH_HAS_DATE = 'league_match_has_date';
+
 const logger = getLogger('matchService');
 
 @Injectable()
@@ -39,6 +43,19 @@ export class MatchService {
     if (draw.event.tournament.isTournament()) {
       const matches: any[] = VRAPIService.arrayify(tl_matches_json.Match);
       logger.info(matches.length + ' matches found');
+
+      // In some cases, like if a TD does not schedule or record the date
+      // and time of a given match, the match data WILL NOT include the
+      // MatchTime attribute.  But we want the MatchTime information
+      // for some downstream reports. So, we use the tournament's
+      // end date to estimate the MatchTime.  It is an acceptible
+      // estimate.
+      for (const m of matches) {
+        if (!m.MatchTime) {
+          m.MatchTime = draw.event.tournament.endDate;
+          importStats.bump(TOURNAMENT_MATCH_DATE_ESTIMATED);
+        }
+      }
       await this.processMatches(draw, matches, importStats);
     }
 
@@ -54,7 +71,32 @@ export class MatchService {
           'Tournament/' + draw.event.tournament.tournamentCode +
           '/TeamMatch/' + tm.Code,
         );
+
+        // Now we have all the regular matches that were played in a given
+        // "TeamMatch" (aka fixture) played between two teams.
         const matches: any[] = VRAPIService.arrayify(matches_json.Match);
+
+        // But wait!  There's more! Unlike the "Match" nodes that come back in
+        // the Tournament/Draw/Match API call for regular tournaments, the "Match"
+        // node that comes back from the Tournament/TeamMatch call for leagues
+        // DOES NOT contain a MatchTime attribute.
+        // And we need the MatchTime attribute in order to get an idea of when
+        // the match was played for various statistical reports. So, we need to
+        // make yet another API Call for each one of the regular matches within the
+        // "TeamMatch".
+        for (const match of matches) {
+          const matchDetail_json = await this.vrapi.get(
+            `Tournament/${draw.event.tournament.tournamentCode}/` +
+            `MatchDetail/${match.Code}`
+          );
+          if (matchDetail_json.Match && matchDetail_json.Match.MatchTime) {
+            match.MatchTime = matchDetail_json.Match.MatchTime;
+            importStats.bump(LEAGUE_MATCH_HAS_DATE);
+          } else {
+            importStats.bump(LEAGUE_MATCH_MISSING_DATE);
+          }
+        }
+
         logger.info(matches.length + ' matches found');
         await this.processMatches(draw, matches, importStats);
       }
@@ -65,7 +107,7 @@ export class MatchService {
     // The extra information in a tournament's Match includes things like
     // the event code, the draw code, the draw name, and the rankings category name
     // of the event and draw in which the match occurred.
-    // But we do not need any of that because it is all available locally in
+    // But we do not need any of that because it is all available locally
     // in the draw object and the draw.event object.
     return true;
   }

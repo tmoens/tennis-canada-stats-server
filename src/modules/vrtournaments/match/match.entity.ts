@@ -2,7 +2,6 @@ import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, On
 import {Event} from '../event/event.entity';
 import {Draw} from '../draw/draw.entity';
 import {MatchPlayer} from '../match_player/match_player.entity';
-import {JobStats} from '../../../utils/jobstats';
 
 @Entity()
 @Index('event', ['event'])
@@ -65,7 +64,7 @@ export class Match {
   score: string;
 
   @Column('date', {
-    nullable: false,
+    nullable: true,
     name: 'date',
   })
   date: string;

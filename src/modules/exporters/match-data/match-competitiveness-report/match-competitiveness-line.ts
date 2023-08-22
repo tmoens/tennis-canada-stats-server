@@ -1,11 +1,8 @@
 import {Tournament} from '../../../vrtournaments/tournament/tournament.entity';
 import {Match} from '../../../vrtournaments/match/match.entity';
 import {Event} from '../../../vrtournaments/event/event.entity';
-import {MatchPlayer} from '../../../vrtournaments/match_player/match_player.entity';
-import {JobStats} from '../../../../utils/jobstats';
-import {string} from 'joi';
 
-export class MatchQualityLine {
+export class MatchCompetitivenessLine {
   matchId?: string;
   tournamentName: string;
   tournamentId: string = null;
@@ -83,7 +80,7 @@ export class MatchQualityLine {
         } else {
           this.loser1 = mp.playerId.toString(10);
         }
-      };
+      }
     }
 
     // If we have no winner or loser, we are not interested. (I.e. skip byes)

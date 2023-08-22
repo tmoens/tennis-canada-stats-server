@@ -5,13 +5,10 @@ import {getLogger, Logger} from 'log4js';
 import {ConfigurationService} from '../../configuration/configuration.service';
 import {JobState, JobStats} from '../../../utils/jobstats';
 import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
-import {MatchPlayer} from '../../vrtournaments/match_player/match_player.entity';
-import {Match} from '../../vrtournaments/match/match.entity';
 import {Tournament} from '../../vrtournaments/tournament/tournament.entity';
-import {Event} from '../../vrtournaments/event/event.entity';
 import * as moment from 'moment';
 import {UTRLine} from './utr/u-t-r.line';
-import {MatchQualityLine} from './match-quality-report/match-quality-line';
+import {MatchCompetitivenessLine} from './match-competitiveness-report/match-competitiveness-line';
 
 export const TOURNAMENT_URL_PREFIX = 'https://tc.tournamentsoftware.com/sport/tournament.aspx?id=';
 
@@ -26,7 +23,7 @@ export class MatchDataExporterService {
     private readonly repository: Repository<Tournament>,
   ) {
     this.utrReportStats = new JobStats('BuildUTRReport');
-    this.mqReportStats = new JobStats('ITFMatchExport');
+    this.mqReportStats = new JobStats('MatchCompetitivenessReport');
   }
 
   // ================= For UTR ============================
@@ -140,21 +137,16 @@ export class MatchDataExporterService {
     return this.utrReportStats;
   }
 
-  // ================= For Match Quality Report ============================
+  // ================= For Match Competitiveness Report ============================
   // build a report of all the matches in all the tournaments, leagues and box leagues
   // since a given date
-  // TODO set the date rnge in the query.
-  // TODO make the query
-  // TODO make the Client
-  // TODO the initial query should be based on match dates.
-  async buildMatchQualityReport(): Promise<JobStats> {
-    const logger: Logger = getLogger('MatchQualityReporter');
+  async buildMatchCompetitivenessReport(): Promise<JobStats> {
+    const logger: Logger = getLogger('MatchCompetitivenessReporter');
     logger.info('Querying Data.');
-    this.mqReportStats = new JobStats('BuildMQReport');
+    this.mqReportStats = new JobStats('Build Match Competitiveness Report');
     this.mqReportStats.setStatus(JobState.IN_PROGRESS);
     this.mqReportStats.setCurrentActivity('Querying Data');
-    let d = new Date();
-    logger.info('Querying MQ Data for tournaments since 2022-01-01');
+    logger.info('Querying Match Competitiveness Data for tournaments since 2022-01-01');
 
     const tournaments: Tournament[] = await this.repository
       .createQueryBuilder('t')
@@ -168,20 +160,18 @@ export class MatchDataExporterService {
       .where(`t.endDate > '2021-12-31' AND t.typeId != 1`)
       .getMany();
 
-    logger.info('Building MW Report.');
-    this.mqReportStats.setCurrentActivity('Building UTR Report');
+    logger.info('Building Match Competitiveness Report.');
+    this.mqReportStats.setCurrentActivity('Building Match Competitiveness Report');
     const reportData: any[] = [];
 
     // loop through the tournaments (and leagues)
     for (const t of tournaments) {
       this.mqReportStats.bump('tournaments');
-      // console.log(JSON.stringify(t, null, 2));
-      // logger.info(`Match Quality reporting: tournament ${t.tournamentCode} ${t.startDate}`)
       for (const e of t.events) {
         this.mqReportStats.bump('events');
 
         for (const m of e.matches) {
-          const reportLine = new MatchQualityLine();
+          const reportLine = new MatchCompetitivenessLine();
           const res: string = reportLine.dataFill(t, e, m)
           if (res) {
             this.mqReportStats.bump(res);
@@ -192,50 +182,33 @@ export class MatchDataExporterService {
           }
         }
       }
+      // if (this.mqReportStats.get('tournaments') > 3) break; // For debugging
     }
-    this.mqReportStats.log();
 
-    // this.mqReportStats.setCurrentActivity('Writing UTR Report');
-    // const wb: WorkBook = utils.book_new();
-    // wb.Props = {
-    //   Title: 'Tennis Canada Event Ratings',
-    // };
-    // let reportSheet: WorkSheet = await utils.json_to_sheet([], {
-    //   header:
-    //     ['Match ID', 'Date',
-    //       'Winner 1 Name', 'Winner 1 Third Party ID', 'Winner 1 Gender', 'Winner 1 DOB',
-    //       'Winner 1 City', 'Winner 1 State', 'Winner 1 Country', 'Winner 1 College',
-    //       'Winner 2 Name', 'Winner 2 Third Party ID', 'Winner 2 Gender', 'Winner 2 DOB',
-    //       'Winner 2 City', 'Winner 2 State', 'Winner 2 Country', 'Winner 2 College',
-    //       'Loser 1 Name', 'Loser 1 Third Party ID', 'Loser 1 Gender', 'Loser 1 DOB',
-    //       'Loser 1 City', 'Loser 1 State', 'Loser 1 Country', 'Loser 1 College',
-    //       'Loser 2 Name', 'Loser 2 Third Party ID', 'Loser 2 Gender', 'Loser 2 DOB',
-    //       'Loser 2 City', 'Loser 2 State', 'Loser 2 Country', 'Loser 2 College',
-    //       'Score', 'Id Type',
-    //       'Draw Name', 'Draw Gender', 'Draw Team Type', 'Draw Bracket Type', 'Draw Bracket Value', 'Draw Type',
-    //       'Tournament Name', 'Tournament URL', 'Tournament Start Date', 'Tournament End Date',
-    //       'Tournament City', 'Tournament State', 'Tournament Country', 'Tournament Country Code',
-    //       'Tournament Host', 'Tournament Location Type', 'Tournament Surface', 'Tournament Event Type',
-    //       'Tournament Event Category', 'Tournament Event Grade', 'Tournament Import Source', 'Tournament Sanction Body',
-    //     ],
-    // });
-    // reportSheet = await utils.sheet_add_json(reportSheet, reportData, {
-    //   skipHeader: true,
-    //   origin: 'A2',
-    // });
-    // utils.book_append_sheet(wb, reportSheet, 'Matches');
-    // const now = moment().format('YYYY-MM-DD-HH-mm-ss');
-    // const filename = `${this.config.utrReportDirectory}/UTR_Report_${now}.xlsx`;
-    // await writeFile(wb, filename);
-    // this.mqReportStats.data = {filename};
-    //
-    // logger.info('Finished UTR Report');
-    // this.mqReportStats.setCurrentActivity('Finished UTR Report');
-    // this.mqReportStats.setStatus(JobState.DONE);
+    logger.info('Writing MatchCompetitiveness Report.');
+    this.mqReportStats.setCurrentActivity('Writing Match Competitiveness Report');
+    const wb: WorkBook = utils.book_new();
+    wb.Props = {
+      Title: 'Tennis Canada Match Competitiveness',
+    };
+    const reportSheet = await utils.json_to_sheet(reportData);
+    utils.book_append_sheet(wb, reportSheet, 'Matches');
+    const now = moment().format('YYYY-MM-DD-HH-mm-ss');
+    const filename = `Reports/MatchCompetitiveness_${now}.xlsx`;
+    await writeFile(wb, filename);
+    this.mqReportStats.data = {filename};
+
+    logger.info('Finished UTR Report');
+    this.mqReportStats.setCurrentActivity('Finished Match Competitiveness Report');
+    this.mqReportStats.setStatus(JobState.DONE);
+    this.mqReportStats.log();
     return this.mqReportStats;
   }
 
-  getBuildReportStats(): JobStats {
+  getBuildUTRReportStats(): JobStats {
+    return this.utrReportStats;
+  }
+  getBuildMatchCompetitivenessReportStats(): JobStats {
     return this.mqReportStats;
   }
 }
