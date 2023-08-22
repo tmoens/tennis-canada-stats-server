@@ -165,9 +165,11 @@ export class MatchDataExporterService {
     const reportData: any[] = [];
 
     // loop through the tournaments (and leagues)
+    let gotDoubles = false;
     for (const t of tournaments) {
       this.mqReportStats.bump('tournaments');
       for (const e of t.events) {
+        if (e.isSingles) gotDoubles = true;
         this.mqReportStats.bump('events');
 
         for (const m of e.matches) {
@@ -182,7 +184,7 @@ export class MatchDataExporterService {
           }
         }
       }
-      // if (this.mqReportStats.get('tournaments') > 3) break; // For debugging
+      if (gotDoubles) break; // For debugging
     }
 
     logger.info('Writing MatchCompetitiveness Report.');

@@ -75,10 +75,10 @@ export class MatchCompetitivenessLine {
         }
       }
       if (2 === mp.team && 2 === mp.position) {
-        if (m.winnerCode === 2) {
+        if (m.winnerCode === 1) {
           this.loser2 = mp.playerId.toString(10);
         } else {
-          this.loser1 = mp.playerId.toString(10);
+          this.winner2 = mp.playerId.toString(10);
         }
       }
     }
