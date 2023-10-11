@@ -43,7 +43,7 @@ export class ExternalEventResultService {
     const fp = d.FinalPosition;
     if (!isNaN(Number(fp))) {
       r.finishPosition = fp;
-    } else if ('R' === fp.substr(0, 1) && fp.length > 2) {
+    } else if ('R' === fp.slice(0, 1) && fp.length > 2) {
       r.finishPosition = Number(fp.substr(1));
     } else {
       switch (fp) {
@@ -146,8 +146,8 @@ export class ExternalEventResultService {
         returnData.push(new ExternalEventResultDTO(r, exchangeRate));
         // If the player was a junior at the end date of the tournament, we also create a result
         // as if this were a U18 tournament too.
-        const yob = (r.player.DOB) ? parseInt(r.player.DOB.substr(0, 4), 10) : 0;
-        if (parseInt(r.event.tournament.endDate.substr(0, 4), 10) - yob < 19) {
+        const yob = (r.player.DOB) ? parseInt(r.player.DOB.slice(0, 4), 10) : 0;
+        if (parseInt(r.event.tournament.endDate.slice(0, 4), 10) - yob < 19) {
           exchangeRate = await this.exchangeService.findExchaneRate(year, pointCurrency, gender, 'U18');
           r.event.eventType = 'U18';
           returnData.push(new ExternalEventResultDTO(r, exchangeRate));

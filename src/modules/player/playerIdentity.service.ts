@@ -553,7 +553,7 @@ export class PlayerIdentityService {
     if (p.gender.toLowerCase() === c.gender.toLowerCase()) {
       return new FieldMatch(MatchCode.MATCH, c.gender, 10);
     }
-    let pg = p.gender.substr(0, 1).toLowerCase();
+    let pg = p.gender.slice(0, 1).toLowerCase();
     if (pg === 'w') pg = 'f';
     if (pg === c.gender.toLowerCase()) {
       return new FieldMatch(MatchCode.EFFECTIVE_MATCH, c.gender, 10);

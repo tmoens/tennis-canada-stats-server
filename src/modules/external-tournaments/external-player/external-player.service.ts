@@ -76,7 +76,7 @@ export class ExternalPlayerService {
 
   updateFromITFAPI(p: ExternalPlayer, bio: any) {
     if (bio.coach) p.coach = bio.Coach;
-    if (bio.BirthDate) p.DOB = bio.BirthDate.substr(0, 10);
+    if (bio.BirthDate) p.DOB = bio.BirthDate.slice(0, 10);
     if (bio.FamilyName) p.lastName = bio.FamilyName;
     if (bio.Gender) p.gender = bio.Gender;
     if (bio.GivenName) p.firstName = bio.GivenName;

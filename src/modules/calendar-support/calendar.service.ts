@@ -43,7 +43,7 @@ export class CalendarService {
     // go get all the tournaments that have been updated in the sync window
     let d = new Date();
     d = new Date(d.setDate(d.getDate() - this.configService.calendarDbSyncPeriod));
-    const updatedSinceString = d.toISOString().substr(0, 10);
+    const updatedSinceString = d.toISOString().slice(0, 10);
     const tournaments: Tournament[] = await this.tournamentService.getTournamentsUpdatedSince(updatedSinceString);
     this.jobStats.toDo = tournaments.length;
     this.jobStats.setCounter('done', 0);

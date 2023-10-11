@@ -32,7 +32,7 @@ export class ExternalEventResultDTO {
     // the TypeORM entity file.
     // Soooo, I changed it to a string in the entity definition. barf.
     // this.yob = (r.player.DOB) ? r.player.DOB.getFullYear() : null; // <== should be
-    this.yob = (r.player.DOB) ? parseInt(r.player.DOB.substr(0, 4), 10) : 0;
+    this.yob = (r.player.DOB) ? parseInt(r.player.DOB.slice(0, 4), 10) : 0;
     this.tournamentName = r.event.tournament.name;
     this.sanctioningBody = r.event.tournament.sanctioningBody;
     this.tournamentType = r.event.tournament.sanctioningBody + '/' + r.event.tournament.category;
@@ -52,11 +52,11 @@ export class ExternalEventResultDTO {
     if (this.eventType === 'Open') {
       this.pointsCategory =
         ((this.eventGender === 'F') ? 'W' : 'M') +
-        this.eventDiscipline.substr(0, 1) + ' - ' +
+        this.eventDiscipline.slice(0, 1) + ' - ' +
         this.eventType;
       this.shortPointsCategory = [
         ('M' === this.eventGender) ? 'M' : 'W',
-        this.eventDiscipline.substr(0, 1),
+        this.eventDiscipline.slice(0, 1),
       ].join('');
     } else if (this.eventType === 'U18') {
       this.pointsCategory = [
@@ -67,7 +67,7 @@ export class ExternalEventResultDTO {
       this.shortPointsCategory = [
         ('M' === this.eventGender) ? 'B' : 'G',
         this.eventType,
-        this.eventDiscipline.substr(0, 1),
+        this.eventDiscipline.slice(0, 1),
       ].join('');
     } else {
       // this would be bad.

@@ -33,18 +33,18 @@ export class ExternalTournamentService {
 
   async updateFromITFAPI(t: ExternalTournament, d: any) {
     const logger = getLogger('itfapi');
-    if (d.EndDate) t.endDate = d.EndDate.substr(0, 10);
-    if (d.StartDate) t.startDate = d.StartDate.substr(0, 10);
+    if (d.EndDate) t.endDate = d.EndDate.slice(0, 10);
+    if (d.StartDate) t.startDate = d.StartDate.slice(0, 10);
 
     // After 2018 - we care a lot less about sub categories as we have switched to
     // a simple "exchange rate" method of of awarding canadian ranking points.
     // The new method does not care about Categories and subCategories of the tournament,
     // only the points earned by the player.
-    const after2018: boolean = ('2018' < t.endDate.substr(0, 4));
+    const after2018: boolean = ('2018' < t.endDate.slice(0, 4));
 
     // In 2019, we had the introduction of the ITF Transition tour which awarded
     // its own points which we had to convert.  This ended as quickly as it began.
-    const after2019: boolean = ('2019' < t.endDate.substr(0, 4));
+    const after2019: boolean = ('2019' < t.endDate.slice(0, 4));
 
     t.hostNation = d.HostNation;
     t.name = d.PromoName;
@@ -59,7 +59,7 @@ export class ExternalTournamentService {
     // a user will have to set the sub category (later).
     // For example the API does not distinguish between the various type
     // of Futures or Challenger events.
-    switch (d.TournamentId.substr(0, 1)) {
+    switch (d.TournamentId.slice(0, 1)) {
       // Start with Professional Men
       case 'M':
         t.sanctioningBody = 'ATP';

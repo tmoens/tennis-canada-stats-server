@@ -86,7 +86,7 @@ export class LicenseService {
       {width: 14},
     ];
     wb.Sheets.Licenses = ws;
-    const filename = 'Reports/VR_License_Usage_' + now.toISOString().substr(0, 10) + '.xlsx';
+    const filename = 'Reports/VR_License_Usage_' + now.toISOString().slice(0, 10) + '.xlsx';
 
     writeFile(wb, filename);
     return filename;

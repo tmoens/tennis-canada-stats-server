@@ -186,7 +186,7 @@ export class EventService {
                 lastName: player.lastName,
                 rank: rankItem.rank,
                 points: rankItem.points,
-                birthYear: player.DOB.substr(0,4),
+                birthYear: player.DOB?.slice(0,4),
                 rating,
               });
               eventRating = eventRating + rating;

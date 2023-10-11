@@ -86,7 +86,7 @@ export class ExternalTournament {
   version: number;
 
   getTournamentYear(): number | null {
-    return Number(this.endDate.substr(0, 4));
+    return Number(this.endDate.slice(0, 4));
   }
 
   getPointCurrency(): string {
@@ -97,11 +97,11 @@ export class ExternalTournament {
     // ITF tournaments can deal in ITF Junior points or TransitionTour points or WTA points.
     if (this.sanctioningBody === 'ITF')  {
       // All ITF Junior tournaments deal with ITF (junior points
-      if (this.tournamentId.substr(0, 1) === 'J') {
+      if (this.tournamentId.slice(0, 1) === 'J') {
         return 'ITF';
       }
       // All ITF Men's Open tournaments deal in transitionTour Points.
-      if (this.tournamentId.substr(0, 1) === 'M') {
+      if (this.tournamentId.slice(0, 1) === 'M') {
         return 'TT';
       }
       // ITF Women's Tournaments could deal in WTA or TT points
