@@ -20,19 +20,22 @@ export class MatchDataExporterController {
     return await this.service.buildUTRReport();
   }
 
-  @Get('/buildMatchCompetitivenessReport/status')
+  @Get('MatchCompetitivenessReport/build/status')
   @UseGuards(JwtAuthGuard)
   async buildMatchCompetitivenessReportStatus(): Promise<JobStats> {
-    return this.service.getBuildMatchCompetitivenessReportStats();
+    const start = performance.now();
+    const stats = this.service.getBuildMatchCompetitivenessReportStats();
+    console.log (`Stats retrieval start: ${start}, duration: ${performance.now() - start} ms.`)
+    return stats;
   }
 
-  @Get('/MatchCompetitivenessReport')
+  @Get('MatchCompetitivenessReport/build')
   @UseGuards(JwtAuthGuard)
-  async buildMatchQUalityReport(): Promise<JobStats> {
-    return await this.service.buildMatchCompetitivenessReport();
+  buildMatchCompetitivenessReport() {
+    this.service.buildMatchCompetitivenessReport();
   }
 
-  @Get('downloadMatchCompetitivenessReport')
+  @Get('MatchCompetitivenessReport/download')
   // TODO figure out how to guard this - client is an <a>...</a>
   // which does not send auth headers. no private data so it is ok.
   // @UseGuards(JwtAuthGuard)

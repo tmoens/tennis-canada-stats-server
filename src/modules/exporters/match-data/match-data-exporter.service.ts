@@ -140,7 +140,7 @@ export class MatchDataExporterService {
   // ================= For Match Competitiveness Report ============================
   // build a report of all the matches in all the tournaments, leagues and box leagues
   // since a given date
-  async buildMatchCompetitivenessReport(): Promise<JobStats> {
+  async buildMatchCompetitivenessReport() {
     const logger: Logger = getLogger('MatchCompetitivenessReporter');
     logger.info('Querying Data.');
     this.mqReportStats = new JobStats('Build Match Competitiveness Report');
@@ -160,33 +160,36 @@ export class MatchDataExporterService {
       .where(`t.endDate > '2021-12-31' AND t.typeId != 1`)
       .getMany();
 
-    logger.info('Building Match Competitiveness Report.');
+    logger.info(`Building Match Competitiveness Report. ${tournaments.length} Tournaments.`);
     this.mqReportStats.setCurrentActivity('Building Match Competitiveness Report');
+    this.mqReportStats.toDo = tournaments.length;
     const reportData: any[] = [];
 
     // loop through the tournaments (and leagues)
     for (const t of tournaments) {
-      this.mqReportStats.bump('tournaments');
       for (const e of t.events) {
-        this.mqReportStats.bump('events');
-
         for (const m of e.matches) {
           const reportLine = new MatchCompetitivenessLine();
           const res: string = reportLine.dataFill(t, e, m)
           if (res) {
-            this.mqReportStats.bump(res);
-            if (res.includes('MissingMatchDateCount')) this.mqReportStats.bump('TotalMissingDates');
+            if (res.includes('MissingMatchDateCount')) {
+              this.mqReportStats.bump('TotalMissingDates');
+            }
           } else {
-            this.mqReportStats.bump('validMatchAndScore');
             reportData.push(JSON.parse(JSON.stringify(reportLine, null, 2)));
           }
+          this.mqReportStats.bump('matchesProcessed');
         }
+        this.mqReportStats.bump('eventsProcessed');
       }
+      this.mqReportStats.bump('done');
+      // try a brief wait between tournaments so as not to block the server.
+      await new Promise(resolve => setTimeout(resolve, 1));
     }
 
     logger.info('Writing MatchCompetitiveness Report.');
     this.mqReportStats.setCurrentActivity('Writing Match Competitiveness Report');
-    const wb: WorkBook = utils.book_new();
+    const wb: WorkBook = await utils.book_new();
     wb.Props = {
       Title: 'Tennis Canada Match Competitiveness',
     };
@@ -195,13 +198,12 @@ export class MatchDataExporterService {
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/MatchCompetitiveness_${now}.xlsx`;
     await writeFile(wb, filename);
-    this.mqReportStats.data = {filename};
+    this.mqReportStats.setData('filename', filename);
 
-    logger.info('Finished UTR Report');
+    logger.info('Finished match competitiveness report');
     this.mqReportStats.setCurrentActivity('Finished Match Competitiveness Report');
     this.mqReportStats.setStatus(JobState.DONE);
     this.mqReportStats.log();
-    return this.mqReportStats;
   }
 
   getBuildUTRReportStats(): JobStats {
