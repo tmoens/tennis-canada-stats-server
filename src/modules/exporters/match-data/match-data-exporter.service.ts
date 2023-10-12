@@ -173,9 +173,9 @@ export class MatchDataExporterService {
     logger.info(`Building Match Competitiveness Report. ${tournaments.length} Tournaments.`);
 
     // Part 2: Go get all the match data for one tournament at a time.
-    let testingLimit = 30;
+    // let testingLimit = 30;
     for (const tournament of tournaments) {
-      if (testingLimit-- === 0) { break; }
+      // if (testingLimit-- === 0) { break; }
       const reportData: any[] = [];
       this.mqReportStats.setData('nowProcessing', tournament.name);
       const t: Tournament = await this.repository
