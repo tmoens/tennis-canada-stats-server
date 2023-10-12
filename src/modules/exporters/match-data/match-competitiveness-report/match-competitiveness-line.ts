@@ -35,18 +35,18 @@ export class MatchCompetitivenessLine {
   dataFill(t: Tournament, e: Event, m: Match): string {
     // cannot create a record for matches with no winner code or no score or no date
     // Winner Codes 0: none (often just unplayed matches), 1: side 1, 2: side 2, 3: tie
-    if (m.winnerCode < 1) return 'noWinnerCode(Unplayed)';
+    if (m.winnerCode < 1) return 'unplayed';
 
     // Score status other than 0 implies retirements, walkovers and defaults, so
     // we ignore those as we cant sy the match was competitive or not.
-    if (m.scoreStatus !== 0) return `scoreStatus: ${m.scoreStatus}`;
+    if (m.scoreStatus !== 0) return `nonZeroScoreStatus`;
 
     // If the score string is empty or undefined we can't say the match was competitive.
     if (!m.score || !m.score.trim()) return 'noScoreLine';
 
     if (m.score === 'Bye') return 'scorelineIsBye';
 
-    if (!m.date) return `${t.tournamentCode} Type:${t.typeId} Draw: ${m.vrDrawCode} MissingMatchDateCount`;
+    if (!m.date) return `${t.tournamentCode} Type:${t.typeId} Draw: ${m.vrDrawCode} missingMatchDate`;
 
     this.date = m.date;
 
@@ -84,7 +84,7 @@ export class MatchCompetitivenessLine {
     }
 
     // If we have no winner or loser, we are not interested. (I.e. skip byes)
-    if (!this.winner1 || !this.loser1) return 'inferredBye (Should Not Happen)';
+    if (!this.winner1 || !this.loser1) return 'inferredBye';
 
     this.tournamentId = t.tournamentCode;
     this.tournamentName = t.name;

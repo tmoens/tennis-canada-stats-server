@@ -30,6 +30,7 @@ export class MatchDataExporterService {
   // build a report of all the matches in all the tournaments
   // at a national, regional or provincial level from any tournament
   // that has been uploaded in the last however many days
+  // TODO Consider improving this to match the way the competitiveness report is done.
   async buildUTRReport(): Promise<JobStats> {
     const logger: Logger = getLogger('UTRReporter');
     logger.info('Querying UTR Data.');
@@ -145,36 +146,57 @@ export class MatchDataExporterService {
     logger.info('Querying Data.');
     this.mqReportStats = new JobStats('Build Match Competitiveness Report');
     this.mqReportStats.setStatus(JobState.IN_PROGRESS);
-    this.mqReportStats.setCurrentActivity('Querying Data');
-    logger.info('Querying Match Competitiveness Data for tournaments since 2022-01-01');
+    this.mqReportStats.setCurrentActivity('Building "Match Competitiveness" report');
+    const tournamentsWithoutMatches: { code: string, name: string, endDate: string }[] = [];
 
+    const wb: WorkBook = await utils.book_new();
+    wb.Props = {
+      Title: 'Tennis Canada Match Competitiveness',
+    };
+
+    let reportSheet: WorkSheet;
+    let reportRow = 2; // 2 because a- Excel counts from 1 and b- there is a header row.
+
+    // Initially, I wrote a query to get everything.  The Query took a very long time,
+    // and it would get longer and use more memory as time goes by.  So I broke it
+    // into two parts.
+    // First, get the set of tournaments that are of interest.
+    // Second process them one by one.
+    // Overall it is slower but this way The server is never blocked for very long.
+
+    // Part 1: get all the tournaments of interest
     const tournaments: Tournament[] = await this.repository
       .createQueryBuilder('t')
-      .leftJoinAndSelect('t.events', 'e')
-      .leftJoinAndSelect('t.license', 'l')
-      .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
-      .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
-      .leftJoinAndSelect('e.matches', 'm')
-      .leftJoinAndSelect('m.matchPlayers', 'mp')
-      .leftJoinAndSelect('mp.player', 'p')
       .where(`t.endDate > '2021-12-31' AND t.typeId != 1`)
       .getMany();
-
-    logger.info(`Building Match Competitiveness Report. ${tournaments.length} Tournaments.`);
-    this.mqReportStats.setCurrentActivity('Building Match Competitiveness Report');
     this.mqReportStats.toDo = tournaments.length;
-    const reportData: any[] = [];
+    logger.info(`Building Match Competitiveness Report. ${tournaments.length} Tournaments.`);
 
-    // loop through the tournaments (and leagues)
-    for (const t of tournaments) {
+    // Part 2: Go get all the match data for one tournament at a time.
+    let testingLimit = 30;
+    for (const tournament of tournaments) {
+      if (testingLimit-- === 0) { break; }
+      const reportData: any[] = [];
+      this.mqReportStats.setData('nowProcessing', tournament.name);
+      const t: Tournament = await this.repository
+        .createQueryBuilder('t')
+        .leftJoinAndSelect('t.events', 'e')
+        .leftJoinAndSelect('t.license', 'l')
+        .leftJoinAndSelect('e.vrRankingsCategory', 'rCat')
+        .leftJoinAndSelect('rCat.vrRankingsType', 'rType')
+        .leftJoinAndSelect('e.matches', 'm')
+        .leftJoinAndSelect('m.matchPlayers', 'mp')
+        .leftJoinAndSelect('mp.player', 'p')
+        .where(`t.tournamentCode = '${tournament.tournamentCode}'`)
+        .getOne();
+
       for (const e of t.events) {
         for (const m of e.matches) {
           const reportLine = new MatchCompetitivenessLine();
           const res: string = reportLine.dataFill(t, e, m)
           if (res) {
-            if (res.includes('MissingMatchDateCount')) {
-              this.mqReportStats.bump('TotalMissingDates');
-            }
+            // How did building a scoreline fail? Let me count the ways.
+            this.mqReportStats.bump(res);
           } else {
             reportData.push(JSON.parse(JSON.stringify(reportLine, null, 2)));
           }
@@ -182,19 +204,46 @@ export class MatchDataExporterService {
         }
         this.mqReportStats.bump('eventsProcessed');
       }
+
+      // Add tournament results to the report worksheet;
+      if (reportData.length > 0) {
+        if (!reportSheet) {
+          // For the first set of results, we create the worksheet
+          // this function causes header rows to be added.
+          reportSheet = await utils.json_to_sheet(reportData);
+        } else {
+          // For subsequent sheets we just add rows, skipping the headers
+          reportSheet = await utils.sheet_add_json(reportSheet, reportData, {
+            skipHeader: true,
+            origin: `A${reportRow}`,
+          });
+        }
+        // remember where to add the next set of matches.
+        reportRow = reportRow + reportData.length;
+      } else {
+        // It turns out that a lot of tournaments do not have matches to report:
+        // - many were cancelled, usually COVID related
+        //    - some of those have ANULLED CANCELLED in their name
+        //    - some do not
+        // - some only have under 10 type matches which do not get reported
+        // - and there is a chance, I screwed up and did not get the matches
+        // Anyway, we might as well capture the list and let Tennis Canada
+        // look at them if they want to.
+        this.mqReportStats.bump('tournamentsWithoutMatches');
+        tournamentsWithoutMatches.push({ code: t.tournamentCode, name: t.name, endDate: t.endDate });
+      }
       this.mqReportStats.bump('done');
-      // try a brief wait between tournaments so as not to block the server.
-      await new Promise(resolve => setTimeout(resolve, 1));
     }
 
-    logger.info('Writing MatchCompetitiveness Report.');
     this.mqReportStats.setCurrentActivity('Writing Match Competitiveness Report');
-    const wb: WorkBook = await utils.book_new();
-    wb.Props = {
-      Title: 'Tennis Canada Match Competitiveness',
-    };
-    const reportSheet = await utils.json_to_sheet(reportData);
+    logger.info('Writing MatchCompetitiveness Report.');
+
+    // wait a moment before writing workbook. Just look the other way.
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     utils.book_append_sheet(wb, reportSheet, 'Matches');
+    const tournamnetsWithoutMatchesSheet = await utils.json_to_sheet(tournamentsWithoutMatches);
+    utils.book_append_sheet(wb, tournamnetsWithoutMatchesSheet, 'TournamentsWithoutMatches');
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/MatchCompetitiveness_${now}.xlsx`;
     await writeFile(wb, filename);

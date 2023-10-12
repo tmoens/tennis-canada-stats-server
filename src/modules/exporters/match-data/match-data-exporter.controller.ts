@@ -23,10 +23,7 @@ export class MatchDataExporterController {
   @Get('MatchCompetitivenessReport/build/status')
   @UseGuards(JwtAuthGuard)
   async buildMatchCompetitivenessReportStatus(): Promise<JobStats> {
-    const start = performance.now();
-    const stats = this.service.getBuildMatchCompetitivenessReportStats();
-    console.log (`Stats retrieval start: ${start}, duration: ${performance.now() - start} ms.`)
-    return stats;
+    return this.service.getBuildMatchCompetitivenessReportStats();
   }
 
   @Get('MatchCompetitivenessReport/build')
