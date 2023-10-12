@@ -1,13 +1,12 @@
 import {Injectable} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository} from 'typeorm';
-import { Event } from './event.entity';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
+import {Event} from './event.entity';
 import {VRAPIService} from '../../VRAPI/vrapi.service';
 import {Tournament} from '../tournament/tournament.entity';
 import {getLogger} from 'log4js';
-import {PlayerService} from '../../player/player.service';
 import {DrawService} from '../draw/draw.service';
-import {JobStats} from '../../../utils/jobstats';
+import {JobState, JobStats} from '../../../utils/jobstats';
 import {utils, WorkBook, WorkSheet, writeFile} from 'xlsx';
 import {VRRankingsCategoryService} from '../../vrrankings/category/category.service';
 import {VRRankingsPublicationService} from '../../vrrankings/publication/publication.service';
@@ -23,17 +22,23 @@ const logger = getLogger('eventService');
 
 @Injectable()
 export class EventService {
+  ratingStats: JobStats;
   constructor(
     @InjectRepository(Event) private readonly repository: Repository<Event>,
     private readonly drawService: DrawService,
-    private readonly playerService: PlayerService,
     private readonly rosterService: EventPlayerService,
     private readonly vrapi: VRAPIService,
     private readonly categoryService: VRRankingsCategoryService,
     private readonly rankingsPubService: VRRankingsPublicationService,
     private readonly rankingsItemService: VRRankingsItemService,
   ) {
+    this.ratingStats = new JobStats('gradingStats');
   }
+
+  getRatingStats(): JobStats {
+    return this.ratingStats;
+  }
+
 
   async findAll(): Promise<Event[]> {
     return await this.repository.find();
@@ -55,7 +60,7 @@ export class EventService {
       // even if it is in the data from VR.
       // Why? Because matches between teams within an event in a league usually include several
       // matches each of which can be in different rankings categories. For example, league matches
-      // in the Intercounty Junior league could involve a U16 Boys Single, a U16 Girls Singles
+      // in the Inter-county Junior league could involve a U16 Boys Single, a U16 Girls Singles
       // and a U14 boys doubles.
       if (tournament.isLeague()) {
         e.vrRankingsCategory = null;
@@ -116,7 +121,7 @@ export class EventService {
   /*
    * Create a report which rates events based on the strength of the players
    * in the events.
-   * The result is provided in an excel book with one page per event category.
+   * The result is provided in an Excel book with one page per event category.
    * We rate Tournaments events only, not league events.
    */
   async rateEvents(fromDate: Date,
@@ -124,10 +129,14 @@ export class EventService {
                    province: string,
                    categoryIds: string[]): Promise<string>{
     const wb: WorkBook = utils.book_new();
+    this.ratingStats = new JobStats(`Rating events`);
+    this.ratingStats.setStatus(JobState.IN_PROGRESS);
     logger.info('Generating event strength report.');
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
     };
+    this.ratingStats.toDo = categoryIds.length;
+    this.ratingStats.setCounter('done', 0);
     for (const categoryId of categoryIds) {
       // For every category we build a list of events in that category and
       // a list of the players in those events complete with their ranking
@@ -139,7 +148,7 @@ export class EventService {
         await this.categoryService.getRankingCategoryFromId(categoryId);
       if (!category) break;
       let events: Event[] = [];
-      let q = await this.repository
+      let q = this.repository
         .createQueryBuilder('event')
         .leftJoinAndSelect('event.tournament', 'tournament')
         .leftJoinAndSelect('tournament.license', 'license')
@@ -158,6 +167,8 @@ export class EventService {
       events = await q.getMany();
 
       for (const event of events) {
+        this.ratingStats.setData( 'currentEvent', `Category: ${category.categoryName}, Tournament: ${event.tournament.name}, Event: ${event.name}.`)
+        this.ratingStats.bump('eventsProcessed');
         // console.log(`event: ${event.eventId}, entries: ${event.numberOfEntries}, province: ${event.tournament.license.province}`)
         const pub = await this.getRankingsPublication(event);
         // console.log(`publication: ${JSON.stringify(pub)}`);
@@ -167,6 +178,8 @@ export class EventService {
           logger.warn(
             'Can not rate event because can not find a ranking publication for it: ' +
             JSON.stringify(event, null, 2));
+          this.ratingStats.addNote(`Error: Cannot rate tournament ${event.tournament.tournamentCode} (${event.tournament.name}), event: ${event.name} could not find rankings for tournament date.`);
+          this.ratingStats.bump('Events without appropriate rankings');
         } else {
           // console.log('Rankings Publication: ' + JSON.stringify(pub));
           let numRatedPlayers: number = 0;
@@ -196,6 +209,7 @@ export class EventService {
           }
           if (event.numberOfEntries === numUnratedPlayers) {
             logger.warn(`No rated players found for event ${event.eventId} using rankings (sub)publication: ${pub.publicationId}`);
+            this.ratingStats.bump('Events with no rated players')
           }
           const e = {
             tournamentCode: event.tournament.tournamentCode,
@@ -218,14 +232,17 @@ export class EventService {
           eventList.push(e);
         }
       }
-      const playerSheet: WorkSheet = await utils.json_to_sheet(playerList);
+      const playerSheet: WorkSheet = utils.json_to_sheet(playerList);
       utils.book_append_sheet(wb, playerSheet, categoryId + 'Players');
-      const eventSheet: WorkSheet = await utils.json_to_sheet(eventList);
+      const eventSheet: WorkSheet = utils.json_to_sheet(eventList);
       utils.book_append_sheet(wb, eventSheet, categoryId + 'Events');
+      this.ratingStats.bump('done');
     }
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/Event_Rating_${now}.xlsx`;
     await writeFile(wb, filename);
+    this.ratingStats.setData('filename', filename);
+    this.ratingStats.setStatus(JobState.DONE);
     return filename;
   }
 }

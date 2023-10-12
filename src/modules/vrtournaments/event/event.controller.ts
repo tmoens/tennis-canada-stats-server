@@ -14,17 +14,20 @@ export class EventController {
     return await this.eventService.findAll();
   }
 
-  // TODO add a jobstatus thingy to track the status of the report generation
+  @Get('buildRatingsReport/status')
+  @UseGuards(JwtAuthGuard)
+  getRatingsStats(): any {
+    return this.eventService.getRatingStats();
+  }
 
   @Get('buildRatingsReport')
   @UseGuards(JwtAuthGuard)
-  async buildRatingsReport( @Query() query): Promise<any> {
+  async buildRatingsReport( @Query() query) {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to generate report. Query: ' + JSON.stringify(query, null, 2));
-    const filename: string = await this.eventService.rateEvents(
+    this.eventService.rateEvents(
       query.from, query.to, query.province, query.categories.split(','));
     logger.info('Report generation complete.');
-    return ({filename});
   }
 
   @Get('downloadRatingsReport')
