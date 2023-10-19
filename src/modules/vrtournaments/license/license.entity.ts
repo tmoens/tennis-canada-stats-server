@@ -8,6 +8,7 @@ export class License {
   })
   licenseName: string;
 
+  // Note: "province" is a misnomer, it should have been tennisAssociation
   @Column('varchar', {
     nullable: false,
     length: 3,

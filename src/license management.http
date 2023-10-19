@@ -1,0 +1,54 @@
+GET http://localhost:3003/License/Tennis Roxboro
+Content-Type: application/json
+
+###
+GET http://localhost:3003/License
+
+###
+GET http://localhost:3003/License/missingProvince
+
+###
+POST http://localhost:3003/License/setTennisAssociationForLicense
+Content-Type: application/json
+
+{
+  "licenseName": "Mayfair Parkway Racquet Club",
+  "province": "ON"
+}
+
+###
+POST http://localhost:3003/License/setTennisAssociationForLicense
+Content-Type: application/json
+
+{
+  "foo": "Mayfair Parkway Racquet Club",
+  "province": "ON"
+}
+
+###
+POST http://localhost:3003/License/setTennisAssociationForLicense
+Content-Type: application/json
+
+{
+  "licenseName": "Mayfair Parkway Racquet Club",
+  "province": "FOO"
+}
+
+###
+POST http://localhost:3003/License/setTennisAssociationForLicense
+Content-Type: application/json
+
+{
+  "licenseName": "Mayfair Parkway Racquet Club",
+  "foo": "ON"
+}
+
+###
+POST http://localhost:3003/License/setTennisAssociationForLicense
+Content-Type: application/json
+
+{
+  "licenseName": "FOO",
+  "foo": "ON"
+}
+

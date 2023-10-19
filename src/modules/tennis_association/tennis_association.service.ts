@@ -15,4 +15,9 @@ export class TennisAssociationService {
   async findAll(): Promise<TennisAssociation[]> {
     return await this.repository.find();
   }
+
+  async validRegionAbbrv(regionAbbrv: string): Promise<boolean> {
+    const tennisAssociation = await this.repository.findOne({where: {'regionAbbrv': regionAbbrv}});
+    return !!tennisAssociation;
+  }
 }

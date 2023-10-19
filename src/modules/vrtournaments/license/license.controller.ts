@@ -1,4 +1,4 @@
-import {Body, Controller, Get, HttpStatus, Param, Post, Req, Res, UseGuards} from '@nestjs/common';
+import {Body, Controller, Get, HttpStatus, Param, Post, Res, UseGuards} from '@nestjs/common';
 import { LicenseService } from './license.service';
 import { License, LicenseDTO } from './license.entity';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
@@ -8,7 +8,7 @@ export class LicenseController {
   constructor(private readonly licenseService: LicenseService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   async findAll(): Promise<License[]> {
     return await this.licenseService.findAll();
   }
@@ -36,13 +36,18 @@ export class LicenseController {
   @Get(':licenseName')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param() params): Promise<License> {
-
     return await this.licenseService.findOne(params.licenseName);
   }
 
-  @Post('fixLicensesWithoutProvinces')
+  @Post('setTennisAssociationForLicenses')
   @UseGuards(JwtAuthGuard)
-  async fixLicensesWithMissingProvinces(@Body() fixedLicenses: LicenseDTO[]): Promise<License[]> {
-    return await this.licenseService.fixLicensesWithMissingProvinces(fixedLicenses);
+  async setTennisAssociationForLicenses(@Body() licenses: LicenseDTO[]): Promise<License[]> {
+    return await this.licenseService.setTennisAssociationForLicenses(licenses);
+  }
+
+  @Post('setTennisAssociationForLicense')
+  @UseGuards(JwtAuthGuard)
+  async setTennisAssociationForLicense(@Body() license: LicenseDTO): Promise<License | null> {
+    return await this.licenseService.setTennisAssociationForLicense(license);
   }
 }

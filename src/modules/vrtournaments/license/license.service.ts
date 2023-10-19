@@ -3,7 +3,8 @@ import {getLogger} from 'log4js';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {License, LicenseDTO} from './license.entity';
-import {WorkBook, Properties, writeFile, utils, WorkSheet} from 'xlsx';
+import {WorkBook, writeFile, utils, WorkSheet} from 'xlsx';
+import {TennisAssociationService} from '../../tennis_association/tennis_association.service';
 
 const logger = getLogger('licenseService');
 
@@ -11,7 +12,8 @@ const logger = getLogger('licenseService');
 export class LicenseService {
   constructor(
     @InjectRepository(License) private readonly repository: Repository<License>,
-    ) {}
+    private tennisAssociationServeice: TennisAssociationService,
+  ) {}
 
   async findAll(): Promise<License[]> {
     return await this.repository.find();
@@ -29,20 +31,33 @@ export class LicenseService {
     return await this.repository.find({province: 'TBD'});
   }
 
-  async fixLicensesWithMissingProvinces(fixedLicenses: LicenseDTO[]): Promise<any> {
-
-    for (let i = 0; i < fixedLicenses.length; i++) {
-      logger.info('Fixing license: ' + JSON.stringify(fixedLicenses[i], null, 2));
-      const l = await this.findOne(fixedLicenses[i].licenseName);
-      if (null != l) {
-        // TODO Check that this province is valid.
-        l.province = fixedLicenses[i].province;
-        await this.repository.save(l);
-
-      } else {
-        logger.warn('Attempt to fix non-existent license!  LicenseName:' + fixedLicenses[i].licenseName);
-      }
+  async setTennisAssociationForLicenses(licenses: LicenseDTO[]): Promise<any> {
+    for (const license of licenses) {
+      this.setTennisAssociationForLicense(license);
     }
+  }
+
+  async setTennisAssociationForLicense(license: LicenseDTO): Promise<License | null> {
+    if (!license.licenseName) {
+      logger.warn(`Cant set license pta. No license name supplied.`);
+      return null;
+    }
+    if (!license.province) {
+      logger.warn(`Cant set license pta for ${license.licenseName}. No PTA supplied.`);
+      return null;
+    }
+    const validPTA = await this.tennisAssociationServeice.validRegionAbbrv(license.province);
+    if (!validPTA) {
+      logger.warn(`Cant set license pta for ${license.licenseName}. Invalid PTA: ${license.province}.`);
+      return null;
+    }
+    const l = await this.findOne(license.licenseName);
+    if (!l) {
+      logger.warn(`Cant set license pta for ${license.licenseName}. No unknown license name.`);
+      return null;
+    }
+    l.province = license.province;
+    return this.repository.save(l);
   }
 
   async lookupOrCreate(licenseName: string): Promise<License> {
@@ -53,7 +68,6 @@ export class LicenseService {
       l = new License(licenseName, 'TBD');
       await this.repository.save(l);
     }
-
     return l;
   }
 
