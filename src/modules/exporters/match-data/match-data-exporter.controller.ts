@@ -34,6 +34,7 @@ export class MatchDataExporterController {
 
   @Get('MatchCompetitivenessReport/download')
   // TODO figure out how to guard this - client is an <a>...</a>
+  // Like Duh? take it out of <a>...</a>
   // which does not send auth headers. no private data so it is ok.
   // @UseGuards(JwtAuthGuard)
   async exportRatingsReport( @Res() response, @Query() query): Promise<any> {

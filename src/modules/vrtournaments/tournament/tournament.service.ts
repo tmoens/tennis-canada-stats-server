@@ -25,7 +25,7 @@ const BOX_LEAGUE_CREATION_COUNT = 'Box leagues created';
 const BOX_LEAGUE_UPDATE_COUNT = 'Box leagues updated';
 const BOX_LEAGUE_UP_TO_DATE_COUNT = 'Box leagues already up to date';
 const SKIP_COUNT = 'Leagues and Tournaments skipped';
-const DONE = 'done';
+const DONE = 'Done (created + updated + already up to date + skipped)';
 
 const logger = getLogger('tournamentService');
 
@@ -88,7 +88,7 @@ export class TournamentService {
     const tournamentCount: number = miniTournaments.length;
     // the next line is not strictly true as many will be skipped and there
     // may be an import limit (but only during testing).  But it is a reasonable guess.
-    this.importStats.toDo = tournamentCount;
+    this.importStats.toDo = this.importStats.toDo + tournamentCount;
 
     for (let i = tournamentCount - 1; i >= 0; i--) {
       const miniTournament = miniTournaments[i];

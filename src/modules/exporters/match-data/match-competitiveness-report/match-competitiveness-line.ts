@@ -3,31 +3,31 @@ import {Match} from '../../../vrtournaments/match/match.entity';
 import {Event} from '../../../vrtournaments/event/event.entity';
 
 export class MatchCompetitivenessLine {
-  matchId?: string;
+  matchId: string;
   tournamentName: string;
-  tournamentId: string = null;
-  tournamentLevel?: string;
+  tournamentId: string;
+  tournamentLevel: string = null;
   tournamentType: string = null;
-  province?: string;
-  city?: string;
+  province: string = null;
+  city: string = null;
   score: string = null;
-  competitiveness?: number;
+  competitiveness: number = null;
 
-  winner1: string;
-  winner2?: string;
-  loser1: string;
-  loser2?: string;
+  winner1: string = null;
+  winner2: string = null;
+  loser1: string = null;
+  loser2: string = null;
 
   license: string = null;
-  vrEventId?: number;
-  eventName?: string;
-  eventGrade?: string;
-  eventGender?: string = null;
-  eventMinAge?: number;
-  eventMaxAge?: number;
-  eventIsSingles: boolean; // Singles or doubles
-  eventSize?: number;
-  date: string;
+  vrEventId: number  = null;
+  eventName: string  = null;
+  eventGrade: string = null;
+  eventGender: string = null;
+  eventMinAge: number = null;
+  eventMaxAge: number = null;
+  eventIsSingles: boolean = null; // Singles or doubles
+  eventSize: number = null;
+  date: string = null;
 
   constructor() {
   }

@@ -103,7 +103,7 @@ export class MatchDataExporterService {
     wb.Props = {
       Title: 'Tennis Canada Event Ratings',
     };
-    let reportSheet: WorkSheet = await utils.json_to_sheet([], {
+    let reportSheet: WorkSheet = utils.json_to_sheet([], {
       header:
         ['Match ID', 'Date',
           'Winner 1 Name', 'Winner 1 Third Party ID', 'Winner 1 Gender', 'Winner 1 DOB',
@@ -122,7 +122,7 @@ export class MatchDataExporterService {
           'Tournament Event Category', 'Tournament Event Grade', 'Tournament Import Source', 'Tournament Sanction Body',
         ],
     });
-    reportSheet = await utils.sheet_add_json(reportSheet, reportData, {
+    reportSheet = utils.sheet_add_json(reportSheet, reportData, {
       skipHeader: true,
       origin: 'A2',
     });
@@ -149,13 +149,13 @@ export class MatchDataExporterService {
     this.mqReportStats.setCurrentActivity('Building "Match Competitiveness" report');
     const tournamentsWithoutMatches: { code: string, name: string, endDate: string }[] = [];
 
-    const wb: WorkBook = await utils.book_new();
+    const wb: WorkBook = utils.book_new();
     wb.Props = {
       Title: 'Tennis Canada Match Competitiveness',
     };
 
     let reportSheet: WorkSheet;
-    let reportRow = 2; // 2 because a- Excel counts from 1 and b- there is a header row.
+    let reportRow = 2; // 2 because a) Excel counts from 1 and b) there is a header row.
 
     // Initially, I wrote a query to get everything.  The Query took a very long time,
     // and it would get longer and use more memory as time goes by.  So I broke it
@@ -210,10 +210,10 @@ export class MatchDataExporterService {
         if (!reportSheet) {
           // For the first set of results, we create the worksheet
           // this function causes header rows to be added.
-          reportSheet = await utils.json_to_sheet(reportData);
+          reportSheet = utils.json_to_sheet(reportData);
         } else {
           // For subsequent sheets we just add rows, skipping the headers
-          reportSheet = await utils.sheet_add_json(reportSheet, reportData, {
+          reportSheet = utils.sheet_add_json(reportSheet, reportData, {
             skipHeader: true,
             origin: `A${reportRow}`,
           });
@@ -223,7 +223,7 @@ export class MatchDataExporterService {
       } else {
         // It turns out that a lot of tournaments do not have matches to report:
         // - many were cancelled, usually COVID related
-        //    - some of those have ANULLED CANCELLED in their name
+        //    - some of those have "ANULLED" "CANCELLED" in their name
         //    - some do not
         // - some only have under 10 type matches which do not get reported
         // - and there is a chance, I screwed up and did not get the matches
@@ -242,8 +242,8 @@ export class MatchDataExporterService {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     utils.book_append_sheet(wb, reportSheet, 'Matches');
-    const tournamnetsWithoutMatchesSheet = await utils.json_to_sheet(tournamentsWithoutMatches);
-    utils.book_append_sheet(wb, tournamnetsWithoutMatchesSheet, 'TournamentsWithoutMatches');
+    const tournamentsWithoutMatchesSheet = utils.json_to_sheet(tournamentsWithoutMatches);
+    utils.book_append_sheet(wb, tournamentsWithoutMatchesSheet, 'TournamentsWithoutMatches');
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
     const filename = `Reports/MatchCompetitiveness_${now}.xlsx`;
     await writeFile(wb, filename);

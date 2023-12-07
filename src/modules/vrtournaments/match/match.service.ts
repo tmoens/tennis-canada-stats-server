@@ -52,6 +52,8 @@ export class MatchService {
       // estimate.
       for (const m of matches) {
         if (!m.MatchTime) {
+          // console.log(`MatchTime for ${draw.event.tournament.tournamentCode}, ${draw.event.name}, ${draw.event.grade}
+          // match time: ${m.MatchTime}, tournament end date: ${draw.event.tournament.endDate}` );
           m.MatchTime = draw.event.tournament.endDate;
           importStats.bump(TOURNAMENT_MATCH_DATE_ESTIMATED);
         }
