@@ -253,6 +253,12 @@ export class MatchDataExporterService {
     this.mqReportStats.setCurrentActivity('Finished Match Competitiveness Report');
     this.mqReportStats.setStatus(JobState.DONE);
     this.mqReportStats.log();
+
+    // wait a moment before writing workbook. Just look the other way.
+    // For some reason, on the production machine once writing of the report is complete,
+    // The call to getBuildMatchCompetitivenessReportStats fails.  This little
+    // pause is intended to allow a little more time.
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   getBuildUTRReportStats(): JobStats {
