@@ -11,7 +11,6 @@ import {JobState, JobStats} from '../../utils/jobstats';
 import {ExternalTournament} from '../external-tournaments/external-tournament/external-tournament.entity';
 import {ExternalEventService} from '../external-tournaments/external-event/external-event.service';
 import {ExternalEvent} from '../external-tournaments/external-event/external-event.entity';
-import {PointExchangeService} from '../external-tournaments/point-exchange/point-exchange.service';
 import {ExternalEventResultService} from '../external-tournaments/external-event-result/external-event-result.service';
 import {ExternalEventResult} from '../external-tournaments/external-event-result/external-event-result.entity';
 import {ItfMatchResultsService} from '../external-tournaments/itf-match-results/itf-match-results.service';
@@ -21,7 +20,7 @@ const DEBUG_LIMIT = 500000;
 const logger = getLogger('itfapi');
 // This service makes a call to the ITFAPI to load results in a given time period.
 // The returned structure is a somewhat complicated nested JSON object which
-// gets broken down and stored in it's constituent parts.
+// gets broken down and stored in its constituent parts.
 
 // OK, so what the heck is this agent?
 // Well, if you do not use it, the "normal" agent will open up a new
@@ -30,7 +29,7 @@ const logger = getLogger('itfapi');
 // any more connections ETIMEDOUT or some such thing.  So we have
 // to push all our request down a number of sockets which we keep
 // alive.  This line plus the use of one below where the agent is
-// used cost about 6 hours.  Hence this rememory note.
+// used cost about 6 hours.  Hence, this rememory note.
 const keepaliveAgent = new HttpsAgent({maxSockets: 10});
 
 @Injectable()
@@ -39,7 +38,6 @@ export class ItfapiService {
 
   constructor(
     private readonly config: ConfigurationService,
-    private readonly eventRatingService: PointExchangeService,
     private readonly externalTournamentService: ExternalTournamentService,
     private readonly externalPlayerService: ExternalPlayerService,
     private readonly externalEventService: ExternalEventService,

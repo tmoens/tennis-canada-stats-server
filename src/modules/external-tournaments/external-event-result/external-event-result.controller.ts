@@ -18,7 +18,7 @@ export class ExternalEventResultController {
 
   @Get('getFilteredResults')
   @UseGuards(JwtAuthGuard)
-  async getFilteredTournaments(@Query() query): Promise<ExternalEventResultDTO[] | null> {
+  async getFilteredResults(@Query() query): Promise<ExternalEventResultDTO[] | null> {
     return await this.service.getFilteredResults(query);
   }
 

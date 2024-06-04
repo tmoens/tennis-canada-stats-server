@@ -36,16 +36,6 @@ export class ExternalTournamentService {
     if (d.EndDate) t.endDate = d.EndDate.slice(0, 10);
     if (d.StartDate) t.startDate = d.StartDate.slice(0, 10);
 
-    // After 2018 - we care a lot less about sub categories as we have switched to
-    // a simple "exchange rate" method of of awarding canadian ranking points.
-    // The new method does not care about Categories and subCategories of the tournament,
-    // only the points earned by the player.
-    const after2018: boolean = ('2018' < t.endDate.slice(0, 4));
-
-    // In 2019, we had the introduction of the ITF Transition tour which awarded
-    // its own points which we had to convert.  This ended as quickly as it began.
-    const after2019: boolean = ('2019' < t.endDate.slice(0, 4));
-
     t.hostNation = d.HostNation;
     t.name = d.PromoName;
     t.zone = d.Zone;
@@ -67,16 +57,8 @@ export class ExternalTournamentService {
           case 'ITF':
             // ITF events are sanctioned by the ITF, not the ATP
             t.sanctioningBody = 'ITF';
-            if (after2018 && !after2019) {
-              // The transition Tour existed in 2019 only
-              // They awarded their own points (not ATP points)
-              t.category = 'TT';
-              t.subCategory = 'TT';
-            } else {
-              // before and after that they awarded ATP points, and are pro tournaments.
-              t.category = 'Pro';
-              t.subCategory = 'Pro';
-            }
+            t.category = 'Pro';
+            t.subCategory = 'Pro';
             break;
           case 'SL':
             // No sub categories
@@ -101,12 +83,12 @@ export class ExternalTournamentService {
           case 'CH':
             // API does not distinguish subCategories
             t.category = 'Challenger';
-            if (after2018) t.subCategory = 'Challenger';
+            t.subCategory = 'Challenger';
             break;
           case 'FU':
             // API does not distinguish subCategories
             t.category = 'Futures';
-            if (after2018) t.subCategory = 'Futures';
+            t.subCategory = 'Futures';
             break;
           case 'TC':
             // I think this is the ATP Cup
@@ -124,27 +106,10 @@ export class ExternalTournamentService {
         t.sanctioningBody = 'WTA';
         switch (d.Category) {
           case 'ITF':
+            // ITF events are sanctioned by the ITF, not the WTA
             t.sanctioningBody = 'ITF';
-            if (after2018 && !after2019) {
-              // The ITF Transition Tour existed only in 2019.
-
-              // There is a problem right here.  The ITF offers two flavours
-              // of women's pro events.  "Pro" events that offer WTA points and
-              // "Transition Tour" events that offer ITF Entry points.
-              // The API does not distinguish between the two and so we call them
-              // all TT by default.
-              // Then there is a whole user app to change some of them to "Pro" category manually.
-              // Soooo, if a user has changed the category of an event from TT to Pro, do not overwrite it.
-              if (!t.category || t.category !== 'Pro') {
-                t.category = 'TT';
-                t.subCategory = 'TT';
-              } else {
-                // The transition tour was gone in 2020 and the $15K and $20K events reverted
-                // to awarding WTA Points.  I.e. ITF Pro events.
-                t.category = 'Pro';
-                t.subCategory = 'Pro';
-              }
-            }
+            t.category = 'Pro';
+            t.subCategory = 'Pro';
             break;
           case 'SL':
             // No sub categories
@@ -181,14 +146,6 @@ export class ExternalTournamentService {
             t.category = 'WTA International';
             t.subCategory = 'WTA International';
             break;
-          case 'WITF':
-            // API does not distinguish subCategories
-            // Category went away altogether in 2019.
-            t.category = 'WITF';
-            if (after2018) {
-              t.subCategory = 'WITF';
-            }
-            break;
           default:
             logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
             break;
@@ -200,9 +157,7 @@ export class ExternalTournamentService {
           case 'GA':
             // API does not distinguish subCategories
             t.category = 'Grade A';
-            if (after2018) {
-              t.subCategory = 'Grade A';
-            }
+            t.subCategory = 'Grade A';
             break;
           case 'GB1':
             // No sub categories
@@ -238,44 +193,32 @@ export class ExternalTournamentService {
           case 'JGS':
             // Formerly grand slam
             t.category = 'J500';
-            if (after2018) {
-              t.subCategory = 'J500';
-            }
+            t.subCategory = 'J500';
             break;
           case 'J300':
             // formerly Grades B1 and 1
             t.category = 'J300';
-            if (after2018) {
-              t.subCategory = 'J300';
-            }
+            t.subCategory = 'J300';
             break;
           case 'J200':
             // formerly grade 2
             t.category = 'J200';
-            if (after2018) {
-              t.subCategory = 'J200';
-            }
+            t.subCategory = 'J200';
             break;
           case 'J100':
             // formerly grade 3
             t.category = 'J100';
-            if (after2018) {
-              t.subCategory = 'J100';
-            }
+            t.subCategory = 'J100';
             break;
           case 'J60':
             // formerly grade 4
             t.category = 'J60';
-            if (after2018) {
-              t.subCategory = 'J60';
-            }
+            t.subCategory = 'J60';
             break;
           case 'J30':
             // formerly grade 5
             t.category = 'J30';
-            if (after2018) {
-              t.subCategory = 'J30';
-            }
+            t.subCategory = 'J30';
             break;
           default:
             logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));

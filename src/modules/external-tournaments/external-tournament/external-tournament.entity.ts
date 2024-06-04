@@ -92,7 +92,7 @@ export class ExternalTournament {
   getPointCurrency(): string {
     // All ATP tournaments deal in ATP points.
     if (this.sanctioningBody === 'ATP')  return 'ATP';
-    // ALL WTA Tournaments seal in WTA Points.
+    // ALL WTA Tournaments deal in WTA Points.
     if (this.sanctioningBody === 'WTA')  return 'WTA';
     // ITF tournaments can deal in ITF Junior points or TransitionTour points or WTA points.
     if (this.sanctioningBody === 'ITF')  {
