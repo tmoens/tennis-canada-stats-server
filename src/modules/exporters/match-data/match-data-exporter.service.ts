@@ -245,7 +245,7 @@ export class MatchDataExporterService {
     const tournamentsWithoutMatchesSheet = utils.json_to_sheet(tournamentsWithoutMatches);
     utils.book_append_sheet(wb, tournamentsWithoutMatchesSheet, 'TournamentsWithoutMatches');
     const now = moment().format('YYYY-MM-DD-HH-mm-ss');
-    const filename = `Reports/MatchCompetitiveness_${now}.xlsx`;
+    const filename = `${this.config.matchCompetitivenessReportDirectory}/Match_Competitiveness_Report_${now}.xlsx`;
     await writeFile(wb, filename);
     this.mqReportStats.setData('filename', filename);
 

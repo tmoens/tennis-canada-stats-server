@@ -120,6 +120,8 @@ export class ConfigurationService implements
       UTR_REPORT_DIRECTORY: Joi.string().required(),
       UTR_REPORT_GOES_BACK_IN_DAYS: Joi.number().required(),
 
+      MATCH_COMPETITIVENESS_REPORT_DIRECTORY: Joi.string().required(),
+
       CALENDAR_DB_SYNC_PERIOD: Joi.number().default(5),
 
       HOW_MANY_CANDIDATE_MATCHES: Joi.number().default(3),
@@ -205,6 +207,10 @@ export class ConfigurationService implements
 
   get utrReportDirectory(): string {
     return String(this.envConfig.UTR_REPORT_DIRECTORY);
+  }
+
+  get matchCompetitivenessReportDirectory(): string {
+    return String(this.envConfig.MATCH_COMPETITIVENESS_REPORT_DIRECTORY);
   }
 
   get calendarDbSyncPeriod(): number {
