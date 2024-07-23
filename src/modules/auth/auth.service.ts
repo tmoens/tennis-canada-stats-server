@@ -32,8 +32,4 @@ export class AuthService {
     this._loggedIn[user.id] = token;
     return token;
   }
-
-  isLoggedIn(user: User) {
-    return !!(this._loggedIn[user.id]);
-  }
 }

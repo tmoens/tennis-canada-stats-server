@@ -10,6 +10,7 @@ export class AuthController {
     private authService: AuthService,
   ) {}
 
+  // This is the only endpoint that uses the LocalAuthGuard (i.e. password)
   @UseGuards(LocalAuthGuard)
   @Post('auth/login')
   async login(@Request() req) {

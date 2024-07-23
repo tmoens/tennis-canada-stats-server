@@ -8,6 +8,18 @@ import {getLogger, Logger} from 'log4js';
 
 const logger: Logger = getLogger('JwtStrategy')
 
+/**
+ * This strategy is for validating access a route using a JWT.
+ *
+ * It checks that the content of the incoming JWT content identifies a user
+ * and that the user is permitted to access the system (i.e. is logged in and
+ * has not been deactivated).
+ *
+ * Note that the Passport library automatically checks that the token itself is
+ * valid and has not expired before calling the validate function. The validate
+ * function does the rest.
+ */
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -23,9 +35,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // At this point, the token itself and the expiry have already been checked by Passport.
-    // However, the user may have logged out or been deactivated.
-
     const user = await this.userService.findActiveUser(payload.sub);
     if (!user) {
       const message = 'Bad Token: token does not identify an active user.'

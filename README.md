@@ -2,14 +2,15 @@
 
 **DO NOT PUT THE PRODUCTION CONFIGURATION IN SOURCE CONTROL**
 
-Is actually a set of server side programs that collect and analyze Tennis Canada tournament and league play statistics.
+Tennis Canada Stats Server is actually a set of server side programs that 
+collect and analyze Tennis Canada tournament and league play statistics.
 
 These server side programs are written in Typescript using the NestJS framework.
 
 The server side programs make use of MariaDB through an Object Relational
 Mapping Tool called TypeORM.
 
-The server required Node to be run.
+The server requires Node to be run.
 
 ## Relationship to Tennis Canada Stats Admin Client
 
@@ -75,10 +76,11 @@ small subset of that data used to run Tennis Canada's calendar application.
 
 The servers are a set of Typescript programs. 
 
-The all use the same configuration data as as described above.
+The all use the same configuration data as described above.
 
 These programs are each either run on a schedule or on demand, as described 
-below.  Schedules are configured in the Task Scheduler application on Windows.
+below.  On the production system, schedules are configured in the Task 
+Scheduler application on Windows.
 
 ### Tennis Canada Stats Server (main.ts)
 
@@ -87,9 +89,9 @@ This program provides an API to the Tennis Canada Stats Client to support
 various applications.
 
 #### Notes
-The stats server runs on a port set in the configuration. Traffic from the Stats
-Client directed to this API is redirected to the appropriate port in the 
-Webserver (apache) configuration.
+The stats server runs on a port that is set in the configuration. Traffic from
+the Stats Client directed to this API is redirected to the appropriate port in
+the Webserver (apache) configuration.
 
 For details on all the client applications supported by this server, see the 
 Tennis Canada Stats Client repo.
@@ -98,8 +100,8 @@ This server produces lots of logs in the logs directory and reports in the
 Reports directory.  
 
 #### Schedule
-This server is persistent. The Windows Task Manager is supposed to restart 
-it if it fails.
+This server is persistent. In the production environment the Windows Task 
+Manager is supposed to restart it if it fails.
 
 ### Load VR Tournaments (loadVRTournaments)
 
@@ -112,7 +114,7 @@ Configuration for VR API access is in the config file.
 
 This includes the tournaments, events, draws, matches, players and mores.
 The data is used by Tennis Canada for reports and analysis.
-Tournaments are loaded whether they have started or not.
+Tournaments are loaded whether play has started or not.
 In that way there is up-to-data about all planned tournaments and leagues.
 The loader uses this simple approach:
 - get a list of all the tournaments run this calendar year and last
@@ -136,7 +138,7 @@ The main use rankings data is for a report that computes the strength of a
 particular event after it has been played.  If an event has higher ranking 
 participants, it is deemed to be stronger than an event with lower ranking 
 participants.  This allows Tennis Canada to determine if a tournament or an 
-event within a tournament deserve a higher or lower rating.
+event within a tournament deserves a higher or lower rating.
 
 It is also the case that VR only provides ranking history for only two years,
 and so at this point, Tennis Canada has the ability to use or present a much 
@@ -144,7 +146,8 @@ richer historical view if they were to choose to do so.
 
 It is possible that once rankings are published, they can later be changed. 
 For that reason, the same kind of loading algorithm is used as with loading 
-tournaments.
+tournaments.  That is, if our rankings for a particular week are out of date,
+delete them and reload from VR.
 
 #### Schedule
 This program runs daily. Rankings updates are infrequent and there is no 
@@ -166,8 +169,9 @@ timely fashion.  Therefore, there is an application that Tennis Canada uses
 to review this data and correct it as necessary.  That application is 
 supported by the API provided by the main stats server program.
 
-The data is then exported manually to VR so that ranking points are applied to 
-player rankings. This process is done by Tennis Canada administrators.
+The data from these tournaments is then exported manually to VR so that ranking 
+points are applied to player rankings. This process is done by Tennis Canada
+administrators.
 
 #### Schedule
 This program runs hourly to keep data up to date.
@@ -178,17 +182,17 @@ This is standalone program that reads the stats database and populates the
 database used to support the Tennis Canada Calendar application.
 
 #### Notes
-This is very much an ad-hoc job.  The main purpose is to give a stand-alone 
+This is very much an ad-hoc job.  The main purpose is to maintain a stand-alone 
 database for the Tennis Canada Calendar application to use to present its 
 web pages.
 
 The Calendar app originally read the stats database directly.  Of course, it 
 should have used an API, but at the time there was no one to develop an API 
 and so SQL calls were made.  Though practical, it was a horrible decision 
-because it meant that if this system changed its database, Calendar 
+because it meant that if this system changed its database, the Calendar 
 application might go down.  So, a decision was made to have a program 
 extract data from the stats database and populate the calendar database as a 
-way to decouple changes.  Of course this means that id the stats database 
+way to decouple changes.  Of course this means that if the stats database 
 changes, the updateCalendarDatabase code has to be checked to see if it is 
 affected.
 
@@ -221,8 +225,8 @@ TC Stats Admin Client.
 #### Purpose
 This is a report that lists the match history in the stats database. Each 
 match is augmented with a "competitiveness" level which is a number 
-indicating that a match was somewhere between very competitive (7-6, 6-7, 7-6) 
-and not at all competitive (6-0, 6-0).
+indicating that a match was somewhere between very competitive (e.g. 7-6, 6-7, 
+7-6) and not at all competitive (e.g. 6-0, 6-0).
 
 #### Schedule
 It is run on demand using the Tennis Canada Stats Admin Client.
@@ -245,9 +249,7 @@ $ npm run start:dev
 npm run start:prod
 ```
 For the other programs, look at the configuration of the Task Scheduler on 
-the deployment machine.
-
-
+the deployment server.
 
 ## Database
 
@@ -273,6 +275,6 @@ server.
 ## TODO
 
 1. I added a library "dom" to the tsconfig.json file which solves a compile 
-   problem BUT does not belong here in a node environment. It is probably 
-   not required anymore.
+   problem BUT does not belong here in a node environment on the server side. 
+   It is probably not required anymore.
 

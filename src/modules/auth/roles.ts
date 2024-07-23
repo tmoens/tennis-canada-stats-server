@@ -1,3 +1,10 @@
+/**
+ * These are the "roles" supported by the system.
+ *
+ * The BC Membership role is defunct.  It used to be used for an application that
+ * would allow BC_MEMBERSHIP_ROLE admin to check their club membership lists against
+ * the known VR Members.
+ */
 export const GUEST_ROLE = 'guest';
 export const USER_ROLE = 'user';
 export const ADMIN_ROLE = 'admin';

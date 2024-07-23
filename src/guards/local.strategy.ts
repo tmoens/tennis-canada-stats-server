@@ -4,6 +4,11 @@ import {Injectable, UnauthorizedException} from '@nestjs/common';
 import {UserService} from '../modules/user/user.service';
 import {getLogger, Logger} from 'log4js';
 
+/**
+ * The "local" authorization strategy is a straight password check.
+ * It only guards the login route.
+ */
+
 const logger: Logger = getLogger('LocalStrategy');
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
