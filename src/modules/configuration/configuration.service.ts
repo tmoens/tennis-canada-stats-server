@@ -114,6 +114,7 @@ export class ConfigurationService implements
 
       TOURNAMENT_UPLOAD_START_YEAR: Joi.number().default(0),
       TOURNAMENT_UPLOAD_LIMIT: Joi.number().default(10),
+      BOX_LADDER_FORCE_RELOAD_PERCENT: Joi.number().default(0),
 
       RANKING_PUBLICATION_UPLOAD_LIMIT: Joi.number().default(10),
 
@@ -197,6 +198,10 @@ export class ConfigurationService implements
     return Number(this.envConfig.TOURNAMENT_UPLOAD_LIMIT);
   }
 
+  get boxLadderForceReloadPercent(): number {
+    return Number(this.envConfig.BOX_LADDER_FORCE_RELOAD_PERCENT);
+  }
+
   get rankingUploadLimit(): number {
     return Number(this.envConfig.RANKING_PUBLICATION_UPLOAD_LIMIT);
   }
@@ -278,6 +283,7 @@ export class ConfigurationService implements
       password: this.envConfig.DB_PASSWORD,
       synchronize: this.typeORMSyncDatabase,
       logging: logOptions,
+      charset: 'utf8mb4',
     }
     switch(db) {
       case TC_STATS_DB:

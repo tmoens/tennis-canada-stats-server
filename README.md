@@ -56,7 +56,7 @@ The configuration is in the /environments directory.
 There are a number of configuration parameters that need to be set to
 run the servers in development or production mode.
 The configuration files are in the /environments directory.
-They contain passwords for the database, the VR aAPI and the ITF API and
+They contain passwords for the database, the VR API and the ITF API and
 thus should never be stored in the git repository.  
 The current version in live deployment has good settings.
 

@@ -24,7 +24,9 @@ const OL_LEAGUE_UP_TO_DATE_COUNT = 'Online leagues already up to date';
 const BOX_LEAGUE_CREATION_COUNT = 'Box leagues created';
 const BOX_LEAGUE_UPDATE_COUNT = 'Box leagues updated';
 const BOX_LEAGUE_UP_TO_DATE_COUNT = 'Box leagues already up to date';
+const BOX_LEAGUE_FORCED_RELOAD_COUNT = 'Box leagues reloaded in spite of being up to date';
 const SKIP_COUNT = 'Leagues and Tournaments skipped';
+const DUPLICATE_COUNT = 'Tournaments or Leagues seen multiple times';
 const DONE = 'Done (created + updated + already up to date + skipped)';
 
 const logger = getLogger('tournamentService');
@@ -66,9 +68,13 @@ export class TournamentService {
       year = d.getFullYear();
     }
 
+    // Some tournaments (Box Ladders in particular) may show up in the
+    // tournament list for multiple years. So we keep track of the tournaments
+    // we have done.
+    const tournamentsDone: string[] = [];
     for (year; year >= this.config.tournamentUploadStartYear; year--) {
       if (this.importStats.get(TOURNAMENT_CREATION_COUNT) >= this.config.tournamentUploadLimit) break;
-      await this.importTournamentsFromVRYear(year);
+      await this.importTournamentsFromVRYear(year, tournamentsDone);
     }
 
     this.importStats.setStatus(JobState.DONE);
@@ -77,7 +83,7 @@ export class TournamentService {
     return;
   }
 
-  async importTournamentsFromVRYear(year: number) {
+  async importTournamentsFromVRYear(year: number, tournamentsDone: string[]) {
     // Ask the API for a list of tournaments since a configured start time
     // The API responds with an array an object containing only one item called
     // Tournament which is an array of mini tournamentId records.
@@ -92,6 +98,16 @@ export class TournamentService {
 
     for (let i = tournamentCount - 1; i >= 0; i--) {
       const miniTournament = miniTournaments[i];
+
+      // Some tournaments show up in multiple years (Box Ladders in particular)
+      // So, keep track of ones that have been processed and don't redo any.
+      if (tournamentsDone.includes(miniTournament.Code)) {
+        this.importStats.bump(DUPLICATE_COUNT);
+        logger.info(`Tournament ${miniTournament.Code} type: ${miniTournament.TypeID} seen multiple times`);
+        continue;
+      } else {
+        tournamentsDone.push(miniTournament.Code);
+      }
 
       // 2022-10-20 add support for box leagues.
       // 2022-11-17 add support for on-line leagues
@@ -132,7 +148,19 @@ export class TournamentService {
         if (miniTournament.TypeID === '0') this.importStats.bump(TOURNAMENT_UP_TO_DATE_COUNT);
         if (miniTournament.TypeID === '1') this.importStats.bump(LP_LEAGUE_UP_TO_DATE_COUNT);
         if (miniTournament.TypeID === '3') this.importStats.bump(OL_LEAGUE_UP_TO_DATE_COUNT);
-        if (miniTournament.TypeID === '10') this.importStats.bump(BOX_LEAGUE_UP_TO_DATE_COUNT);
+        if (miniTournament.TypeID === '10') {
+          // 2024-07-25 It turns out that for Box Ladders, the LastUpdated value
+          // DOES NOT get updated when match results are added. So we have to reload
+          // them by force on occasion.
+          if (this.config.boxLadderForceReloadPercent > (Math.random() * 100)) {
+            logger.info(`Forced reload of Box Ladder ${miniTournament.Code}`);
+            await this.repository.remove(tournament);
+            await this.createTournamentFromVRAPI(miniTournament.Code);
+            this.importStats.bump(BOX_LEAGUE_FORCED_RELOAD_COUNT);
+          } else {
+            this.importStats.bump(BOX_LEAGUE_UP_TO_DATE_COUNT);
+          }
+        }
       }
 
       this.importStats.bump(DONE);
