@@ -19,7 +19,7 @@ export class ItfMatchResultsService {
 
   /**
    * create or update an itf match record
-   * @param externalEvent - the ExternalEvent that this match occured
+   * @param externalEvent - the ExternalEvent that this match occurred
    * @param externalPlayer - the ExternalPlayer of interest
    * @param matchData - The data that was received from the ITF API for this match.
    */
@@ -33,7 +33,7 @@ export class ItfMatchResultsService {
         relations: ['event', 'player'],
       });
     if (!r) {
-      r = await this.repo.create({MatchId: matchData.MatchId, player: externalPlayer});
+      r = this.repo.create({MatchId: matchData.MatchId, player: externalPlayer});
     }
     r.event = externalEvent;
     // Because the table was set up to have all exactly the same fields

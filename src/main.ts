@@ -10,7 +10,7 @@ async function bootstrap() {
   const configService: ConfigurationService = await app.get(ConfigurationService);
 
   /**
-   * make several directories, just in case it is a fresh install.
+   * make several directories, just in case it is a fresh installation.
    */
   try {
     mkdirSync('./log');

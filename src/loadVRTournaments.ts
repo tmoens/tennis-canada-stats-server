@@ -3,7 +3,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {TournamentService} from './modules/vrtournaments/tournament/tournament.service';
-import {configure, getLogger} from 'log4js';
+import {configure} from 'log4js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

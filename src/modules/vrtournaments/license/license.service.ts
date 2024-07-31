@@ -33,7 +33,7 @@ export class LicenseService {
 
   async setTennisAssociationForLicenses(licenses: LicenseDTO[]): Promise<any> {
     for (const license of licenses) {
-      this.setTennisAssociationForLicense(license);
+      await this.setTennisAssociationForLicense(license);
     }
   }
 

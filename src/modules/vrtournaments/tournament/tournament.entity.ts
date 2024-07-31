@@ -82,8 +82,8 @@ export class Tournament {
   // is older than the provided date string - in which case we are out of date.
   isOutOfDate(lastUpdateInVR: string): boolean {
     // We have to truncate milliseconds from the incoming "LastUpdated" time
-    // Because mysql does the same when it stores the value and we need to
-    // compare the two so we know if ours is out of date.
+    // Because mysql does the same when it stores the value, and we need to
+    // compare the two, so we know if ours is out of date.
     const lu: Date = new Date(lastUpdateInVR);
     lu.setMilliseconds(0);
     return (null == this.lastUpdatedInVR || this.lastUpdatedInVR < lu);

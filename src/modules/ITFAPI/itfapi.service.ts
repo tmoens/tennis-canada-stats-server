@@ -24,8 +24,8 @@ const logger = getLogger('itfapi');
 
 // OK, so what the heck is this agent?
 // Well, if you do not use it, the "normal" agent will open up a new
-// socket connection for each call to the API.  The API gets a
-// a little testy about that and at some point says, does not accept
+// socket connection for each call to the API. The API gets a
+// little testy about that and at some point says, does not accept
 // any more connections ETIMEDOUT or some such thing.  So we have
 // to push all our request down a number of sockets which we keep
 // alive.  This line plus the use of one below where the agent is
@@ -153,7 +153,7 @@ export class ItfapiService {
               // We load those now.
               let count: number;
               for (const matchData of eventData.Matches) {
-                this.itfMatchResultService.loadFromITFAPI(ee, ep, matchData);
+                await this.itfMatchResultService.loadFromITFAPI(ee, ep, matchData);
                 count = this.stats.bump('itf matches loaded');
                 if (count % 100 === 0) {
                   logger.info('Matches Loaded: ' + count);

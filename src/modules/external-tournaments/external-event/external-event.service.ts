@@ -4,7 +4,6 @@ import {Repository} from 'typeorm';
 import {ExternalEvent} from './external-event.entity';
 import {ExternalTournament} from '../external-tournament/external-tournament.entity';
 import {getLogger} from 'log4js';
-import {PointExchangeService} from '../point-exchange/point-exchange.service';
 
 @Injectable()
 export class ExternalEventService {

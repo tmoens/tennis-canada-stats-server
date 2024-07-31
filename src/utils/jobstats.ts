@@ -1,7 +1,7 @@
 import {getLogger} from 'log4js';
 
 /*
- * A very small object to track the status of long running jobs.
+ * A very small object to track the status of long-running jobs.
  * By keeping one of these up to date, the server can answer
  * client polling for the status of a job.
  *

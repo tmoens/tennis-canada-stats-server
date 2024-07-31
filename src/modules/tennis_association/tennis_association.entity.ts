@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn} from "typeorm";
+import {Entity, Column, PrimaryGeneratedColumn} from 'typeorm';
 
 @Entity('tennisassociation')
 export class TennisAssociation {
@@ -6,38 +6,38 @@ export class TennisAssociation {
   @PrimaryGeneratedColumn()
   tennisAssociationId:number;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   name: string;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   regionName: string;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   regionAbbrv: string;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   url: string;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   vrURL: string;
 
 
-  constructor(rn:string, ra:string, n:string, url:string, vrurl:string) {
+  constructor(rn:string, ra:string, n:string, url:string, vrUrl:string) {
     this.name = n;
     this.regionName = rn;
     this.regionAbbrv = ra;
     this.url = url;
-    this.vrURL = vrurl;
+    this.vrURL = vrUrl;
   }
 
 }

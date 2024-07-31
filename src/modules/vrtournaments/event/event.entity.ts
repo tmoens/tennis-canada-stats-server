@@ -129,7 +129,7 @@ export class Event {
     // Singles or doubles?
     const sd = this.isSingles ? 'S' : 'D';
 
-    // Figure out what type of event is is based
+    // Figure out what type of event it is
     if (this.minAge > 28) {
       // looks like a senior's event
       return ('S' + this.genderId + sd + 'O' + this.minAge);
@@ -139,7 +139,7 @@ export class Event {
       return ('J' + this.genderId + sd + 'U' + this.maxAge);
     }
 
-    // we are assuming a level based (Adult) event
+    // we are assuming a level based (Adult) event,
     // and we are assuming that the Level is therefore filled in.
     return ('A' + this.genderId + sd + 'L' + this.level);
   }

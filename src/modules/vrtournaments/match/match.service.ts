@@ -39,7 +39,7 @@ export class MatchService {
 
 
     // When importing matches from a tournament, the above API call gives  a
-    // list of "Match"es.
+    // list of "Match" objects.
     if (draw.event.tournament.isTournament()) {
       const matches: any[] = VRAPIService.arrayify(tl_matches_json.Match);
       logger.info(matches.length + ' matches found');

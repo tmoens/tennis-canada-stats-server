@@ -107,10 +107,10 @@ export class PlayerService {
   }
 
   // Some client gets its hands on a VR player ID and possibly more scraps of player info.
-  // It wants to lookup that player.
+  // It wants to look up that player.
   async findPlayerOrFacsimile(config: PlayerConfig, tryToCreate: boolean = false): Promise<Player> {
     // if we get an invalid playerId, we are pretty much hooped
-    // so this is the "unknown player" case and we just return playerZero
+    // so this is the "unknown player" case, and we just return playerZero
     // Note that the "unknown player" is very different from "no Player" like in a Bye
     // situation.
     if (!PlayerService.validatePlayerId(config.playerId)) {
@@ -151,7 +151,7 @@ export class PlayerService {
   // This checks the VRAPI to see if it knows about a player Id and if so
   // it creates the player *and saves* it in the database.
   async loadPlayerFromVRAPI(playerId: number, source?: string): Promise<Player | null> {
-    // Lets try to use the VR API to get the player details.
+    // Let's try to use the VR API to get the player details.
     const apiPlayer = await this.vrapi.get('Player/' + playerId);
     if (null == apiPlayer.Player) {
       // no such luck
@@ -253,7 +253,7 @@ export class PlayerService {
   // Normally what happens is the Fred creates a VR account with a VRID.
   // Then he forgets his password and goes and creates another account
   // in spite of how hard we try to convince him not to.
-  // Then his results and rankings start to look screwy and he
+  // Then his results and rankings start to look screwy, and he
   // complains that the system is "not optimal"
 
   // Someone then goes and merges the two IDs in the VR system
@@ -326,7 +326,7 @@ export class PlayerService {
     }
 
     // The player you are trying to renumber TO must also be known.
-    // Lets look up the TO player.
+    // Let's look up the TO player.
     let toPlayer: Player = await this.findPlayerOrLoadFromVR(pmr.toPlayerId, '*toPlayer* in renumbering');
     if (null === toPlayer) {
       // toId is not in the database and not available in the VRAPI.
@@ -345,11 +345,11 @@ export class PlayerService {
     // Here is where we prevent renumbering loops.
     // We chase the renumbering of the TO id.
     // If eventually renumbers to the FROM id, it was an attempt to create a loop.
-    // e.g. if existing renumberings were a->b, b->c, c->d
+    // e.g. if existing renumberings were a->b, b->c, c->d,
     // and we were asked to renumber FROM d TO a,
-    // it would be disallowed because a renumbers to d.
-    // Likewise if we try to renumber FROM d TO b
-    // will also be disallowed because b renumbers to d.
+    // it would be disallowed because a already renumbers to d.
+    // Likewise, if we try to renumber FROM d TO b
+    // will also be disallowed because b already renumbers to d.
     // Same for c to d and also d to d (the shortest loop of them all).
     // Note that the erroneous renumbering requests of c->a, b->a and c->b
     // are already taken care of by the fact that you cannot renumber one id
@@ -385,7 +385,7 @@ export class PlayerService {
     // in the database. PlayerIDs can show up in three places:
     // - any time a player has played a match (MatchPlayer)
     // - any time a player shows up in a ranking list (VRRankingsItem)
-    // - any time a player entered in an event
+    // - any time a player is entered in an event
     response.merges = {
       matches: await this.matchPlayerService.renumberPlayer(fromPlayer, renumberedToPlayer),
       ranking_entries: await this.vrRankingsItemService.renumberPlayer(fromPlayer, renumberedToPlayer),
@@ -397,7 +397,7 @@ export class PlayerService {
   // This does the work of importing a VR "All Persons" report.
   // Note:  We previously did this with xlsx js but loading the large
   // xlsx file was blocking the whole node server.
-  // Furthermore the xlsx library does not allow a streaming read so we
+  // Furthermore, the xlsx library does not allow a streaming read, so we
   // reverted to .csv.
   async importVRPersons(players: any[]) {
     logger.info('**** Starting player import.');
@@ -418,7 +418,7 @@ export class PlayerService {
         this.importStats.bump('player created');
       }
       this.importStats.setCurrentActivity(`Loading player ${player.playerId}.`);
-      // This is the order in which the fields appear in the excel spreadsheet.
+      // This is the order in which the fields appear in the Excel spreadsheet.
       // skip playerData.code
       player.lastName = playerData.lastname;
       // skip playerData.lastname2
@@ -490,17 +490,17 @@ export class PlayerService {
 
   /**
    * This returns minimal player records that can be given to the ITF without
-   * releasing personal information like birth date, address, phone numbers
+   * releasing personal information like birthdate, address, phone numbers
    * or e-mail.
    */
   async getITFPlayerData(): Promise<ITFPlayerDataDTO[]> {
     const players: Player[] = await this.repo.find({where: {itfOptIn: true}});
     const itfPlayers: ITFPlayerDataDTO[] = [];
     for (const p of players) {
-      /* looking at this you will ask "WTF? Why did you not simply join
+      /* looking at this you will ask "WTF?" Why did you not simply join
        * external player to the vr player???
-       * The answer is that a) i did not create that relation in the player entity
-       * and b) it is possible that multiple external players could be mapped
+       * The answer is that first: I did not create that relation in the player entity
+       * and second: it is possible that multiple external players could be mapped
        * to the same internal player.
        */
       const dto = new ITFPlayerDataDTO(p);

@@ -35,7 +35,7 @@ export class VRRankingsTypeService {
     this.rankingsImportStats = new JobStats(' VR Rankings Import');
     this.rankingsImportStats.setStatus(JobState.IN_PROGRESS);
     logger.info('**** VR Ranking Import starting...');
-    // go get the the known rankings types
+    // go get the known rankings types
     const rankingTypes: VRRankingsType[] = await this.repository
       .find({relations: ['vrRankingsCategories']});
     for (const rankingType of rankingTypes) {

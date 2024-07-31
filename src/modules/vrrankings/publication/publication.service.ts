@@ -14,7 +14,7 @@ import {ConfigurationService} from '../../configuration/configuration.service';
 // publication. VR has one publication per rankings type
 // (adult/senior/junior/wheelchair) per week.
 // But we break it down to one publication per category per week
-// (e.g. 4.5 Men's singles, U16 Girls doubles etc)\
+// (e.g. 4.5 Men's singles, U16 Girls doubles etc.)\
 // So, for us there are 35 Adult, 25 Junior and 65
 // Senior rankings publications every week.
 
@@ -79,7 +79,7 @@ export class VRRankingsPublicationService {
     // Ask the API for a list of vr rankings publications for this type of ranking
     // The publications list goes back 100 weeks.
     const pubs_json = await this.vrapi.get('Ranking/' + rankingType.typeCode + '/Publication');
-    const publicationList = await VRAPIService.arrayify(pubs_json.RankingPublication);
+    const publicationList = VRAPIService.arrayify(pubs_json.RankingPublication);
 
     logger.info(publicationList.length + ' publications found for ' + rankingType.typeName);
 
@@ -162,7 +162,7 @@ export class VRRankingsPublicationService {
 
     // We are going to build a separate publication object for each rankings
     // category in the rankings type.
-    const categories: VRRankingsCategory[] = await rankingType.vrRankingsCategories;
+    const categories: VRRankingsCategory[] = rankingType.vrRankingsCategories;
     let category: VRRankingsCategory;
     for (category of categories) {
       if (category.loadMe) {

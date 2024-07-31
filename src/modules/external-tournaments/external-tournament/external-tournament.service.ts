@@ -25,9 +25,9 @@ export class ExternalTournamentService {
   async loadFromITFAPI(resultData: any ): Promise<ExternalTournament> {
     let t: ExternalTournament = await this.repo.findOne(resultData.TournamentId);
     if (!t) {
-      t = await this.repo.create({tournamentId: resultData.TournamentId});
+      t = this.repo.create({tournamentId: resultData.TournamentId});
     }
-    this.updateFromITFAPI(t, resultData);
+    await this.updateFromITFAPI(t, resultData);
     return await this.repo.save(t);
   }
 
@@ -233,7 +233,7 @@ export class ExternalTournamentService {
   }
 
 // The client has asked for a filtered set of tournaments using an HTTP get query.
-// The query contains a number of possible fields which are converted to an sql query.
+// The query contains a number of possible fields which are converted to a sql query.
   async getFilteredTournaments(query: any): Promise<ExternalTournament[] | null> {
     let q = this.repo.createQueryBuilder('t');
     if (query.sanctioningBody) {

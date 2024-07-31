@@ -25,7 +25,7 @@ export class EventController {
   async buildRatingsReport( @Query() query) {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to generate report. Query: ' + JSON.stringify(query, null, 2));
-    this.eventService.rateEvents(
+    await this.eventService.rateEvents(
       query.from, query.to, query.province, query.categories.split(','));
     logger.info('Report generation complete.');
   }

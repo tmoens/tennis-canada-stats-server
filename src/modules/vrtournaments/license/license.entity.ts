@@ -28,10 +28,3 @@ export class LicenseDTO {
   readonly licenseName: string;
   readonly province: string;
 }
-
-export class VRLicenseUseDTO {
-  licenseName: string;
-  province: string;
-  lastUsed: string;
-  usageCount: string;
-}

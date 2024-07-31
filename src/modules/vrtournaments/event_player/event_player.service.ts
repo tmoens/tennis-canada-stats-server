@@ -31,9 +31,9 @@ export class EventPlayerService {
   async loadRoster(event: Event, entriesData: any[], jobStats: JobStats): Promise<boolean> {
     for (const entryData of entriesData) {
       // An entry record always contains Player1 and in doubles events also contains Player2
-      this.loadEntry(event, entryData.Player1, jobStats);
+      await this.loadEntry(event, entryData.Player1, jobStats);
       if (entryData.Player2) {
-        this.loadEntry(event, entryData.Player2, jobStats);
+        await this.loadEntry(event, entryData.Player2, jobStats);
       }
     }
     return true;

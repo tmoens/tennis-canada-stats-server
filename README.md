@@ -223,7 +223,7 @@ TC Stats Admin Client.
 
 #### Match Competitiveness Report (generateMatchCompetitivenessReport)
 #### Purpose
-This is a report that lists the match history in the stats database. Each 
+This is a report that lists the match history in the statistics database. Each 
 match is augmented with a "competitiveness" level which is a number 
 indicating that a match was somewhere between very competitive (e.g. 7-6, 6-7, 
 7-6) and not at all competitive (e.g. 6-0, 6-0).

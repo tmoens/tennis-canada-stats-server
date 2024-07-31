@@ -10,7 +10,7 @@ export class VRRankingsItem {
   // Normally, the publication+player is unique and
   // would be the primary key.  But there is a corner case
   // where a player gets two Ids and shows up in a rankings list
-  // under both Ids.  Then when the Ids are merged, we would end
+  // under both Ids.  Then, when the Ids are merged, we would end
   // up with the same player twice in the same ranking list.
   // So we created a generated key.
   @PrimaryGeneratedColumn()

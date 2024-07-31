@@ -76,7 +76,7 @@ export class Match {
   // the vr API still sends a match record - with a score status of 0 (Normal)!!!
   // If one of the players is missing, it could be a Bye, or it could simply
   // mean that the other player is TBD.  If BOTH players are missing, it
-  // could mean that both players are TBD (e.g. a SF when the QF has not
+  // could mean that both players are TBD (e.g. an SF) when the QF has not
   // yet been played.
   // As time goes by and the tournament is updated, these results will
   // be updated.
@@ -144,7 +144,7 @@ export class Match {
 
   // make a score string from the returned XML
   makeScoreString(apiMatch: any): string {
-    // The sets will come back as an array only if there are two or more
+    // The sets will come back as an array only if there are two or more,
     // so we need to fix that up a bit.
     let sets: any[];
     if (Array.isArray(apiMatch.Sets.Set)) {

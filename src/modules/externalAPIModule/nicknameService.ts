@@ -1,5 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {ExternalapiService} from './externalapi.service';
+import {lastValueFrom} from 'rxjs';
 
 @Injectable()
 export class NickNameService {
@@ -34,7 +35,7 @@ export class NickNameService {
     // and cache it.
     if (!this.nickNames[name]) {
       const temp = [];
-      const nicknames = await this.externalAPIService.fetchNickNames(name).toPromise();
+      const nicknames = await lastValueFrom(this.externalAPIService.fetchNickNames(name));
       if (nicknames && nicknames.nicknames) {
         for (const nn of nicknames.nicknames) temp.push(nn.nickname.toLowerCase());
       }

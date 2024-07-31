@@ -1,9 +1,9 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from "typeorm";
-import {Event} from "../event/event.entity";
-import {Match} from "../match/match.entity";
+import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
+import {Event} from '../event/event.entity';
+import {Match} from '../match/match.entity';
 
 @Entity()
-@Index("event",["event",])
+@Index('event',['event',])
 export class Draw {
 
   @PrimaryGeneratedColumn()
@@ -14,40 +14,40 @@ export class Draw {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE'
   })
-  @JoinColumn({name: "eventId"})
+  @JoinColumn({name: 'eventId'})
   event:Event;
 
-  @Column("int",{
-    comment: "VRs code for this draw.  It is unique within the tournament only."
+  @Column('int',{
+    comment: 'VRs code for this draw.  It is unique within the tournament only.'
   })
   drawCode:number;
 
-  @Column("varchar",{
+  @Column('varchar',{
     length:255
   })
   name: string;
 
-  @Column("int",{
-    comment: "VRs draw type code - see the api docs"
+  @Column('int',{
+    comment: 'VRs draw type code - see the api docs'
   })
   typeId:number;
 
-  @Column("int",{
-    comment: "This is not the number of players, but the number of positions in the draw."
+  @Column('int',{
+    comment: 'This is not the number of players, but the number of positions in the draw.'
   })
   drawSize:number;
 
-  @Column("int",{
+  @Column('int',{
     nullable:true,
-    comment: "If the draw ends at the semis, this would be 4. Used for qualification draws."
+    comment: 'If the draw ends at the semis, this would be 4. Used for qualification draws.'
   })
   endSize:number;
 
-  @Column("tinyint",{
+  @Column('tinyint',{
     nullable:false,
     default: false,
     width:1,
-    comment: "Indicator that this draw is a qualifier as opposed to a main draw."
+    comment: 'Indicator that this draw is a qualifier as opposed to a main draw.'
   })
   isQualification:boolean;
 
@@ -59,13 +59,13 @@ export class Draw {
 
   // Given an event object from the VR API, fill in our own fields
   buildFromVRAPIObj(apiDraw: any) {
-    this.drawCode = parseInt(apiDraw.Code);
+    this.drawCode = parseInt(apiDraw.Code, 10);
     this.name = apiDraw.Name;
-    this.typeId = parseInt(apiDraw.TypeID);
-    this.drawSize = parseInt(apiDraw.Size);
+    this.typeId = parseInt(apiDraw.TypeID, 10);
+    this.drawSize = parseInt(apiDraw.Size, 10);
     if (null != apiDraw.EndSize) {
-      this.endSize = parseInt(apiDraw.EndSize);
+      this.endSize = parseInt(apiDraw.EndSize, 10);
     }
-    this.isQualification = ("true" == apiDraw.Qualification);
+    this.isQualification = ('true' === apiDraw.Qualification);
   }
 }

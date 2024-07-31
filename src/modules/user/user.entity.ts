@@ -3,7 +3,8 @@ import {Exclude} from 'class-transformer';
 import {GUEST_ROLE} from '../auth/roles';
 import {random_password_generate} from './pasword-generator'
 
-const crypto = require('crypto');
+import * as crypto from 'crypto'
+// const crypto = require('crypto');
 
 @Entity()
 export class User {

@@ -11,11 +11,11 @@ const parseString = require('xml2js').parseString;
 // OK, so what the heck is this agent?
 // Well, if you do not use it, the "normal" agent will open up a new
 // socket connection for each call to the VRAPI.  The VRAPI gets a
-// a little testy about that and at some point says, does not accept
+// little testy about that and at some point says, does not accept
 // any more connections ETIMEDOUT or some such thing.  So we have
 // to push all our request down a number of sockets which we keep
 // alive.  This line plus the use of one below where the agent is
-// used cost about 6 hours.  Hence this rememory note.
+// used cost about 6 hours.  Hence, this rememory note.
 const keepaliveAgent = new HttpsAgent({maxSockets: 10});
 
 // Simply makes a call to the VRAPI and converts the returned XML into
@@ -49,7 +49,7 @@ export class VRAPIService {
           .auth(this.config.vrapiUser, this.config.vrapiPassword);
         done = true;
 
-        parseString(response.text, {explicitArray: false, mergeAttrs: true }, function(err, result) {
+        parseString(response.text, {explicitArray: false, mergeAttrs: true }, (err, result) => {
           r = result.Result;
         });
       } catch (e) {

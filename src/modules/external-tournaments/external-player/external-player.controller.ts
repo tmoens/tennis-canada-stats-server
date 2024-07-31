@@ -1,5 +1,4 @@
 import {Controller, Get, Param, Put, Query, UseGuards} from '@nestjs/common';
-import {AuthGuard} from '@nestjs/passport';
 import {ExternalPlayer} from './external-player.entity';
 import {ExternalPlayerService} from './external-player.service';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';

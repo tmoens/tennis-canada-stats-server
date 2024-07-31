@@ -496,7 +496,7 @@ export class PlayerIdentityService {
     return new FieldMatch(MatchCode.MISMATCH,  c.firstName, -5);
   }
 
-  // A match on a email is quite good, but it could be a parent
+  // A match on an email is quite good, but it could be a parent
   // a mismatch is not really that important.
   matchEmail(p: IdentityCheckDTO, c: Player): FieldMatch {
     if (!p.email || !c.email) return new FieldMatch(MatchCode.NO_MATCH, 'No match', 0);

@@ -74,21 +74,3 @@ export enum MatchCode {
   EFFECTIVE_MATCH = 9,
   MATCH = 10,
 }
-
-export interface HereSearchResult {
-  Relevance: number;
-  MatchLevel: string;
-  MatchQuality: any;
-  Location: HereLocation;
-}
-export interface HereLocation {
-  LocationId: string;
-  Address: HereAddress;
-}
-
-export interface HereAddress {
-  Label: string;
-  Country: string;
-  State: string;
-  PostalCode: string;
-}

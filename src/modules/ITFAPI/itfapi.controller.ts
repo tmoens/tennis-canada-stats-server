@@ -1,5 +1,4 @@
 import {Controller, Get, UseGuards} from '@nestjs/common';
-import {AuthGuard} from '@nestjs/passport';
 import {ItfapiService} from './itfapi.service';
 import {JwtAuthGuard} from '../../guards/jwt-auth.guard';
 

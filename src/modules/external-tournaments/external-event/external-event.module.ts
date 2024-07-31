@@ -3,7 +3,6 @@ import { ExternalEventController } from './external-event.controller';
 import { ExternalEventService } from './external-event.service';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {ExternalEvent} from './external-event.entity';
-import {PointExchangeModule} from '../point-exchange/point-exchange.module';
 
 @Module({
   imports: [

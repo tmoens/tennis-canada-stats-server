@@ -1,4 +1,4 @@
-import {BadRequestException, Inject, Injectable, UnauthorizedException} from '@nestjs/common';
+import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {User} from './user.entity';
 import {plainToClass} from 'class-transformer';
@@ -76,7 +76,7 @@ export class UserService  {
   }
 
   async findByUserName(username: string): Promise<User | undefined> {
-    return await this.repo.findOne({where: {username: username}});
+    return await this.repo.findOne({where: {username}});
   }
 
   // ====================== Searches =====================
@@ -100,7 +100,7 @@ export class UserService  {
   }
 
   async findActiveUser(id: string): Promise<User> {
-    return this.repo.findOne({where: {id: id, isActive: true}});
+    return this.repo.findOne({where: {id, isActive: true}});
   }
 
   async findFiltered(filter: UserFilter): Promise<User[]> {
@@ -172,17 +172,17 @@ export class UserService  {
   }
 
   async doesUsernameExist(username: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {username: username}});
+    const u: User = await this.repo.findOne({where: {username}});
     return !!(u);
   }
 
   async doesNameExist(name: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {name: name}});
+    const u: User = await this.repo.findOne({where: {name}});
     return !!(u);
   }
 
   async doesEmailExist(email: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {email: email}});
+    const u: User = await this.repo.findOne({where: {email}});
     return !!(u);
   }
 

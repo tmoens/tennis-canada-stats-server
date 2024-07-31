@@ -1,5 +1,4 @@
-import {Body, Controller, Get, Param, Post, UseGuards} from '@nestjs/common';
-import {AuthGuard} from '@nestjs/passport';
+import {Controller, Get, UseGuards} from '@nestjs/common';
 import {ExternalEventService} from './external-event.service';
 import {ExternalEvent} from './external-event.entity';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';

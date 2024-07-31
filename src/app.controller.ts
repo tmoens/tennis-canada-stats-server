@@ -1,4 +1,4 @@
-import {Get, Controller, Injectable} from '@nestjs/common';
+import {Get, Controller} from '@nestjs/common';
 
 @Controller()
 export class AppController {

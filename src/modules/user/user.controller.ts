@@ -80,7 +80,7 @@ export class UserController {
 
   // This one is strange the way it is now. Anyone anywhere could reset anyone else's password by knowing
   // another user's username.  Seems wrong.  But we cannot guard it with a normal JwtAuthGuard because
-  // then the user would have to log in in order to be able to reset their forgotten password.
+  // then the user would have to log in order to be able to reset their forgotten password.
   @Put('resetPassword')
   async resetPassword(@Body() dto: ResetPasswordDTO): Promise<User> {
     return this.service.resetPassword(dto);
@@ -160,7 +160,7 @@ export class UserController {
   }
 
   // Note the special AuthGuard, it does not check for the "requiresPasswordChange" state.
-  // Otherwise the user would be permanently blocked if they lost their initial start-up message.
+  // Otherwise, the user would be permanently blocked if they lost their initial start-up message.
   @UseGuards(JwtAuthGuard2)
   @Put('changePassword')
   async changePassword(@Request() req, @Body() dto: UserPasswordChangeDTO): Promise<{ access_token: string }> {

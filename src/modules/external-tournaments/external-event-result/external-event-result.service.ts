@@ -44,7 +44,7 @@ export class ExternalEventResultService {
     if (!isNaN(Number(fp))) {
       r.finishPosition = fp;
     } else if ('R' === fp.slice(0, 1) && fp.length > 2) {
-      r.finishPosition = Number(fp.substr(1));
+      r.finishPosition = Number(fp.slice(1));
     } else {
       switch (fp) {
         case 'WR':
@@ -68,7 +68,7 @@ export class ExternalEventResultService {
   }
 
   // The client has asked for a filtered set of external event results using an HTTP get query.
-  // The query contains a number of possible fields which are converted to an sql query.
+  // The query contains a number of possible fields which are converted to a sql query.
   async getFilteredResults(query: any): Promise<ExternalEventResultDTO[] | null> {
     let q = this.repo.createQueryBuilder('r')
       .leftJoinAndSelect('r.player', 'p')
@@ -157,7 +157,7 @@ export class ExternalEventResultService {
     return returnData;
   }
 
-  // Allows the user to enter corrected externalPonts manually when the ones received through
+  // Allows the user to enter corrected externalPoints manually when the ones received through
   // the API are incorrect.  Put in place because the ITF API was not sending points for the
   // New ITF Transition Tour events.
   async overrideExternalPoints(externalEventResultDTO: ExternalEventResultDTO): Promise<any> {

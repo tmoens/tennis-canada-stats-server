@@ -1,4 +1,4 @@
-import {BadRequestException, Injectable} from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {Tournament} from './tournament.entity';
@@ -265,10 +265,5 @@ export class TournamentService {
       }
     }
     return gradings;
-  }
-
-  logAndThrowException(msg: string) {
-    logger.error(msg);
-    throw new BadRequestException(msg);
   }
 }

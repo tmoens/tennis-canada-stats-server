@@ -155,7 +155,7 @@ export class MatchDataExporterService {
     };
 
     let reportSheet: WorkSheet;
-    let reportRow = 2; // 2 because a) Excel counts from 1 and b) there is a header row.
+    let reportRow = 2; // 2 because Excel starts counting at 1 and there is a header row.
 
     // Initially, I wrote a query to get everything.  The Query took a very long time,
     // and it would get longer and use more memory as time goes by.  So I broke it

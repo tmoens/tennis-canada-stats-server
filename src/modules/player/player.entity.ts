@@ -105,7 +105,7 @@ export class Player {
   @Column({ nullable: true })
   renumberedToPlayerId: number;
 
-// Given an player object from the VR API, fill in our own fields
+// Given a player object from the VR API, fill in our own fields
   buildFromVRAPIObj(apiObj: any) {
     this.playerId = apiObj.MemberID;
     this.firstName = apiObj.Firstname;

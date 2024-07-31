@@ -1,4 +1,4 @@
-import {Controller, Get, Param, UseGuards} from '@nestjs/common';
+import {Controller, Get, UseGuards} from '@nestjs/common';
 import { VRRankingsCategoryService } from './category.service';
 import { VRRankingsCategory } from './category.entity';
 import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';

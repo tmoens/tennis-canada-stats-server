@@ -22,7 +22,7 @@ export class CalendarService {
     private readonly configService: ConfigurationService,
 
     // The next two lines were how we were "supposed" to get the repos.
-    // Unfortunately they were not working so we grabbed the connection and got the repos from it.
+    // Unfortunately they were not working, so we grabbed the connection and got the repos from it.
     // @InjectRepository(CalendarTournament) private readonly tournamentRepo: Repository<CalendarTournament>,
     // @InjectRepository(CalendarEvent) private readonly eventRepo: Repository<CalendarEvent>,
 
@@ -63,7 +63,7 @@ export class CalendarService {
 
         if (calendarT.lastUpdated.toISOString() !== t.lastUpdatedInVR.toISOString()) {
 
-          // CASE 2: the tournament is in the calendar DB but it is out of date
+          // CASE 2: the tournament is in the calendar DB, but it is out of date
           // delete it fom the calendar db, then re-add it.
           await this.tournamentRepo.remove(calendarT);
           const tournament: Tournament = await this.tournamentService.getTournamentWithEventsAndLicense(t.tournamentCode);
@@ -133,11 +133,11 @@ export class CalendarService {
       // so we use that directly.
       categoryId = event.vrRankingsCategory.categoryId;
     } else {
-      // However, VR has no event categories for for non-ranked events such as U10, U8 and so on.
+      // However, VR has no event categories for non-ranked events such as U10, U8 and so on.
       // In these cases we construct a category code in the spirit of the VR category code.
       const singlesOrDoubles = (event.isSingles) ? 'S' : 'D';
 
-      // Figure out what type of event is is based
+      // Figure out what type of event it is
       if (event.minAge > 28) {
         // looks like a senior event
         categoryId = `S${event.genderId}${singlesOrDoubles}O${event.maxAge}`;

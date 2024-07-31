@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpException, HttpStatus, Param,
@@ -14,7 +13,6 @@ import {PlayerIdentityService} from './playerIdentity.service';
 import {getLogger} from 'log4js';
 import {FileInterceptor} from '@nestjs/platform-express';
 import {JwtAuthGuard} from '../../guards/jwt-auth.guard';
-import * as fs from 'fs';
 
 @Controller('Player')
 export class PlayerController {
@@ -64,7 +62,7 @@ export class PlayerController {
       throw new HttpException('Bad file type: ' + file.mimetype, HttpStatus.NOT_ACCEPTABLE);
     }
 
-    // arguably this should be done in the service, but it is async
+    // arguably this should be done in the service. But the operation is async,
     // and I was having trouble throwing an exception from there in such
     // a way that this function could always return before the heavy loading
     // got going.
@@ -110,7 +108,7 @@ export class PlayerController {
       throw new HttpException('Bad file type: ' + file.mimetype, HttpStatus.NOT_ACCEPTABLE);
     }
 
-    // arguably this should be done in the service, but it is async
+    // arguably this should be done in the service, but it is async,
     // and I was having trouble throwing an exception from there in such
     // a way that this function could always return before the heavy loading
     // got going.
@@ -139,7 +137,6 @@ export class PlayerController {
   @UseGuards(JwtAuthGuard)
   async checkPlayers(@Req() request, @UploadedFile() file) {
     const valid: boolean = await this.identityService.validateFile(file);
-    // fs.unlink(file.path, (err => {})); // Not deleting files so we can troubleshoot.
     if (!valid) {
       throw new HttpException('Member lists contained one or more errors: ' +
         JSON.stringify(this.identityService.getCheckPlayerStatus().getHistory(), null, 2),
