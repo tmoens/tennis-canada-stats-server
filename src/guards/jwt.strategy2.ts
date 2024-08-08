@@ -1,9 +1,9 @@
-import {ExtractJwt, Strategy} from 'passport-jwt';
-import {PassportStrategy} from '@nestjs/passport';
-import {Injectable, UnauthorizedException} from '@nestjs/common';
-import {ConfigurationService} from '../modules/configuration/configuration.service';
-import {AuthService} from '../modules/auth/auth.service';
-import {UserService} from '../modules/user/user.service';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigurationService } from '../modules/configuration/configuration.service';
+import { AuthService } from '../modules/auth/auth.service';
+import { UserService } from '../modules/user/user.service';
 
 // I'm so sorry. I lack understanding so I am employing a hammer.
 // The problem: the normal jwt strategy validates the jwt and checks
@@ -33,7 +33,9 @@ export class JwtStrategy2 extends PassportStrategy(Strategy, 'jwt2') {
     // However, the user may have logged out or been deactivated.
     const user = await this.userService.findActiveUser(payload.sub);
     if (!user) {
-      throw new UnauthorizedException('Token does not identify an active user.');
+      throw new UnauthorizedException(
+        'Token does not identify an active user.',
+      );
     }
 
     // Here is the only difference from the normal jwt strategy.
@@ -42,7 +44,9 @@ export class JwtStrategy2 extends PassportStrategy(Strategy, 'jwt2') {
     // }
 
     if (!user.isLoggedIn) {
-      throw new UnauthorizedException('Token does not identify a logged in user.');
+      throw new UnauthorizedException(
+        'Token does not identify a logged in user.',
+      );
     }
 
     // passport will stick the user in the request object for us.

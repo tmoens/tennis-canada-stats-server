@@ -1,29 +1,34 @@
-import {Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, Index} from 'typeorm';
-import {Player} from '../../player/player.entity';
-import {Match} from '../match/match.entity';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  Index,
+} from 'typeorm';
+import { Player } from '../../player/player.entity';
+import { Match } from '../match/match.entity';
 
 @Entity('matchplayer')
 @Index(['match', 'team', 'position'], { unique: true })
-
 export class MatchPlayer {
-
   // I struggled to use the matchId+team+position as the primary key
   // but things got hairy when trying to do an update.
   @PrimaryGeneratedColumn()
   matchPlayerId;
 
-  @ManyToOne(type => Match, matchId => matchId.matchPlayers, {
+  @ManyToOne(() => Match, (matchId) => matchId.matchPlayers, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'matchId'})
+  @JoinColumn({ name: 'matchId' })
   match: Match;
 
   // This is a "one way" relationship, that is we do not build the player->match
   // relationship
-  @ManyToOne(type => Player, {
+  @ManyToOne(() => Player, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'playerId'})
+  @JoinColumn({ name: 'playerId' })
   player: Player;
 
   // This "column" just give access to the player Id value

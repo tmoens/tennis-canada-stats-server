@@ -1,5 +1,5 @@
-import {Column, Entity, OneToMany, PrimaryColumn} from 'typeorm';
-import {Tournament} from '../tournament/tournament.entity';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
+import { Tournament } from '../tournament/tournament.entity';
 
 @Entity()
 export class License {
@@ -15,7 +15,7 @@ export class License {
   })
   province: string;
 
-  @OneToMany(type => Tournament, tournaments => tournaments.license)
+  @OneToMany(() => Tournament, (tournaments) => tournaments.license)
   tournaments: Tournament[];
 
   constructor(n: string, p: string) {

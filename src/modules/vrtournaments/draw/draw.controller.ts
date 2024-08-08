@@ -1,7 +1,7 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { DrawService } from './draw.service';
 import { Draw } from './draw.entity';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('Draw')
 export class DrawController {

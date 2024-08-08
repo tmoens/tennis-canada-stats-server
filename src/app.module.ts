@@ -1,47 +1,49 @@
-import {Module} from '@nestjs/common';
-import {HttpModule} from '@nestjs/axios';
-import {PassportModule} from '@nestjs/passport';
-import {JwtStrategy} from './guards/jwt.strategy';
-import {JwtStrategy2} from './guards/jwt.strategy2';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {Connection, createConnection} from 'typeorm';
-import {AppController} from './app.controller';
-import {AuthModule} from './modules/auth/auth.module';
-import {ConfigurationModule} from './modules/configuration/configuration.module';
-import {UserModule} from './modules/user/user.module';
-import {DrawModule} from './modules/vrtournaments/draw/draw.module';
-import {EventModule} from './modules/vrtournaments/event/event.module';
-import {LicenseModule} from './modules/vrtournaments/license/license.module';
-import {MatchModule} from './modules/vrtournaments/match/match.module';
-import {MatchPlayerModule} from './modules/vrtournaments/match_player/match_player.module';
-import {PlayerModule} from './modules/player/player.module';
-import {TennisAssociationModule} from './modules/tennis_association/tennis_association.module';
-import {TournamentModule} from './modules/vrtournaments/tournament/tournament.module';
-import {MailerModule} from '@nestjs-modules/mailer';
-import {VRAPIModule} from './modules/VRAPI/vrapi.module';
-import {VRRankingsTypeModule} from './modules/vrrankings/type/type.module';
-import {VRRankingsCategoryModule} from './modules/vrrankings/category/category.module';
-import {VRRankingsPublicationModule} from './modules/vrrankings/publication/publication.module';
-import {CALENDAR_DB, ConfigurationService, TC_STATS_DB} from './modules/configuration/configuration.service';
-import {MatchDataExporterModule} from './modules/exporters/match-data/match-data-exporter.module';
-import {ExternalPlayerModule} from './modules/external-tournaments/external-player/external-player.module';
-import {ExternalTournamentService} from './modules/external-tournaments/external-tournament/external-tournament.service';
-import {ExternalTournamentController} from './modules/external-tournaments/external-tournament/external-tournament.controller';
-import {ExternalTournamentModule} from './modules/external-tournaments/external-tournament/external-tournament.module';
-import {ExternalEventModule} from './modules/external-tournaments/external-event/external-event.module';
-import {PointExchangeService} from './modules/external-tournaments/point-exchange/point-exchange.service';
-import {PointExchangeModule} from './modules/external-tournaments/point-exchange/point-exchange.module';
-import {ExternalEventResultController} from './modules/external-tournaments/external-event-result/external-event-result.controller';
-import {ExternalEventResultModule} from './modules/external-tournaments/external-event-result/external-event-result.module';
-import {ItfMatchResultsService} from './modules/external-tournaments/itf-match-results/itf-match-results.service';
-import {ItfMatchResultsController} from './modules/external-tournaments/itf-match-results/itf-match-results.controller';
-import {ItfMatchResultsModule} from './modules/external-tournaments/itf-match-results/itf-match-results.module';
-import {ITFAPIModule} from './modules/ITFAPI/itfapi.module';
-import {ExternalapiModule} from './modules/externalAPIModule/externalapi.module';
-import {LocalStrategy} from './guards/local.strategy';
-import {CalendarModule} from './modules/calendar-support/calendar.module';
-import {CalendarService} from './modules/calendar-support/calendar.service';
-import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval/tournament-grade-approval.module';
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './guards/jwt.strategy';
+import { JwtStrategy2 } from './guards/jwt.strategy2';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AuthModule } from './modules/auth/auth.module';
+import { ConfigurationModule } from './modules/configuration/configuration.module';
+import { UserModule } from './modules/user/user.module';
+import { DrawModule } from './modules/vrtournaments/draw/draw.module';
+import { EventModule } from './modules/vrtournaments/event/event.module';
+import { LicenseModule } from './modules/vrtournaments/license/license.module';
+import { MatchModule } from './modules/vrtournaments/match/match.module';
+import { MatchPlayerModule } from './modules/vrtournaments/match_player/match_player.module';
+import { PlayerModule } from './modules/player/player.module';
+import { TennisAssociationModule } from './modules/tennis_association/tennis_association.module';
+import { TournamentModule } from './modules/vrtournaments/tournament/tournament.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { VRAPIModule } from './modules/VRAPI/vrapi.module';
+import { VRRankingsTypeModule } from './modules/vrrankings/type/type.module';
+import { VRRankingsCategoryModule } from './modules/vrrankings/category/category.module';
+import { VRRankingsPublicationModule } from './modules/vrrankings/publication/publication.module';
+import {
+  CALENDAR_DB,
+  ConfigurationService,
+  TC_STATS_DB,
+} from './modules/configuration/configuration.service';
+import { MatchDataExporterModule } from './modules/exporters/match-data/match-data-exporter.module';
+import { ExternalPlayerModule } from './modules/external-tournaments/external-player/external-player.module';
+import { ExternalTournamentService } from './modules/external-tournaments/external-tournament/external-tournament.service';
+import { ExternalTournamentController } from './modules/external-tournaments/external-tournament/external-tournament.controller';
+import { ExternalTournamentModule } from './modules/external-tournaments/external-tournament/external-tournament.module';
+import { ExternalEventModule } from './modules/external-tournaments/external-event/external-event.module';
+import { PointExchangeService } from './modules/external-tournaments/point-exchange/point-exchange.service';
+import { PointExchangeModule } from './modules/external-tournaments/point-exchange/point-exchange.module';
+import { ExternalEventResultController } from './modules/external-tournaments/external-event-result/external-event-result.controller';
+import { ExternalEventResultModule } from './modules/external-tournaments/external-event-result/external-event-result.module';
+import { ItfMatchResultsService } from './modules/external-tournaments/itf-match-results/itf-match-results.service';
+import { ItfMatchResultsController } from './modules/external-tournaments/itf-match-results/itf-match-results.controller';
+import { ItfMatchResultsModule } from './modules/external-tournaments/itf-match-results/itf-match-results.module';
+import { ITFAPIModule } from './modules/ITFAPI/itfapi.module';
+import { LocalStrategy } from './guards/local.strategy';
+import { CalendarModule } from './modules/calendar-support/calendar.module';
+import { CalendarService } from './modules/calendar-support/calendar.service';
+import { TournamentGradeApprovalModule } from './modules/tournament-grade-approval/tournament-grade-approval.module';
 
 @Module({
   imports: [
@@ -55,28 +57,21 @@ import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval
       inject: [ConfigurationService],
       name: 'default',
       useFactory: (configService: ConfigurationService) => {
-        return configService.generateTypeOrmOptions(TC_STATS_DB);
+        return configService.createTypeOrmOptions(TC_STATS_DB);
       },
-      connectionFactory: async (options) => {
-        return await createConnection(options);
-      }
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigurationModule],
       inject: [ConfigurationService],
       name: 'calendar',
       useFactory: (configService: ConfigurationService) => {
-        return configService.generateTypeOrmOptions(CALENDAR_DB);
+        return configService.createTypeOrmOptions(CALENDAR_DB);
       },
-      connectionFactory: async (options) => {
-        return await createConnection(options);
-      }
     }),
-    MailerModule.forRootAsync(
-      {
-        imports: [ConfigurationModule],
-        useExisting: ConfigurationService,
-      }),
+    MailerModule.forRootAsync({
+      imports: [ConfigurationModule],
+      useExisting: ConfigurationService,
+    }),
     PassportModule,
     AuthModule,
     MailerModule,
@@ -103,7 +98,6 @@ import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval
     ExternalEventResultModule,
     ItfMatchResultsModule,
     ITFAPIModule,
-    ExternalapiModule,
     CalendarModule,
     TournamentGradeApprovalModule,
   ],
@@ -122,11 +116,8 @@ import {TournamentGradeApprovalModule} from './modules/tournament-grade-approval
     JwtStrategy2,
     CalendarService,
   ],
-  exports: [
-    TypeOrmModule
-  ],
+  exports: [TypeOrmModule],
 })
-
 export class AppModule {
-  constructor(private readonly connection: Connection) {}
+  constructor() {}
 }

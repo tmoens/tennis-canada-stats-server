@@ -3,7 +3,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { configure } from 'log4js';
-import {ItfapiService} from './modules/ITFAPI/itfapi.service';
+import { ItfapiService } from './modules/ITFAPI/itfapi.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

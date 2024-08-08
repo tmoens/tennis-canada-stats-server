@@ -1,11 +1,18 @@
-import {Index, Entity, Column, OneToMany, PrimaryColumn, UpdateDateColumn, VersionColumn} from 'typeorm';
-import {ExternalEvent} from '../external-event/external-event.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+  VersionColumn,
+} from 'typeorm';
+import { ExternalEvent } from '../external-event/external-event.entity';
 
 @Entity('external_tournament')
 @Index('endDate', ['endDate'])
 @Index('name', ['name'])
 export class ExternalTournament {
-
   @PrimaryColumn('varchar', {
     nullable: false,
     primary: true,
@@ -40,7 +47,8 @@ export class ExternalTournament {
     nullable: true,
     length: 10,
     name: 'sanctioningBody',
-    comment: 'Sanctioning body will necessarily be one from the event_rating table',
+    comment:
+      'Sanctioning body will necessarily be one from the event_rating table',
   })
   sanctioningBody: string | null;
 
@@ -48,7 +56,8 @@ export class ExternalTournament {
     nullable: true,
     length: 40,
     name: 'category',
-    comment: 'Category body will necessarily be one from the event_rating table',
+    comment:
+      'Category body will necessarily be one from the event_rating table',
   })
   category: string | null;
 
@@ -56,7 +65,8 @@ export class ExternalTournament {
     nullable: true,
     length: 20,
     name: 'subCategory',
-    comment: 'sub-category body will necessarily be one from the event_rating table',
+    comment:
+      'sub-category body will necessarily be one from the event_rating table',
   })
   subCategory: string | null;
 
@@ -64,7 +74,6 @@ export class ExternalTournament {
     nullable: true,
     name: 'startDate',
     comment: 'Not presently used by the system',
-
   })
   startDate: string | null;
 
@@ -74,9 +83,9 @@ export class ExternalTournament {
   })
   endDate: string;
 
-  @OneToMany(type => ExternalEvent, externalEvent => externalEvent.tournament, {
-    onDelete: 'CASCADE' ,
-    onUpdate: 'CASCADE' ,
+  @OneToMany(() => ExternalEvent, (externalEvent) => externalEvent.tournament, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   })
   externalEvents: ExternalEvent[];
 
@@ -91,11 +100,11 @@ export class ExternalTournament {
 
   getPointCurrency(): string {
     // All ATP tournaments deal in ATP points.
-    if (this.sanctioningBody === 'ATP')  return 'ATP';
+    if (this.sanctioningBody === 'ATP') return 'ATP';
     // ALL WTA Tournaments deal in WTA Points.
-    if (this.sanctioningBody === 'WTA')  return 'WTA';
+    if (this.sanctioningBody === 'WTA') return 'WTA';
     // ITF tournaments can deal in ITF Junior points or TransitionTour points or WTA points.
-    if (this.sanctioningBody === 'ITF')  {
+    if (this.sanctioningBody === 'ITF') {
       // All ITF Junior tournaments deal with ITF (junior points
       if (this.tournamentId.slice(0, 1) === 'J') {
         return 'ITF';

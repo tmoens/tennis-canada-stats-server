@@ -1,7 +1,7 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { VRRankingsTypeService } from './type.service';
 import { VRRankingsType } from './type.entity';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('VRRankingsType')
 export class VRRankingsTypeController {

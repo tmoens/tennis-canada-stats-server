@@ -1,13 +1,11 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
-import {PointExchange} from './point-exchange.entity';
-import {PointExchangeService} from './point-exchange.service';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { PointExchange } from './point-exchange.entity';
+import { PointExchangeService } from './point-exchange.service';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('PointExchange')
 export class PointExchangeController {
-  constructor(
-    private readonly service: PointExchangeService,
-  ) {}
+  constructor(private readonly service: PointExchangeService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)

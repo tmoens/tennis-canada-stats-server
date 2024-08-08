@@ -1,13 +1,11 @@
-import {Controller, Get, Param, Put, Query, UseGuards} from '@nestjs/common';
-import {ExternalPlayer} from './external-player.entity';
-import {ExternalPlayerService} from './external-player.service';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { ExternalPlayer } from './external-player.entity';
+import { ExternalPlayerService } from './external-player.service';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('ExternalPlayer')
 export class ExternalPlayerController {
-  constructor(
-    private readonly service: ExternalPlayerService,
-  ) {}
+  constructor(private readonly service: ExternalPlayerService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -18,7 +16,10 @@ export class ExternalPlayerController {
   @Get('GetExternalPlayers')
   @UseGuards(JwtAuthGuard)
   async findByNameOrITFId(@Query() query): Promise<any> {
-    return await this.service.getExternalPlayers((query.missingVRID === 'true'), query.searchString);
+    return await this.service.getExternalPlayers(
+      query.missingVRID === 'true',
+      query.searchString,
+    );
   }
 
   @Get('FindVRMatches/:id')
@@ -32,5 +33,4 @@ export class ExternalPlayerController {
   async SetVRId(@Param() params): Promise<ExternalPlayer | null> {
     return await this.service.setVRId(params.ExternalId, params.VRId);
   }
-
 }

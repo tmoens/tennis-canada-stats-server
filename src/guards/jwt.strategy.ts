@@ -1,12 +1,11 @@
-import {ExtractJwt, Strategy} from 'passport-jwt';
-import {PassportStrategy} from '@nestjs/passport';
-import {Injectable, UnauthorizedException} from '@nestjs/common';
-import {ConfigurationService} from '../modules/configuration/configuration.service';
-import {AuthService} from '../modules/auth/auth.service';
-import {UserService} from '../modules/user/user.service';
-import {getLogger, Logger} from 'log4js';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigurationService } from '../modules/configuration/configuration.service';
+import { UserService } from '../modules/user/user.service';
+import { getLogger, Logger } from 'log4js';
 
-const logger: Logger = getLogger('JwtStrategy')
+const logger: Logger = getLogger('JwtStrategy');
 
 /**
  * This strategy is for validating access a route using a JWT.
@@ -18,13 +17,15 @@ const logger: Logger = getLogger('JwtStrategy')
  * Note that the Passport library automatically checks that the token itself is
  * valid and has not expired before calling the validate function. The validate
  * function does the rest.
+ *
+ * The key to this is that the validate function returns a User object which Passport
+ * then sticks into the Request object.
  */
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigurationService,
-    private authService: AuthService,
     private userService: UserService,
   ) {
     super({
@@ -37,20 +38,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.userService.findActiveUser(payload.sub);
     if (!user) {
-      const message = 'Bad Token: token does not identify an active user.'
-      logger.warn(message)
+      const message = 'Bad Token: token does not identify an active user.';
+      logger.warn(message);
       throw new UnauthorizedException(message);
     }
 
     if (user.passwordChangeRequired) {
-      const message = 'Password change required.'
-      logger.warn(message)
+      const message = 'Password change required.';
+      logger.warn(message);
       throw new UnauthorizedException(message);
     }
 
     if (!user.isLoggedIn) {
-      const message = 'Bad Token: Token does not identify a logged in user.'
-      logger.warn(message)
+      const message = 'Bad Token: Token does not identify a logged in user.';
+      logger.warn(message);
       throw new UnauthorizedException(message);
     }
 

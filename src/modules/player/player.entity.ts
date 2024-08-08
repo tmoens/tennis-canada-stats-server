@@ -1,4 +1,11 @@
-import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeorm';
+import {
+  Index,
+  Entity,
+  Column,
+  PrimaryColumn,
+  JoinColumn,
+  ManyToOne,
+} from 'typeorm';
 
 @Entity()
 @Index('firstName', ['firstName'])
@@ -7,7 +14,6 @@ import {Index, Entity, Column, PrimaryColumn, JoinColumn, ManyToOne} from 'typeo
 @Index('renumberedToPlayer', ['renumberedToPlayer'])
 @Index('itfOptIn', ['itfOptIn'])
 export class Player {
-
   @PrimaryColumn()
   playerId: number;
 
@@ -94,18 +100,18 @@ export class Player {
   })
   itfOptIn: boolean;
 
-  @ManyToOne(type => Player, {
+  @ManyToOne(() => Player, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'renumberedToPlayerId'})
+  @JoinColumn({ name: 'renumberedToPlayerId' })
   renumberedToPlayer: Player;
 
-// This "column" just give access to the renumberedToPlayerId value
-// without having to load the entire player object.
+  // This "column" just give access to the renumberedToPlayerId value
+  // without having to load the entire player object.
   @Column({ nullable: true })
   renumberedToPlayerId: number;
 
-// Given a player object from the VR API, fill in our own fields
+  // Given a player object from the VR API, fill in our own fields
   buildFromVRAPIObj(apiObj: any) {
     this.playerId = apiObj.MemberID;
     this.firstName = apiObj.Firstname;

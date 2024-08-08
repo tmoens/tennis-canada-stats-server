@@ -3,7 +3,7 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  CreateDateColumn
+  CreateDateColumn,
 } from 'typeorm';
 
 /**
@@ -35,9 +35,7 @@ import {
 
 @Entity()
 @Index('tournament', ['tournament'])
-
 export class TournamentGradeApproval {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -60,5 +58,5 @@ export class TournamentGradeApproval {
   approvingUser: string;
 
   @CreateDateColumn()
-  creationDate: Date
+  creationDate: Date;
 }

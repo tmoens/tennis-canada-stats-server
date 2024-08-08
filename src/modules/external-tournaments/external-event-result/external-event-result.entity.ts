@@ -1,25 +1,41 @@
-import {Index, Entity, Column, JoinColumn, ManyToOne, VersionColumn} from 'typeorm';
-import {ExternalEvent} from '../external-event/external-event.entity';
-import {ExternalPlayer} from '../external-player/external-player.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  JoinColumn,
+  ManyToOne,
+  VersionColumn,
+} from 'typeorm';
+import { ExternalEvent } from '../external-event/external-event.entity';
+import { ExternalPlayer } from '../external-player/external-player.entity';
 
 @Entity('external_event_result')
 @Index('fi__player_key', ['player'])
 export class ExternalEventResult {
-
-  @ManyToOne(type => ExternalEvent, event => event.eventResults, {
-    primary: true,
+  @Column({
     nullable: false,
+    primary: true,
+  })
+  playerId: string;
+
+  @Column({
+    nullable: false,
+    primary: true,
+  })
+  eventId: string;
+
+  @ManyToOne(() => ExternalEvent, (event) => event.eventResults, {
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'eventId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'eventId' })
   event: ExternalEvent;
 
-  @ManyToOne(type => ExternalPlayer, player => player.eventResults, {
-    primary: true,
-    nullable: false,
+  @ManyToOne(() => ExternalPlayer, (player) => player.eventResults, {
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'})
-  @JoinColumn({ name: 'playerId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'playerId' })
   player: ExternalPlayer;
 
   @Column('int', {

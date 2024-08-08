@@ -1,14 +1,14 @@
-import {Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {VRRankingsPublication} from './publication.entity';
-import {VRAPIService} from '../../VRAPI/vrapi.service';
-import {getLogger} from 'log4js';
-import {VRRankingsType} from '../type/type.entity';
-import {VRRankingsCategory} from '../category/category.entity';
-import {VRRankingsItemService} from '../item/item.service';
-import {JobState, JobStats} from '../../../utils/jobstats';
-import {ConfigurationService} from '../../configuration/configuration.service';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { VRRankingsPublication } from './publication.entity';
+import { VRAPIService } from '../../VRAPI/vrapi.service';
+import { getLogger } from 'log4js';
+import { VRRankingsType } from '../type/type.entity';
+import { VRRankingsCategory } from '../category/category.entity';
+import { VRRankingsItemService } from '../item/item.service';
+import { JobState, JobStats } from '../../../utils/jobstats';
+import { ConfigurationService } from '../../configuration/configuration.service';
 
 // NOTE: There will be many publication objects for a single VR rankings
 // publication. VR has one publication per rankings type
@@ -40,20 +40,31 @@ export class VRRankingsPublicationService {
   }
 
   async findByCode(publicationCode: string): Promise<VRRankingsPublication> {
-    return await this.repository.findOne({publicationCode});
+    return await this.repository.findOne({
+      where: {
+        publicationCode,
+      },
+    });
   }
 
   async findByCategoryYearWeek(
     category: VRRankingsCategory,
     year: number,
-    week: number): Promise<VRRankingsPublication> | null {
-    return this.repository.findOne(
-      {where: {year, week, rankingsCategory: category.categoryCode}});
+    week: number,
+  ): Promise<VRRankingsPublication> | null {
+    return this.repository.findOne({
+      where: {
+        year,
+        week,
+        rankingsCategory: category,
+      },
+    });
   }
 
   // Get a superficial state of the rankings data that has been loaded from VR
   async getLoadedRankingsData(): Promise<any[]> {
-    return await this.repository.createQueryBuilder('rp')
+    return await this.repository
+      .createQueryBuilder('rp')
       .select('rt.typeName', 'type')
       .addSelect('rp.year', 'year')
       .addSelect('rp.week', 'week')
@@ -64,24 +75,34 @@ export class VRRankingsPublicationService {
       .orderBy({
         'rt.typeName': 'ASC',
         'rp.year': 'DESC',
-        'rp.week': 'DESC'
+        'rp.week': 'DESC',
       })
       .getRawMany();
   }
 
   // update the ts_stats_server database wrt vr rankings publications for a given ranking Type
   // The types are Adult, Junior, Masters (Seniors) and Wheelchair
-  async importVRRankingsPublicationFromVR(rankingType: VRRankingsType): Promise<JobStats>{
+  async importVRRankingsPublicationFromVR(
+    rankingType: VRRankingsType,
+  ): Promise<JobStats> {
     let message: string;
     const importStats: JobStats = new JobStats(`rankingsImport`);
 
-    importStats.setCurrentActivity(`Loading ${rankingType.typeName} publications from VR`);
+    importStats.setCurrentActivity(
+      `Loading ${rankingType.typeName} publications from VR`,
+    );
     // Ask the API for a list of vr rankings publications for this type of ranking
     // The publications list goes back 100 weeks.
-    const pubs_json = await this.vrapi.get('Ranking/' + rankingType.typeCode + '/Publication');
+    const pubs_json = await this.vrapi.get(
+      'Ranking/' + rankingType.typeCode + '/Publication',
+    );
     const publicationList = VRAPIService.arrayify(pubs_json.RankingPublication);
 
-    logger.info(publicationList.length + ' publications found for ' + rankingType.typeName);
+    logger.info(
+      publicationList.length +
+        ' publications found for ' +
+        rankingType.typeName,
+    );
 
     // Each element of the list we get back from the API is a record of a particular
     // "publication".  A "publication" is an id for a set of rankings. For example
@@ -93,7 +114,11 @@ export class VRRankingsPublicationService {
       // a sub-publication for Each junior category (boys singles under 18, mixed doubles
       // under 14, girls doubles under 14, and so on).
       const subPublications: VRRankingsPublication[] =
-        await this.repository.find({publicationCode: apiPublication.Code});
+        await this.repository.find({
+          where: {
+            publicationCode: apiPublication.Code,
+          },
+        });
 
       // If we do not already have a record of a particular publication, make one
       // and load the rankings for that publication
@@ -101,7 +126,10 @@ export class VRRankingsPublicationService {
         message = `Loading rankings publication: ${apiPublication.Name}`;
         logger.info(message);
         importStats.addNote(message);
-        await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
+        await this.loadVRRankingsPublicationFromVRAPI(
+          rankingType,
+          apiPublication,
+        );
         importStats.bump(CREATION_COUNT);
       }
 
@@ -113,7 +141,10 @@ export class VRRankingsPublicationService {
         for (const outdatedPub of subPublications) {
           await this.repository.remove(outdatedPub);
         }
-        await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
+        await this.loadVRRankingsPublicationFromVRAPI(
+          rankingType,
+          apiPublication,
+        );
         importStats.bump(UPDATE_COUNT);
       }
 
@@ -125,17 +156,30 @@ export class VRRankingsPublicationService {
       // So we take a remedial action here - if we have not loaded every category
       // for a particular publication, we delete all the categories of that
       // publication and re-load it.
-      else if (rankingType.vrRankingsCategories.length !== subPublications.length) {
-        message = 'Detected incomplete rankings upload for: ' +
-          rankingType.typeName + ' for ' + subPublications[0].year + ' week: ' +
-          subPublications[0].week + '. Expected ' + rankingType.vrRankingsCategories.length +
-          ' categories, found ' + subPublications.length + '. Reloading this publication.';
+      else if (
+        rankingType.vrRankingsCategories.length !== subPublications.length
+      ) {
+        message =
+          'Detected incomplete rankings upload for: ' +
+          rankingType.typeName +
+          ' for ' +
+          subPublications[0].year +
+          ' week: ' +
+          subPublications[0].week +
+          '. Expected ' +
+          rankingType.vrRankingsCategories.length +
+          ' categories, found ' +
+          subPublications.length +
+          '. Reloading this publication.';
         logger.info(message);
         importStats.addNote(message);
         for (const brokenPub of subPublications) {
           await this.repository.remove(brokenPub);
         }
-        await this.loadVRRankingsPublicationFromVRAPI(rankingType, apiPublication);
+        await this.loadVRRankingsPublicationFromVRAPI(
+          rankingType,
+          apiPublication,
+        );
         importStats.bump(FIX_COUNT);
       }
 
@@ -147,17 +191,23 @@ export class VRRankingsPublicationService {
       // Rate limiting so as not to stress the VRAPI when we are first loading up rankings.
       if (this.config.rankingUploadLimit <= importStats.get(CREATION_COUNT)) {
         importStats.addNote(
-          `Import limit of ${this.config.rankingUploadLimit} reached for importing ${rankingType.typeName} rankings`);
+          `Import limit of ${this.config.rankingUploadLimit} reached for importing ${rankingType.typeName} rankings`,
+        );
         break;
       }
     }
     importStats.setCurrentActivity('Finished');
     importStats.setStatus(JobState.DONE);
-    logger.info(`Finished loading publications found for ${rankingType.typeName}.` );
+    logger.info(
+      `Finished loading publications found for ${rankingType.typeName}.`,
+    );
     return importStats;
   }
 
-  async loadVRRankingsPublicationFromVRAPI(rankingType: VRRankingsType, apiPublication: any): Promise<boolean> {
+  async loadVRRankingsPublicationFromVRAPI(
+    rankingType: VRRankingsType,
+    apiPublication: any,
+  ): Promise<boolean> {
     let p = new VRRankingsPublication();
 
     // We are going to build a separate publication object for each rankings
@@ -185,35 +235,41 @@ export class VRRankingsPublicationService {
     year: number,
     isoWeek: number,
     minAge: number,
-    prov: string): Promise<any> {
+    prov: string,
+  ): Promise<any> {
     // figure out the minimum date of birth of players to be included in the list
     const maxDOB = (year - 1 - minAge).toString() + '-12-31';
     // Find the publication
-    let publication: VRRankingsPublication = await this.repository.createQueryBuilder('p')
-      .where('p.year = :year', {year})
-      .andWhere('p.week = :week', {week: isoWeek})
-      .andWhere('p.categorycode = :code', {code})
+    let publication: VRRankingsPublication = await this.repository
+      .createQueryBuilder('p')
+      .where('p.year = :year', { year })
+      .andWhere('p.week = :week', { week: isoWeek })
+      .andWhere('p.categorycode = :code', { code })
       .leftJoinAndSelect('p.rankingsCategory', 'c')
       .leftJoinAndSelect('c.vrRankingsType', 't')
       .getOne();
 
     // if you don't find one, try to find the most recent one instead
     if (!publication) {
-      publication = await this.repository.createQueryBuilder('p')
-        .where('p.categorycode = :code', {code})
+      publication = await this.repository
+        .createQueryBuilder('p')
+        .where('p.categorycode = :code', { code })
         .leftJoinAndSelect('p.rankingsCategory', 'c')
         .leftJoinAndSelect('c.vrRankingsType', 't')
-        .orderBy({'p.year': 'DESC', 'p.week': 'DESC'})
+        .orderBy({ 'p.year': 'DESC', 'p.week': 'DESC' })
         .getOne();
     }
 
     // Find the players on the list (skipping those who do not meet the age and province criteria)
     if (publication) {
-      const list: any[] =
-        await this.vrRankingsItemService.findByPub(publication.publicationId, maxDOB, prov);
-      return {publication, list};
+      const list: any[] = await this.vrRankingsItemService.findByPub(
+        publication.publicationId,
+        maxDOB,
+        prov,
+      );
+      return { publication, list };
     } else {
-      return {publication: {}, list: {}};
+      return { publication: {}, list: {} };
     }
   }
 }

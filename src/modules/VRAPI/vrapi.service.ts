@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import * as request from 'superagent';
-import {getLogger} from 'log4js';
-import {ConfigurationService} from '../configuration/configuration.service';
-const HttpsAgent = require('agentkeepalive').HttpsAgent;
+import { getLogger } from 'log4js';
+import { ConfigurationService } from '../configuration/configuration.service';
+import { HttpsAgent } from 'agentkeepalive';
+import { parseString } from 'xml2js';
 
 const logger = getLogger('vrapi');
-
-const parseString = require('xml2js').parseString;
 
 // OK, so what the heck is this agent?
 // Well, if you do not use it, the "normal" agent will open up a new
@@ -16,7 +15,7 @@ const parseString = require('xml2js').parseString;
 // to push all our request down a number of sockets which we keep
 // alive.  This line plus the use of one below where the agent is
 // used cost about 6 hours.  Hence, this rememory note.
-const keepaliveAgent = new HttpsAgent({maxSockets: 10});
+const keepaliveAgent = new HttpsAgent({ maxSockets: 10 });
 
 // Simply makes a call to the VRAPI and converts the returned XML into
 // a javascript object and returns it.
@@ -26,9 +25,7 @@ const keepaliveAgent = new HttpsAgent({maxSockets: 10});
 
 @Injectable()
 export class VRAPIService {
-
-  constructor(
-    private readonly config: ConfigurationService) {
+  constructor(private readonly config: ConfigurationService) {
     logger.info('API User: ' + config.vrapiUser);
   }
   async get(pattern: string = ''): Promise<any> {
@@ -40,18 +37,24 @@ export class VRAPIService {
     let done = false;
     const retryLimit: number = 3;
     let retryCount: number = 0;
-    while (!done )
+    while (!done)
       try {
-        logger.info('calling: https://api.tournamentsoftware.com/1.0/' + pattern);
+        logger.info(
+          'calling: https://api.tournamentsoftware.com/1.0/' + pattern,
+        );
         const response = await request
           .get('https://api.tournamentsoftware.com/1.0/' + pattern)
           .agent(keepaliveAgent)
           .auth(this.config.vrapiUser, this.config.vrapiPassword);
         done = true;
 
-        parseString(response.text, {explicitArray: false, mergeAttrs: true }, (err, result) => {
-          r = result.Result;
-        });
+        parseString(
+          response.text,
+          { explicitArray: false, mergeAttrs: true },
+          (err, result) => {
+            r = result.Result;
+          },
+        );
       } catch (e) {
         logger.warn('Error calling VR API: ' + e);
         retryCount++;

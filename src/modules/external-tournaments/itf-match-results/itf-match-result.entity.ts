@@ -1,16 +1,27 @@
-import {Entity, Column, ManyToOne, JoinColumn, VersionColumn} from 'typeorm';
-import {ExternalPlayer} from '../external-player/external-player.entity';
-import {ExternalEvent} from '../external-event/external-event.entity';
+import { Entity, Column, ManyToOne, JoinColumn, VersionColumn } from 'typeorm';
+import { ExternalPlayer } from '../external-player/external-player.entity';
+import { ExternalEvent } from '../external-event/external-event.entity';
 
 @Entity('itf_match_result')
 export class ItfMatchResult {
-
-  @ManyToOne(type => ExternalPlayer, player => player.matches, {
+  @Column({
+    nullable: false,
     primary: true,
+  })
+  PlayerId: string;
+
+  @Column({
+    nullable: false,
+    primary: true,
+  })
+  EventId: string;
+
+  @ManyToOne(() => ExternalPlayer, (player) => player.matches, {
     nullable: false,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'PlayerId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'PlayerId' })
   player: ExternalPlayer | null;
 
   @Column('varchar', {
@@ -21,12 +32,12 @@ export class ItfMatchResult {
   })
   MatchId: string;
 
-  @ManyToOne(type => ExternalEvent, event => event.matches, {
-    primary: true,
+  @ManyToOne(() => ExternalEvent, (event) => event.matches, {
     nullable: false,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'EventId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'EventId' })
   event: ExternalEvent | null;
 
   @Column('char', {
@@ -50,9 +61,9 @@ export class ItfMatchResult {
   })
   WinLossStatus: string | null;
 
-  @Column('char', {
+  @Column('varchar', {
     nullable: true,
-    length: 20,
+    length: 50,
     name: 'Score',
   })
   Score: string | null;

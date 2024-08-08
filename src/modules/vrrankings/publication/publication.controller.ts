@@ -1,12 +1,14 @@
-import {Controller, Get, Param, Query, UseGuards} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { VRRankingsPublicationService } from './publication.service';
 import { VRRankingsPublication } from './publication.entity';
 import moment = require('moment');
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('VRRankingsPublication')
 export class VRRankingsPublicationController {
-  constructor(private readonly vrrankingspublicationService: VRRankingsPublicationService) {}
+  constructor(
+    private readonly vrrankingspublicationService: VRRankingsPublicationService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -16,8 +18,10 @@ export class VRRankingsPublicationController {
 
   @Get('/code/:code')
   @UseGuards(JwtAuthGuard)
-  async findBycode(@Param() params): Promise<VRRankingsPublication> {
-    return await this.vrrankingspublicationService.findByCode(params.code);
+  async findByCode(
+    @Param('code') code: string,
+  ): Promise<VRRankingsPublication> {
+    return await this.vrrankingspublicationService.findByCode(code);
   }
 
   @Get('/list/')
@@ -28,11 +32,16 @@ export class VRRankingsPublicationController {
     // the minAge query parameter tells us a lower bound on the age of the players to
     // return.  This allows us to implement the 11-12, 13-14, 15-16 and 17-18
     // age groups for Quebec.
-    const minAge = (params.minAge) ? parseInt(params.minAge, 10) : 0;
+    const minAge = params.minAge ? parseInt(params.minAge, 10) : 0;
     // the province query parameter just filters to players from a given province.
-    const prov = (params.province) ? params.province : '%';
+    const prov = params.province ? params.province : '%';
     return await this.vrrankingspublicationService.getRankingList(
-      params.code, d.year(), d.isoWeek(), minAge, prov);
+      params.code,
+      d.year(),
+      d.isoWeek(),
+      minAge,
+      prov,
+    );
   }
 
   @Get('/WhatsBeenLoaded')

@@ -9,7 +9,9 @@ describe('TournamentGradeApprovalService', () => {
       providers: [TournamentGradeApprovalService],
     }).compile();
 
-    service = module.get<TournamentGradeApprovalService>(TournamentGradeApprovalService);
+    service = module.get<TournamentGradeApprovalService>(
+      TournamentGradeApprovalService,
+    );
   });
 
   it('should be defined', () => {

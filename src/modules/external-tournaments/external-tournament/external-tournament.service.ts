@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {ExternalTournament} from './external-tournament.entity';
-import {Repository} from 'typeorm';
-import {getLogger} from 'log4js';
-import {ExternalEventService} from '../external-event/external-event.service';
+import { ExternalTournament } from './external-tournament.entity';
+import { Repository } from 'typeorm';
+import { getLogger } from 'log4js';
 
 @Injectable()
 export class ExternalTournamentService {
   constructor(
     @InjectRepository(ExternalTournament)
     private readonly repo: Repository<ExternalTournament>,
-    private readonly externalEventService: ExternalEventService,
   ) {}
 
   async findAll(): Promise<ExternalTournament[]> {
@@ -22,10 +20,14 @@ export class ExternalTournamentService {
    * the ITF API. Create or update the tournament.
    * @param resultData
    */
-  async loadFromITFAPI(resultData: any ): Promise<ExternalTournament> {
-    let t: ExternalTournament = await this.repo.findOne(resultData.TournamentId);
+  async loadFromITFAPI(resultData: any): Promise<ExternalTournament> {
+    let t: ExternalTournament = await this.repo.findOne({
+      where: {
+        tournamentId: resultData.TournamentId,
+      },
+    });
     if (!t) {
-      t = this.repo.create({tournamentId: resultData.TournamentId});
+      t = this.repo.create({ tournamentId: resultData.TournamentId });
     }
     await this.updateFromITFAPI(t, resultData);
     return await this.repo.save(t);
@@ -59,6 +61,11 @@ export class ExternalTournamentService {
             t.sanctioningBody = 'ITF';
             t.category = 'Pro';
             t.subCategory = 'Pro';
+            break;
+          case 'OL':
+            // No sub categories
+            t.category = 'Olympics';
+            t.subCategory = 'Olympics';
             break;
           case 'SL':
             // No sub categories
@@ -97,7 +104,10 @@ export class ExternalTournamentService {
             t.subCategory = 'TC';
             break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
+            logger.error(
+              'Failed to interpret tournament category from ITF API: ' +
+                JSON.stringify(d, null, 2),
+            );
             break;
         }
         break;
@@ -110,6 +120,11 @@ export class ExternalTournamentService {
             t.sanctioningBody = 'ITF';
             t.category = 'Pro';
             t.subCategory = 'Pro';
+            break;
+          case 'OL':
+            // No sub categories
+            t.category = 'Olympics';
+            t.subCategory = 'Olympics';
             break;
           case 'SL':
             // No sub categories
@@ -136,6 +151,21 @@ export class ExternalTournamentService {
             t.category = 'Premier 700';
             t.subCategory = 'Premier 700';
             break;
+          case 'W1000':
+            // No sub categories
+            t.category = 'WTA 1000 Series';
+            t.subCategory = 'WTA 1000 Series';
+            break;
+          case 'W500':
+            // No sub categories
+            t.category = 'WTA W500 Series';
+            t.subCategory = 'WTA W500 Series';
+            break;
+          case 'W250':
+            // No sub categories
+            t.category = 'WTA 250 Series';
+            t.subCategory = 'WTA 250 Series';
+            break;
           case 'W125':
             // No sub categories
             t.category = 'WTA 125K Series';
@@ -147,7 +177,10 @@ export class ExternalTournamentService {
             t.subCategory = 'WTA International';
             break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
+            logger.error(
+              'Failed to interpret tournament category from ITF API: ' +
+                JSON.stringify(d, null, 2),
+            );
             break;
         }
         break;
@@ -221,34 +254,43 @@ export class ExternalTournamentService {
             t.subCategory = 'J30';
             break;
           default:
-            logger.error('Failed to interpret tournament category from ITF API: ' + JSON.stringify(d, null, 2));
+            logger.error(
+              'Failed to interpret tournament category from ITF API: ' +
+                JSON.stringify(d, null, 2),
+            );
             break;
         }
         break;
       default:
-        logger.error('Failed to identify tournament sanctioning body from: ' + JSON.stringify(d, null, 2));
+        logger.error(
+          'Failed to identify tournament sanctioning body from: ' +
+            JSON.stringify(d, null, 2),
+        );
         break;
     }
-
   }
 
-// The client has asked for a filtered set of tournaments using an HTTP get query.
-// The query contains a number of possible fields which are converted to a sql query.
-  async getFilteredTournaments(query: any): Promise<ExternalTournament[] | null> {
+  // The client has asked for a filtered set of tournaments using an HTTP get query.
+  // The query contains a number of possible fields which are converted to a sql query.
+  async getFilteredTournaments(
+    query: any,
+  ): Promise<ExternalTournament[] | null> {
     let q = this.repo.createQueryBuilder('t');
     if (query.sanctioningBody) {
-      q = q.andWhere('t.sanctioningBody = :sb', {sb: query.sanctioningBody});
+      q = q.andWhere('t.sanctioningBody = :sb', { sb: query.sanctioningBody });
     } else {
       q = q.where('1');
     }
     if (query.startPeriod) {
-      q = q.andWhere('t.endDate >= :sp', {sp: query.startPeriod});
+      q = q.andWhere('t.endDate >= :sp', { sp: query.startPeriod });
     }
     if (query.endPeriod) {
-      q = q.andWhere('t.endDate <= :ep', {ep: query.endPeriod});
+      q = q.andWhere('t.endDate <= :ep', { ep: query.endPeriod });
     }
     if (query.tournamentName) {
-      q = q.andWhere('t.name LIKE :tn', {tn: '%' + query.tournamentName + '%'});
+      q = q.andWhere('t.name LIKE :tn', {
+        tn: '%' + query.tournamentName + '%',
+      });
     }
     if (query.category) {
       if (query.category === 'Junior') {
@@ -276,7 +318,14 @@ export class ExternalTournamentService {
   // events that award WTA points and Transition Tour events that offer
   // ITF Entry.
   async updateCategory(tournamentId: string, category: string): Promise<any> {
-    const t = await this.repo.findOne(tournamentId, {relations: ['externalEvents']});
+    const t = await this.repo.findOne({
+      where: {
+        tournamentId,
+      },
+      relations: {
+        externalEvents: true,
+      },
+    });
     if (!t) {
       // TODO should throw exception
       return false;

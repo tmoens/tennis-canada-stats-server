@@ -1,8 +1,7 @@
-import {Entity, Column} from 'typeorm';
+import { Entity, Column } from 'typeorm';
 
 @Entity('point_exchange')
 export class PointExchange {
-
   @Column('int', {
     nullable: false,
     primary: true,
@@ -13,7 +12,8 @@ export class PointExchange {
   @Column('int', {
     nullable: false,
     name: 'year',
-    comment: 'The year the exchange is valid for. Allows changes year over year.',
+    comment:
+      'The year the exchange is valid for. Allows changes year over year.',
   })
   year: number;
 
@@ -21,7 +21,8 @@ export class PointExchange {
     nullable: false,
     length: 40,
     name: 'sourceCurrency',
-    comment: 'The  currency we are exchanging from (ATP/WTA/ITF Entry/ITF Junior)',
+    comment:
+      'The  currency we are exchanging from (ATP/WTA/ITF Entry/ITF Junior)',
   })
   sourceCurrency: string;
 
@@ -37,7 +38,8 @@ export class PointExchange {
     nullable: true,
     length: 30,
     name: 'targetCurrency',
-    comment: 'The currency we are exchanging to in Tennis Canada Rankings - Open or Junior',
+    comment:
+      'The currency we are exchanging to in Tennis Canada Rankings - Open or Junior',
   })
   targetCurrency: string | null;
 

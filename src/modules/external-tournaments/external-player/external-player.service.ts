@@ -1,10 +1,10 @@
-import {forwardRef, Inject, Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Brackets, Repository} from 'typeorm';
-import {ExternalPlayer} from './external-player.entity';
-import {PlayerService} from '../../player/player.service';
-import {Player} from '../../player/player.entity';
-import {getLogger} from 'log4js';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Brackets, Repository } from 'typeorm';
+import { ExternalPlayer } from './external-player.entity';
+import { PlayerService } from '../../player/player.service';
+import { Player } from '../../player/player.entity';
+import { getLogger } from 'log4js';
 
 const logger = getLogger('playerService');
 
@@ -15,15 +15,18 @@ export class ExternalPlayerService {
     private readonly repo: Repository<ExternalPlayer>,
     @Inject(forwardRef(() => PlayerService))
     private readonly playerService: PlayerService,
-  ) {
-  }
+  ) {}
 
   async findAll(): Promise<ExternalPlayer[]> {
     return await this.repo.find();
   }
 
-  async getExternalPlayers(missingVRID: boolean, searchString: string = null): Promise<any[]> {
-    let q = await this.repo.createQueryBuilder('p')
+  async getExternalPlayers(
+    missingVRID: boolean,
+    searchString: string = null,
+  ): Promise<any[]> {
+    let q = this.repo
+      .createQueryBuilder('p')
       .leftJoinAndSelect('p.tcPlayer', 'tcp')
       .orderBy('p.lastName')
       .addOrderBy('p.firstName');
@@ -33,10 +36,13 @@ export class ExternalPlayerService {
       q = q.where('1');
     }
     if (searchString) {
-      q = q.andWhere(new Brackets(qb => {
-            qb.where('p.lastName LIKE "%' + searchString + '%"')
-              .orWhere('p.playerId LIKE "%' + searchString + '%"');
-          }));
+      q = q.andWhere(
+        new Brackets((qb) => {
+          qb.where('p.lastName LIKE "%' + searchString + '%"').orWhere(
+            'p.playerId LIKE "%' + searchString + '%"',
+          );
+        }),
+      );
     }
     return await q.getMany();
   }
@@ -44,18 +50,28 @@ export class ExternalPlayerService {
   // We receive a player record from the ITF API
   async loadFromITFAPI(bio: any): Promise<ExternalPlayer | null> {
     let ep: ExternalPlayer;
-    ep = await this.repo.findOne(bio.PlayerId, {
-      relations: ['tcPlayer'],
+    ep = await this.repo.findOne({
+      where: {
+        playerId: bio.PlayerId,
+      },
+      relations: {
+        tcPlayer: true,
+      },
     });
     if (!ep) {
-      ep = await this.repo.create({playerId: bio.PlayerId});
+      ep = this.repo.create({ playerId: bio.PlayerId });
     }
     this.updateFromITFAPI(ep, bio);
     // if the ExternalPlayer has not been matched with an existing Tennis Canada player
     // try to do this now by an exact match on names, gender and data of birth.
     if (!ep.tcPlayer) {
-      const tcPlayer: Player = await this.playerService.findUniquePlayerByAttributes(
-        ep.firstName, ep.lastName, ep.gender, ep.DOB);
+      const tcPlayer: Player =
+        await this.playerService.findUniquePlayerByAttributes(
+          ep.firstName,
+          ep.lastName,
+          ep.gender,
+          ep.DOB,
+        );
       if (tcPlayer) {
         ep.tcPlayer = tcPlayer;
       }
@@ -63,15 +79,24 @@ export class ExternalPlayerService {
     return await this.repo.save(ep);
   }
 
-  // For a given external player, find a list of potential matches in the known
+  // For a given external player, find a list of players with the same last name
   // set of internal (that is, VR) players
-  async FindVRMatches(externalPlayerId: string): Promise<any[]| null> {
-    const externalPlayer: ExternalPlayer = await this.repo.findOne(externalPlayerId);
+  async FindVRMatches(externalPlayerId: string): Promise<Player[] | null> {
+    const externalPlayer: ExternalPlayer = await this.repo.findOne({
+      where: {
+        playerId: externalPlayerId,
+      },
+    });
     if (!externalPlayer) {
-      logger.error('Client asked for matches for non existent External Player Id: ' + externalPlayerId);
+      logger.error(
+        'Client asked for matches for non existent External Player Id: ' +
+          externalPlayerId,
+      );
       return null;
     }
-    return await this.playerService.findPlayersByLastName(externalPlayer.lastName);
+    return await this.playerService.findPlayersByLastName(
+      externalPlayer.lastName,
+    );
   }
 
   updateFromITFAPI(p: ExternalPlayer, bio: any) {
@@ -84,11 +109,18 @@ export class ExternalPlayerService {
     if (bio.IPIN) p.ipin = bio.IPIN;
     if (bio.Nationality) p.nationality = bio.Nationality;
     if (bio.Residence) p.residence = bio.Residence;
-    if (bio.Weight)p.weight = bio.Weight;
+    if (bio.Weight) p.weight = bio.Weight;
   }
 
-  async setVRId(externalId: string, vrId: string): Promise<ExternalPlayer | null> {
-    const ep: ExternalPlayer = await this.repo.findOne(externalId);
+  async setVRId(
+    externalId: string,
+    vrId: string,
+  ): Promise<ExternalPlayer | null> {
+    const ep: ExternalPlayer = await this.repo.findOne({
+      where: {
+        playerId: externalId,
+      },
+    });
     if (!ep) {
       return null;
     }
@@ -101,6 +133,10 @@ export class ExternalPlayerService {
   }
 
   async findByInternalId(internalId: number): Promise<ExternalPlayer | null> {
-    return await this.repo.findOne({where: {internalId}});
+    return await this.repo.findOne({
+      where: {
+        internalId,
+      },
+    });
   }
 }

@@ -1,10 +1,10 @@
-import {forwardRef, Module} from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VRRankingsItemService } from './item.service';
 import { VRRankingsItemController } from './item.controller';
 import { VRRankingsItem } from './item.entity';
-import {VRAPIModule} from '../../VRAPI/vrapi.module';
-import {PlayerModule} from '../../player/player.module';
+import { VRAPIModule } from '../../VRAPI/vrapi.module';
+import { PlayerModule } from '../../player/player.module';
 
 @Module({
   imports: [
@@ -12,14 +12,8 @@ import {PlayerModule} from '../../player/player.module';
     VRAPIModule,
     forwardRef(() => PlayerModule),
   ],
-  providers: [
-    VRRankingsItemService,
-  ],
-  controllers: [
-    VRRankingsItemController,
-  ],
-  exports: [
-    VRRankingsItemService,
-  ],
+  providers: [VRRankingsItemService],
+  controllers: [VRRankingsItemController],
+  exports: [VRRankingsItemService],
 })
 export class VRRankingsItemModule {}

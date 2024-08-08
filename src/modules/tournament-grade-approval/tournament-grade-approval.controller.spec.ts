@@ -9,7 +9,9 @@ describe('TournamentGradeApprovalController', () => {
       controllers: [TournamentGradeApprovalController],
     }).compile();
 
-    controller = module.get<TournamentGradeApprovalController>(TournamentGradeApprovalController);
+    controller = module.get<TournamentGradeApprovalController>(
+      TournamentGradeApprovalController,
+    );
   });
 
   it('should be defined', () => {

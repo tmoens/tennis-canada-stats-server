@@ -1,12 +1,18 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn} from 'typeorm';
-import {Player} from '../../player/player.entity';
-import {VRRankingsPublication} from '../publication/publication.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Player } from '../../player/player.entity';
+import { VRRankingsPublication } from '../publication/publication.entity';
 
 @Entity('vrrankingsitem')
 @Index('publication', ['publication'])
 @Index('player', ['player'])
 export class VRRankingsItem {
-
   // Normally, the publication+player is unique and
   // would be the primary key.  But there is a corner case
   // where a player gets two Ids and shows up in a rankings list
@@ -16,20 +22,20 @@ export class VRRankingsItem {
   @PrimaryGeneratedColumn()
   vrRankingsItemId;
 
-  @ManyToOne(type => VRRankingsPublication, publication => publication.items, {
+  @ManyToOne(() => VRRankingsPublication, (publication) => publication.items, {
     nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'publicationId'})
+  @JoinColumn({ name: 'publicationId' })
   publication: VRRankingsPublication;
 
-  @ManyToOne(type => Player, {
+  @ManyToOne(() => Player, {
     nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'playerId'})
+  @JoinColumn({ name: 'playerId' })
   player: Player;
 
   // This "column" just give access to the player Id value
@@ -47,5 +53,4 @@ export class VRRankingsItem {
 
   @Column('float')
   points: number;
-
 }

@@ -1,13 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {configure, getLogger} from 'log4js';
-import {mkdirSync} from 'fs';
-import {ConfigurationService} from './modules/configuration/configuration.service';
+import { configure, getLogger } from 'log4js';
+import { mkdirSync } from 'fs';
+import { ConfigurationService } from './modules/configuration/configuration.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  const configService: ConfigurationService = await app.get(ConfigurationService);
+  const configService: ConfigurationService =
+    await app.get(ConfigurationService);
 
   /**
    * make several directories, just in case it is a fresh installation.

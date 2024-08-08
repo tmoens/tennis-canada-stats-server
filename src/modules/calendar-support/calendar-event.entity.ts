@@ -1,26 +1,32 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
-import {CalendarTournament} from './calendar-tournament.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { CalendarTournament } from './calendar-tournament.entity';
 
 @Entity('event')
 @Index('tournament', ['tournament'])
-
 export class CalendarEvent {
-
   @PrimaryGeneratedColumn()
   eventId: number;
 
-  @ManyToOne(type => CalendarTournament, tournament => tournament.events, {
+  @ManyToOne(() => CalendarTournament, (tournament) => tournament.events, {
     nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'tournamentId'})
+  @JoinColumn({ name: 'tournamentId' })
   tournament: CalendarTournament;
 
   @Column('int', {
     nullable: false,
     name: 'eventCode',
-    comment: 'VRs code for this Event. It is unique within the tournament only.',
+    comment:
+      'VRs code for this Event. It is unique within the tournament only.',
   })
   eventCode: number;
 
@@ -82,6 +88,4 @@ export class CalendarEvent {
     length: 255,
   })
   grade: string;
-
-
 }

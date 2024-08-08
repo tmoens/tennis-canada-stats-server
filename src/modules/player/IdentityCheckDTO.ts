@@ -30,9 +30,11 @@ export class PlayerMatchCandidate {
 export class FieldMatch {
   colors: string[] = [];
 
-  constructor(public code: MatchCode = MatchCode.NO_MATCH,
-              public matchNote: string = '',
-              public score: number = 0) {
+  constructor(
+    public code: MatchCode = MatchCode.NO_MATCH,
+    public matchNote: string = '',
+    public score: number = 0,
+  ) {
     this.colors[MatchCode.NO_MATCH] = 'f2f2f2';
     this.colors[MatchCode.MATCH] = 'b9f489';
     this.colors[MatchCode.EFFECTIVE_MATCH] = 'b9f489';
@@ -44,19 +46,19 @@ export class FieldMatch {
     c.value(this.matchNote);
     switch (this.code) {
       case MatchCode.NO_MATCH:
-        c.style('fill',  this.colors[MatchCode.NO_MATCH]);
+        c.style('fill', this.colors[MatchCode.NO_MATCH]);
         break;
       case MatchCode.MATCH:
-        c.style('fill',  this.colors[MatchCode.MATCH]);
+        c.style('fill', this.colors[MatchCode.MATCH]);
         break;
       case MatchCode.EFFECTIVE_MATCH:
-        c.style('fill',  this.colors[MatchCode.EFFECTIVE_MATCH]);
+        c.style('fill', this.colors[MatchCode.EFFECTIVE_MATCH]);
         break;
       case MatchCode.PROBABLE_MATCH:
-        c.style('fill',  this.colors[MatchCode.PROBABLE_MATCH]);
+        c.style('fill', this.colors[MatchCode.PROBABLE_MATCH]);
         break;
       case MatchCode.POSSIBLE_MATCH:
-        c.style('fill',  this.colors[MatchCode.POSSIBLE_MATCH]);
+        c.style('fill', this.colors[MatchCode.POSSIBLE_MATCH]);
         break;
       case MatchCode.MISMATCH:
         c.style('fill', this.colors[MatchCode.MISMATCH]);

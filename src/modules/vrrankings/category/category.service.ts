@@ -14,7 +14,15 @@ export class VRRankingsCategoryService {
     return await this.repository.find();
   }
 
-  async getRankingCategoryFromId(catId: string): Promise<VRRankingsCategory> | null {
-    return await this.repository.findOne({where: { categoryId: catId}});
+  // Translate some textual category name like "JFSU12" (that is, Junior Female Singles Under 12)
+  // to the appropriate VR rankings category, if at all possible.
+  async getRankingCategoryFromId(
+    catId: string,
+  ): Promise<VRRankingsCategory> | null {
+    return await this.repository.findOne({
+      where: {
+        categoryId: catId,
+      },
+    });
   }
 }

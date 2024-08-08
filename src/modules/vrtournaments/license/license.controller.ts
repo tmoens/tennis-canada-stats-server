@@ -1,7 +1,17 @@
-import {Body, Controller, Get, HttpStatus, Param, Post, Res, UseGuards} from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { LicenseService } from './license.service';
 import { License, LicenseDTO } from './license.entity';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { Response } from 'express';
 
 @Controller('License')
 export class LicenseController {
@@ -24,10 +34,10 @@ export class LicenseController {
   // TODO Guard this, but at this point, I do not know how to get the client to
   // properly download the file.  And really, there is no sensitive data served up here.
   @Get('usageReport')
-  async getLicenseUsageReport( @Res() response): Promise<any> {
+  async getLicenseUsageReport(@Res() response: Response): Promise<any> {
     const filename = await this.licenseService.getLicenseUsageReport();
     response.status(HttpStatus.OK);
-    await response.download(filename);
+    response.download(filename);
     // TODO Delete file?
     // fs.unlink(filename);
     return true;
@@ -35,19 +45,25 @@ export class LicenseController {
 
   @Get(':licenseName')
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param() params): Promise<License> {
-    return await this.licenseService.findOne(params.licenseName);
+  async findByName(
+    @Param('licenseName') licenseName: string,
+  ): Promise<License> {
+    return await this.licenseService.findByName(licenseName);
   }
 
   @Post('setTennisAssociationForLicenses')
   @UseGuards(JwtAuthGuard)
-  async setTennisAssociationForLicenses(@Body() licenses: LicenseDTO[]): Promise<License[]> {
+  async setTennisAssociationForLicenses(
+    @Body() licenses: LicenseDTO[],
+  ): Promise<License[]> {
     return await this.licenseService.setTennisAssociationForLicenses(licenses);
   }
 
   @Post('setTennisAssociationForLicense')
   @UseGuards(JwtAuthGuard)
-  async setTennisAssociationForLicense(@Body() license: LicenseDTO): Promise<License | null> {
+  async setTennisAssociationForLicense(
+    @Body() license: LicenseDTO,
+  ): Promise<License | null> {
     return await this.licenseService.setTennisAssociationForLicense(license);
   }
 }

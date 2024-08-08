@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {ExternalEvent} from './external-event.entity';
-import {ExternalTournament} from '../external-tournament/external-tournament.entity';
-import {getLogger} from 'log4js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ExternalEvent } from './external-event.entity';
+import { ExternalTournament } from '../external-tournament/external-tournament.entity';
+import { getLogger } from 'log4js';
 
 @Injectable()
 export class ExternalEventService {
@@ -16,10 +16,17 @@ export class ExternalEventService {
     return await this.repo.find();
   }
 
-  async loadFromITFAPI(et: ExternalTournament, eventData: any ): Promise<ExternalEvent | null> {
-    let e: ExternalEvent = await this.repo.findOne(eventData.EventId);
+  async loadFromITFAPI(
+    et: ExternalTournament,
+    eventData: any,
+  ): Promise<ExternalEvent | null> {
+    let e: ExternalEvent = await this.repo.findOne({
+      where: {
+        eventId: eventData.EventId,
+      },
+    });
     if (!e) {
-      e = await this.repo.create({eventId: eventData.EventId});
+      e = this.repo.create({ eventId: eventData.EventId });
     }
     if (await this.updateFromITFAPI(e, eventData)) {
       e.tournament = et;
@@ -44,7 +51,12 @@ export class ExternalEventService {
         break;
       default:
         // not handling mixed doubles events for now.
-        logger.error('Skipping event: ' + d.EventId + '. Unknown PlayerType: ' + d.PlayerType);
+        logger.error(
+          'Skipping event: ' +
+            d.EventId +
+            '. Unknown PlayerType: ' +
+            d.PlayerType,
+        );
         return false;
     }
     e.discipline = null;
@@ -60,9 +72,13 @@ export class ExternalEventService {
         // FWIW, the ATP cup has both singles and doubles matches in the event
         // so the match type of the event is given as null and the event
         // discipline is neither singles nor doubles.
-        logger.error('Skipping event: ' + d.EventId +
-          '. Unknown MatchType: ' + d.MatchType +
-          ' (probably mixed doubles).');
+        logger.error(
+          'Skipping event: ' +
+            d.EventId +
+            '. Unknown MatchType: ' +
+            d.MatchType +
+            ' (probably mixed doubles).',
+        );
         return false;
     }
 
@@ -73,7 +89,7 @@ export class ExternalEventService {
     // Note to future self - this really only applies to Junior events. With pros
     // (at least after 2019) we are awarding points on a straight "exchange rate" basis
     // so if a player earns points in qualifiers, they still get Canadian Open ranking points.
-    e.ignoreResults = (d.Classification !== 'M');
+    e.ignoreResults = d.Classification !== 'M';
     e.name = d.Name;
     e.drawSize = d.DrawSize;
     e.manuallyCreated = false;
@@ -95,13 +111,18 @@ export class ExternalEventService {
         case 'XXX':
           // Somewhere around Nov 18, 2021 ITF started presenting AgeCategory: 'XXX' in their JSON
           // for Pro events.
-          e.eventType = 'Open'
+          e.eventType = 'Open';
           break;
         default:
           // we only deal with events for the above age categories so
           // log the fact that we hit an unexpected one and cancel loading
           // this event and event result and match results.
-          logger.error('Skipping event: ' + d.EventId + '. Unknown AgeCategory: ' + d.AgeCategory);
+          logger.error(
+            'Skipping event: ' +
+              d.EventId +
+              '. Unknown AgeCategory: ' +
+              d.AgeCategory,
+          );
           return false;
       }
     } else {

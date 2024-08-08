@@ -1,6 +1,6 @@
-import {Tournament} from '../../../vrtournaments/tournament/tournament.entity';
-import {Match} from '../../../vrtournaments/match/match.entity';
-import {Event} from '../../../vrtournaments/event/event.entity';
+import { Tournament } from '../../../vrtournaments/tournament/tournament.entity';
+import { Match } from '../../../vrtournaments/match/match.entity';
+import { Event } from '../../../vrtournaments/event/event.entity';
 
 export class MatchCompetitivenessLine {
   matchId: string;
@@ -19,8 +19,8 @@ export class MatchCompetitivenessLine {
   loser2: string = null;
 
   license: string = null;
-  vrEventId: number  = null;
-  eventName: string  = null;
+  vrEventId: number = null;
+  eventName: string = null;
   eventGrade: string = null;
   eventGender: string = null;
   eventMinAge: number = null;
@@ -29,8 +29,7 @@ export class MatchCompetitivenessLine {
   eventSize: number = null;
   date: string = null;
 
-  constructor() {
-  }
+  constructor() {}
 
   dataFill(t: Tournament, e: Event, m: Match): string {
     // cannot create a record for matches with no winner code or no score or no date
@@ -46,11 +45,17 @@ export class MatchCompetitivenessLine {
 
     if (m.score === 'Bye') return 'scorelineIsBye';
 
-    if (!m.date) return `${t.tournamentCode} Type:${t.typeId} Draw: ${m.vrDrawCode} missingMatchDate`;
+    if (!m.date)
+      return `${t.tournamentCode} Type:${t.typeId} Draw: ${m.vrDrawCode} missingMatchDate`;
 
     this.date = m.date;
 
-    this.matchId = [t.tournamentCode, m.vrEventCode, m.vrDrawCode, m.vrMatchCode].join('-');
+    this.matchId = [
+      t.tournamentCode,
+      m.vrEventCode,
+      m.vrDrawCode,
+      m.vrMatchCode,
+    ].join('-');
 
     for (const mp of m.matchPlayers) {
       if (1 === mp.team && 1 === mp.position) {
@@ -94,7 +99,7 @@ export class MatchCompetitivenessLine {
     if (t.license) {
       this.license = t.license.licenseName;
       if (t.license.province) {
-        this.province = t.license.province
+        this.province = t.license.province;
       }
     }
 
@@ -102,17 +107,19 @@ export class MatchCompetitivenessLine {
     if (e.eventCode) this.vrEventId = e.eventCode;
     if (e.grade) this.eventGrade = e.grade;
     if (e.genderId) this.eventGender = e.genderId;
-    if (e.maxAge  && e.maxAge > 0 ) this.eventMaxAge = e.maxAge;
-    if (e.minAge  && e.minAge > 0 ) this.eventMinAge = e.minAge;
+    if (e.maxAge && e.maxAge > 0) this.eventMaxAge = e.maxAge;
+    if (e.minAge && e.minAge > 0) this.eventMinAge = e.minAge;
 
     this.eventIsSingles = e.isSingles; // Singles or doubles
-    if (e.numberOfEntries && e.numberOfEntries > 0) this.eventSize = e.numberOfEntries;
+    if (e.numberOfEntries && e.numberOfEntries > 0)
+      this.eventSize = e.numberOfEntries;
 
     this.score = m.score; // side 1 perspective
-    const matchCompetitiveness: string|number = m.getMatchCompetitiveness();
+    const matchCompetitiveness: string | number = m.getMatchCompetitiveness();
     if (typeof matchCompetitiveness === 'string') return matchCompetitiveness;
 
-    if (typeof matchCompetitiveness === 'number') this.competitiveness = matchCompetitiveness;
+    if (typeof matchCompetitiveness === 'number')
+      this.competitiveness = matchCompetitiveness;
     // console.log(JSON.stringify(this, null, 2));
     return '';
   }

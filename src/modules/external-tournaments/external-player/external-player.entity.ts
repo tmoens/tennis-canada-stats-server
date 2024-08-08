@@ -2,15 +2,21 @@
  * This table is for Canadian players with identities in other tennis systems like the ITF or ATP.
  */
 
-import {Entity, Column, ManyToOne, JoinColumn, UpdateDateColumn, VersionColumn, OneToMany} from 'typeorm';
-import {Player} from '../../player/player.entity';
-import {ExternalEventResult} from '../external-event-result/external-event-result.entity';
-import {ItfMatchResult} from '../itf-match-results/itf-match-result.entity';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  UpdateDateColumn,
+  VersionColumn,
+  OneToMany,
+} from 'typeorm';
+import { Player } from '../../player/player.entity';
+import { ExternalEventResult } from '../external-event-result/external-event-result.entity';
+import { ItfMatchResult } from '../itf-match-results/itf-match-result.entity';
 
 @Entity('external_player')
-
 export class ExternalPlayer {
-
   @Column('char', {
     nullable: false,
     primary: true,
@@ -20,15 +26,15 @@ export class ExternalPlayer {
   })
   playerId: string;
 
-  @ManyToOne(type => Player, {
+  @ManyToOne(() => Player, {
     nullable: true,
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'internalId'})
+  @JoinColumn({ name: 'internalId' })
   tcPlayer: Player | null;
 
-  // Expose the internal player Id wihtout having to join the tables
+  // Expose the internal player Id without having to join the tables
   @Column()
   internalId: number;
 
@@ -114,13 +120,13 @@ export class ExternalPlayer {
   })
   coach: string | null;
 
-  @OneToMany(type => ExternalEventResult, eventResults => eventResults.event, {
+  @OneToMany(() => ExternalEventResult, (eventResults) => eventResults.event, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   eventResults: ExternalEventResult[];
 
-  @OneToMany(type => ItfMatchResult, matches => matches.event, {
+  @OneToMany(() => ItfMatchResult, (matches) => matches.event, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })

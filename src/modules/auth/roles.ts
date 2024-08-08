@@ -11,12 +11,12 @@ export const ADMIN_ROLE = 'admin';
 
 export class Roles {
   private static _roles: { [name: string]: number } = {
-    'admin': 4,
-    'user': 3,
-    'guest': 1,
-  }
+    admin: 4,
+    user: 3,
+    guest: 1,
+  };
 
   static isAuthorized(userRole: string, permittedRole: string): boolean {
-    return (this._roles[userRole] >= this._roles[permittedRole]);
+    return this._roles[userRole] >= this._roles[permittedRole];
   }
 }

@@ -1,15 +1,13 @@
-import {Controller, Get, Query, UseGuards} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
 import { Tournament } from './tournament.entity';
-import {getLogger} from 'log4js';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
-import {GradingDTO} from './grading-dto';
+import { getLogger } from 'log4js';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { GradingDTO } from './grading-dto';
 
 @Controller('Tournament')
 export class TournamentController {
-  constructor(
-    private readonly tournamentService: TournamentService,
-  ) {}
+  constructor(private readonly tournamentService: TournamentService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -28,14 +26,14 @@ export class TournamentController {
     return await this.tournamentService.importTournamentsFromVR();
   }
   @Get('/buildPlayReport')
-  async buildRatingsReport( @Query() query): Promise<any[]> {
+  async buildRatingsReport(@Query() query): Promise<any[]> {
     const logger = getLogger('overallPlayReport');
     logger.info('Request to generate report. Query: ' + JSON.stringify(query));
     return this.tournamentService.getPlayReport(query.from, query.to);
   }
   @Get('/getCurrentGradings')
   @UseGuards(JwtAuthGuard)
-  async getCurrentGrading( @Query() query): Promise<GradingDTO[]> {
+  async getCurrentGrading(@Query() query): Promise<GradingDTO[]> {
     return this.tournamentService.getCurrentGradings(query);
   }
 }

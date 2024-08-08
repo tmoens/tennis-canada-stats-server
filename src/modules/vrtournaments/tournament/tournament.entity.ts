@@ -1,6 +1,14 @@
-import {Index, Entity, Column, OneToMany, UpdateDateColumn, ManyToOne, JoinColumn} from 'typeorm';
-import {Event} from '../event/event.entity';
-import {License} from '../license/license.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  OneToMany,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Event } from '../event/event.entity';
+import { License } from '../license/license.entity';
 
 @Entity()
 @Index('tournamentCode', ['tournamentCode'])
@@ -9,7 +17,6 @@ import {License} from '../license/license.entity';
 @Index('name', ['name'])
 @Index('level', ['level'])
 export class Tournament {
-
   @Column('varchar', {
     nullable: false,
     primary: true,
@@ -44,7 +51,8 @@ export class Tournament {
   @Column('datetime', {
     nullable: false,
     name: 'lastUpdatedInVR',
-    comment: 'The time the tournament was last updated in VR (uploaded by the TD)',
+    comment:
+      'The time the tournament was last updated in VR (uploaded by the TD)',
   })
   lastUpdatedInVR: Date;
 
@@ -60,12 +68,12 @@ export class Tournament {
   })
   endDate: string;
 
-  @ManyToOne(type => License, license => license.tournaments, {
+  @ManyToOne(() => License, (license) => license.tournaments, {
     nullable: false,
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'licenseName'})
+  @JoinColumn({ name: 'licenseName' })
   license: License;
 
   @Column('varchar', {
@@ -75,7 +83,9 @@ export class Tournament {
   })
   city: string;
 
-  @OneToMany(type => Event, events => events.tournament, { onDelete: 'CASCADE' })
+  @OneToMany(() => Event, (events) => events.tournament, {
+    onDelete: 'CASCADE',
+  })
   events: Event[];
 
   // Check if our view of when the tournamentId was last updated in VR
@@ -86,7 +96,7 @@ export class Tournament {
     // compare the two, so we know if ours is out of date.
     const lu: Date = new Date(lastUpdateInVR);
     lu.setMilliseconds(0);
-    return (null == this.lastUpdatedInVR || this.lastUpdatedInVR < lu);
+    return null == this.lastUpdatedInVR || this.lastUpdatedInVR < lu;
   }
 
   @UpdateDateColumn()
@@ -100,24 +110,18 @@ export class Tournament {
     this.lastUpdatedInVR = new Date(apiTournament.LastUpdated);
     this.startDate = apiTournament.StartDate.substring(0, 10);
     this.endDate = apiTournament.EndDate.substring(0, 10);
-    if (null != apiTournament.Category) this.level = apiTournament.Category.Name;
+    if (null != apiTournament.Category)
+      this.level = apiTournament.Category.Name;
     this.city = apiTournament.Venue.City;
     this.events = [];
   }
 
   isTournament(): boolean {
-    return (
-      this.typeId === 0 ||
-      this.typeId === 10
-    );
+    return this.typeId === 0 || this.typeId === 10;
   }
 
   isLeague(): boolean {
-    return (
-      this.typeId === 1 ||
-      this.typeId === 2 ||
-      this.typeId === 3
-    );
+    return this.typeId === 1 || this.typeId === 2 || this.typeId === 3;
   }
 
   getType(): string {

@@ -3,5 +3,5 @@ export class AccessTokenPayload {
   role: string;
   sub: string;
   iat?: number;
-  exp?: number
+  exp?: number;
 }

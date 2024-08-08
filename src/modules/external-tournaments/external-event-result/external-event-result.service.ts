@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {ExternalEventResult} from './external-event-result.entity';
-import {ExternalEvent} from '../external-event/external-event.entity';
-import {ExternalPlayer} from '../external-player/external-player.entity';
-import {getLogger} from 'log4js';
-import {ExternalEventResultDTO} from './external-event-result.dto';
-import {PointExchangeService} from '../point-exchange/point-exchange.service';
-
-const logger = getLogger('externalEventResult');
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ExternalEventResult } from './external-event-result.entity';
+import { ExternalEvent } from '../external-event/external-event.entity';
+import { ExternalPlayer } from '../external-player/external-player.entity';
+import { getLogger } from 'log4js';
+import { ExternalEventResultDTO } from './external-event-result.dto';
+import { PointExchangeService } from '../point-exchange/point-exchange.service';
 
 @Injectable()
 export class ExternalEventResultService {
@@ -22,13 +20,23 @@ export class ExternalEventResultService {
     return await this.repo.find();
   }
 
-  async loadFromITFAPI(e: ExternalEvent, p: ExternalPlayer, eventData: any ): Promise<ExternalEventResult | null> {
-    let r: ExternalEventResult = await this.repo.findOne(
-      {event: e, player: p},
-      {relations: ['event', 'player'],
-      });
+  async loadFromITFAPI(
+    e: ExternalEvent,
+    p: ExternalPlayer,
+    eventData: any,
+  ): Promise<ExternalEventResult | null> {
+    let r: ExternalEventResult = await this.repo.findOne({
+      relations: {
+        player: true,
+        event: true,
+      },
+      where: {
+        eventId: e.eventId,
+        playerId: p.playerId,
+      },
+    });
     if (!r) {
-      r = await this.repo.create({event: e, player: p});
+      r = this.repo.create({ event: e, player: p });
     }
     if (await this.updateFromITFAPI(r, eventData)) {
       return await this.repo.save(r);
@@ -69,41 +77,46 @@ export class ExternalEventResultService {
 
   // The client has asked for a filtered set of external event results using an HTTP get query.
   // The query contains a number of possible fields which are converted to a sql query.
-  async getFilteredResults(query: any): Promise<ExternalEventResultDTO[] | null> {
-    let q = this.repo.createQueryBuilder('r')
+  async getFilteredResults(
+    query: any,
+  ): Promise<ExternalEventResultDTO[] | null> {
+    let q = this.repo
+      .createQueryBuilder('r')
       .leftJoinAndSelect('r.player', 'p')
       .leftJoinAndSelect('p.tcPlayer', 'tcp')
       .leftJoinAndSelect('r.event', 'e')
       .leftJoinAndSelect('e.tournament', 't');
 
     if (query.sanctioningBody) {
-      q = q.where('t.sanctioningBody = :sb', {sb: query.sanctioningBody});
+      q = q.where('t.sanctioningBody = :sb', { sb: query.sanctioningBody });
     } else {
       q = q.where('1');
     }
-    if (query.VRID ) {
-      q = q.andWhere('tcp.playerId = :pid', {pid: query.VRID});
+    if (query.VRID) {
+      q = q.andWhere('tcp.playerId = :pid', { pid: query.VRID });
     }
-    if (query.playerId ) {
-      q = q.andWhere('p.playerId = :pid', {pid: query.playerId});
+    if (query.playerId) {
+      q = q.andWhere('p.playerId = :pid', { pid: query.playerId });
     }
     if (query.start) {
-      q = q.andWhere('t.endDate >= :sp', {sp: query.start});
+      q = q.andWhere('t.endDate >= :sp', { sp: query.start });
     }
     if (query.end) {
-      q = q.andWhere('t.endDate <= :ep', {ep: query.end});
+      q = q.andWhere('t.endDate <= :ep', { ep: query.end });
     }
     if (query.tournamentName) {
-      q = q.andWhere('t.name LIKE :tn', {tn: '%' + query.tournamentName + '%'});
+      q = q.andWhere('t.name LIKE :tn', {
+        tn: '%' + query.tournamentName + '%',
+      });
     }
     if (query.lastName) {
-      q = q.andWhere('p.lastName LIKE :ln', {ln: '%' + query.lastName + '%'});
+      q = q.andWhere('p.lastName LIKE :ln', { ln: '%' + query.lastName + '%' });
     }
     if (query.category) {
       if (query.category === 'Junior') {
         q = q.andWhere('t.tournamentId LIKE "J%"');
       } else {
-        q = q.andWhere('t.category = :category', {category: query.category});
+        q = q.andWhere('t.category = :category', { category: query.category });
       }
     }
     if (query.gender) {
@@ -115,7 +128,9 @@ export class ExternalEventResultService {
       }
     }
 
-    const results = await q.orderBy({'p.lastName': 'ASC', 't.endDate': 'DESC'}).getMany();
+    const results = await q
+      .orderBy({ 'p.lastName': 'ASC', 't.endDate': 'DESC' })
+      .getMany();
 
     // Now we have an array of results and 5 related objects.  But the client only
     // wants to present a table.  So we have to flatten everything down for them.
@@ -136,19 +151,34 @@ export class ExternalEventResultService {
       gender = r.event.gender;
       // Handle junior events.
       if (r.event.eventType === 'U18') {
-        exchangeRate = await this.exchangeService.findExchaneRate(year, pointCurrency, gender, 'U18');
+        exchangeRate = await this.exchangeService.findExchangeRate(
+          year,
+          pointCurrency,
+          gender,
+          'U18',
+        );
         returnData.push(new ExternalEventResultDTO(r, exchangeRate));
       }
 
       // Handle open events
       if (r.event.eventType === 'Open') {
-        exchangeRate = await this.exchangeService.findExchaneRate(year, pointCurrency, gender, 'Open');
+        exchangeRate = await this.exchangeService.findExchangeRate(
+          year,
+          pointCurrency,
+          gender,
+          'Open',
+        );
         returnData.push(new ExternalEventResultDTO(r, exchangeRate));
         // If the player was a junior at the end date of the tournament, we also create a result
         // as if this were a U18 tournament too.
-        const yob = (r.player.DOB) ? parseInt(r.player.DOB.slice(0, 4), 10) : 0;
+        const yob = r.player.DOB ? parseInt(r.player.DOB.slice(0, 4), 10) : 0;
         if (parseInt(r.event.tournament.endDate.slice(0, 4), 10) - yob < 19) {
-          exchangeRate = await this.exchangeService.findExchaneRate(year, pointCurrency, gender, 'U18');
+          exchangeRate = await this.exchangeService.findExchangeRate(
+            year,
+            pointCurrency,
+            gender,
+            'U18',
+          );
           r.event.eventType = 'U18';
           returnData.push(new ExternalEventResultDTO(r, exchangeRate));
         }
@@ -160,18 +190,30 @@ export class ExternalEventResultService {
   // Allows the user to enter corrected externalPoints manually when the ones received through
   // the API are incorrect.  Put in place because the ITF API was not sending points for the
   // New ITF Transition Tour events.
-  async overrideExternalPoints(externalEventResultDTO: ExternalEventResultDTO): Promise<any> {
-    const target: ExternalEventResult = await this.repo.createQueryBuilder('r')
+  async overrideExternalPoints(
+    externalEventResultDTO: ExternalEventResultDTO,
+  ): Promise<any> {
+    const target: ExternalEventResult = await this.repo
+      .createQueryBuilder('r')
       .leftJoinAndSelect('r.player', 'p')
       .leftJoinAndSelect('r.event', 'e')
-      .where('e.eventId = :eventId', {eventId: externalEventResultDTO.eventId})
-      .andWhere('p.playerId = :playerId', {playerId: externalEventResultDTO.externalId})
+      .where('e.eventId = :eventId', {
+        eventId: externalEventResultDTO.eventId,
+      })
+      .andWhere('p.playerId = :playerId', {
+        playerId: externalEventResultDTO.externalId,
+      })
       .getOne();
 
-    if (isNaN(Number(externalEventResultDTO.manualPointAllocation)) || externalEventResultDTO.manualPointAllocation === '') {
+    if (
+      isNaN(Number(externalEventResultDTO.manualPointAllocation)) ||
+      externalEventResultDTO.manualPointAllocation === ''
+    ) {
       target.manualPointAllocation = null;
     } else {
-      target.manualPointAllocation = Number(externalEventResultDTO.manualPointAllocation);
+      target.manualPointAllocation = Number(
+        externalEventResultDTO.manualPointAllocation,
+      );
     }
     await this.repo.save(target);
     return true;

@@ -1,34 +1,34 @@
 import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
 import * as fs from 'fs';
-import {TypeOrmModuleOptions} from '@nestjs/typeorm';
-import {LoggerOptions} from 'typeorm/logger/LoggerOptions';
-import {MailerOptions, MailerOptionsFactory} from '@nestjs-modules/mailer';
-import {HandlebarsAdapter} from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import {JwtModuleOptions, JwtOptionsFactory} from '@nestjs/jwt';
-import {VRRankingsItem} from '../vrrankings/item/item.entity';
-import {VRRankingsCategory} from '../vrrankings/category/category.entity';
-import {ExternalEventResult} from '../external-tournaments/external-event-result/external-event-result.entity';
-import {ExternalEvent} from '../external-tournaments/external-event/external-event.entity';
-import {ExternalPlayer} from '../external-tournaments/external-player/external-player.entity';
-import {ExternalTournament} from '../external-tournaments/external-tournament/external-tournament.entity';
-import {ItfMatchResult} from '../external-tournaments/itf-match-results/itf-match-result.entity';
-import {VRRankingsPublication} from '../vrrankings/publication/publication.entity';
-import {VRRankingsType} from '../vrrankings/type/type.entity';
-import {Draw} from '../vrtournaments/draw/draw.entity';
-import {Event} from '../vrtournaments/event/event.entity';
-import {User} from '../user/user.entity';
-import {EventPlayer} from '../vrtournaments/event_player/event_player.entity';
-import {License} from '../vrtournaments/license/license.entity';
-import {MatchPlayer} from '../vrtournaments/match_player/match_player.entity';
-import {Player} from '../player/player.entity';
-import {Match} from '../vrtournaments/match/match.entity';
-import {PointExchange} from '../external-tournaments/point-exchange/point-exchange.entity';
-import {TennisAssociation} from '../tennis_association/tennis_association.entity';
-import {Tournament} from '../vrtournaments/tournament/tournament.entity';
-import {CalendarEvent} from '../calendar-support/calendar-event.entity';
-import {CalendarTournament} from '../calendar-support/calendar-tournament.entity';
-import {TournamentGradeApproval} from '../tournament-grade-approval/tournament-grade-approval.entity';
+import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
+import { LoggerOptions } from 'typeorm/logger/LoggerOptions';
+import { MailerOptions, MailerOptionsFactory } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { JwtModuleOptions, JwtOptionsFactory } from '@nestjs/jwt';
+import { VRRankingsItem } from '../vrrankings/item/item.entity';
+import { VRRankingsCategory } from '../vrrankings/category/category.entity';
+import { ExternalEventResult } from '../external-tournaments/external-event-result/external-event-result.entity';
+import { ExternalEvent } from '../external-tournaments/external-event/external-event.entity';
+import { ExternalPlayer } from '../external-tournaments/external-player/external-player.entity';
+import { ExternalTournament } from '../external-tournaments/external-tournament/external-tournament.entity';
+import { ItfMatchResult } from '../external-tournaments/itf-match-results/itf-match-result.entity';
+import { VRRankingsPublication } from '../vrrankings/publication/publication.entity';
+import { VRRankingsType } from '../vrrankings/type/type.entity';
+import { Draw } from '../vrtournaments/draw/draw.entity';
+import { Event } from '../vrtournaments/event/event.entity';
+import { User } from '../user/user.entity';
+import { EventPlayer } from '../vrtournaments/event_player/event_player.entity';
+import { License } from '../vrtournaments/license/license.entity';
+import { MatchPlayer } from '../vrtournaments/match_player/match_player.entity';
+import { Player } from '../player/player.entity';
+import { Match } from '../vrtournaments/match/match.entity';
+import { PointExchange } from '../external-tournaments/point-exchange/point-exchange.entity';
+import { TennisAssociation } from '../tennis_association/tennis_association.entity';
+import { Tournament } from '../vrtournaments/tournament/tournament.entity';
+import { CalendarEvent } from '../calendar-support/calendar-event.entity';
+import { CalendarTournament } from '../calendar-support/calendar-tournament.entity';
+import { TournamentGradeApproval } from '../tournament-grade-approval/tournament-grade-approval.entity';
 
 export const TC_STATS_DB = 'tc_stats';
 export const CALENDAR_DB = 'calendar_db';
@@ -37,9 +37,8 @@ export interface EnvConfig {
   [prop: string]: string;
 }
 
-export class ConfigurationService implements
-  MailerOptionsFactory,
-  JwtOptionsFactory
+export class ConfigurationService
+  implements MailerOptionsFactory, JwtOptionsFactory, TypeOrmOptionsFactory
 {
   private readonly envConfig: EnvConfig;
   readonly environment: string;
@@ -86,14 +85,12 @@ export class ConfigurationService implements
     return this.envConfig.JWT_DURATION;
   }
 
-
   /**
    * Ensures all needed variables are set, and returns the validated JavaScript object
    * including the applied default values.
    */
   private static validateInput(envConfig: EnvConfig): EnvConfig {
     const envVarsSchema: Joi.ObjectSchema = Joi.object({
-
       PORT: Joi.number().default(3002),
       MYSQL_PORT: Joi.number().default(3306),
 
@@ -141,12 +138,10 @@ export class ConfigurationService implements
       DEFAULT_ADMIN_USER_NAME: Joi.string().required(),
       DEFAULT_ADMIN_USER_EMAIL: Joi.string().required(),
       DEFAULT_ADMIN_USER_PASSWORD: Joi.string().required(),
-
     });
 
-    const { error, value: validatedEnvConfig } = envVarsSchema.validate(
-      envConfig
-    );
+    const { error, value: validatedEnvConfig } =
+      envVarsSchema.validate(envConfig);
     if (error) {
       throw new Error(`Config validation error: ${error.message}`);
     }
@@ -230,20 +225,14 @@ export class ConfigurationService implements
     return Boolean(this.envConfig.TYPEORM_SYNCH_DATABASE);
   }
 
-  get howManyCandidateMatches(): number {
-    return Number(this.envConfig.HOW_MANY_CANDIDATE_MATCHES);
-  }
-
-  get candidateMatchScoreThreshold(): number {
-    return Number(this.envConfig.CANDIDATE_MATCH_SCORE_THRESHOLD);
-  }
-
   get mysqlPort(): number {
     return Number(this.envConfig.MYSQL_PORT);
   }
 
   // This is used to build ORM configuration options
-  generateTypeOrmOptions(db: string): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
+  createTypeOrmOptions(
+    db: string,
+  ): Promise<TypeOrmModuleOptions> | TypeOrmModuleOptions {
     const tcStatsEntities = [
       Draw,
       Event,
@@ -267,10 +256,7 @@ export class ConfigurationService implements
       VRRankingsType,
       TournamentGradeApproval,
     ];
-    const calendarEntities = [
-      CalendarEvent,
-      CalendarTournament,
-    ]
+    const calendarEntities = [CalendarEvent, CalendarTournament];
     const logOptions: LoggerOptions = ['error'];
     if (this.typeORMLogQueries) {
       logOptions.push('query');
@@ -284,8 +270,8 @@ export class ConfigurationService implements
       synchronize: this.typeORMSyncDatabase,
       logging: logOptions,
       charset: 'utf8mb4',
-    }
-    switch(db) {
+    };
+    switch (db) {
       case TC_STATS_DB:
         return {
           ...defaultOptions,
@@ -295,12 +281,13 @@ export class ConfigurationService implements
       case CALENDAR_DB:
         return {
           ...defaultOptions,
-          name: 'calendar',
           database: 'vrtournaments',
           entities: calendarEntities,
         };
       default:
-        throw new Error(`Cannot generate TypeORM options for unknown database: ${db}.`);
+        throw new Error(
+          `Cannot generate TypeORM options for unknown database: ${db}.`,
+        );
     }
   }
   // entities: [`${SOURCE_PATH}/**/*.entity{.ts,.js}`],
@@ -320,7 +307,7 @@ export class ConfigurationService implements
         auth: {
           user: this.envConfig.MAIL_USER,
           pass: this.envConfig.MAIL_PASSWORD,
-        }
+        },
       },
       template: {
         dir: __dirname + '/templates',
@@ -329,14 +316,13 @@ export class ConfigurationService implements
           strict: true,
         },
       },
-    }
+    };
   }
 
   createJwtOptions(): Promise<JwtModuleOptions> | JwtModuleOptions {
     return {
       secret: this.jwtSecret,
-      signOptions: {expiresIn: this.jwtDuration},
-    }
+      signOptions: { expiresIn: this.jwtDuration },
+    };
   }
 }
-

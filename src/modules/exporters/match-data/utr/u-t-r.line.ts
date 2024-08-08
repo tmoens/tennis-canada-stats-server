@@ -1,11 +1,11 @@
-import {Tournament} from '../../../vrtournaments/tournament/tournament.entity';
-import {Event} from '../../../vrtournaments/event/event.entity';
-import {Match} from '../../../vrtournaments/match/match.entity';
-import {JobStats} from '../../../../utils/jobstats';
-import {Logger} from 'log4js';
-import {MatchPlayer} from '../../../vrtournaments/match_player/match_player.entity';
+import { Tournament } from '../../../vrtournaments/tournament/tournament.entity';
+import { Event } from '../../../vrtournaments/event/event.entity';
+import { Match } from '../../../vrtournaments/match/match.entity';
+import { JobStats } from '../../../../utils/jobstats';
+import { Logger } from 'log4js';
+import { MatchPlayer } from '../../../vrtournaments/match_player/match_player.entity';
 import * as moment from 'moment/moment';
-import {TOURNAMENT_URL_PREFIX} from '../match-data-exporter.service';
+import { TOURNAMENT_URL_PREFIX } from '../match-data-exporter.service';
 
 // A line in the UTR Report
 
@@ -69,10 +69,15 @@ export class UTRLine {
   tImportSource: string = 'Tennis Canada';
   tSanctionBody: string = null;
 
-  constructor() {
-  }
+  constructor() {}
 
-  dataFill(t: Tournament, e: Event, m: Match, stats: JobStats, logger: Logger): boolean {
+  dataFill(
+    t: Tournament,
+    e: Event,
+    m: Match,
+    stats: JobStats,
+    logger: Logger,
+  ): boolean {
     // Not interested in byes
     // i.e. where there is less than two participants for singles or 4 for doubles
 
@@ -96,7 +101,12 @@ export class UTRLine {
       }
     }
 
-    this.matchId = [t.tournamentCode, m.vrEventCode, m.vrDrawCode, m.vrMatchCode].join('-');
+    this.matchId = [
+      t.tournamentCode,
+      m.vrEventCode,
+      m.vrDrawCode,
+      m.vrMatchCode,
+    ].join('-');
     this.date = moment(t.endDate).format('MM/DD/YYYY');
     if (!w1) {
       stats.bump('no w1');
@@ -112,7 +122,9 @@ export class UTRLine {
       if (w1.player.DOB) {
         this.w1YOB = Number(w1.player.DOB.slice(0, 4));
       } else {
-        logger.error(`UTR Reporter noticed player with no DOB. Id: ${w1.player.playerId}`);
+        logger.error(
+          `UTR Reporter noticed player with no DOB. Id: ${w1.player.playerId}`,
+        );
         stats.bump('player with no DOB');
       }
       this.w1City = w1.player.city;
@@ -132,7 +144,9 @@ export class UTRLine {
       if (l1.player.DOB) {
         this.l1YOB = Number(l1.player.DOB.slice(0, 4));
       } else {
-        logger.error(`UTR Reporter noticed player with no DOB. Id: ${l1.player.playerId}`);
+        logger.error(
+          `UTR Reporter noticed player with no DOB. Id: ${l1.player.playerId}`,
+        );
         stats.bump('player with no DOB');
       }
       this.l1City = l1.player.city;
@@ -160,7 +174,9 @@ export class UTRLine {
           if (w2.player.DOB) {
             this.w2YOB = Number(w2.player.DOB.slice(0, 4));
           } else {
-            logger.error(`UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`);
+            logger.error(
+              `UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`,
+            );
             stats.bump('player with no DOB');
           }
           this.w2City = w2.player.city;
@@ -179,20 +195,20 @@ export class UTRLine {
           if (l2.player.DOB) {
             this.l2YOB = Number(l2.player.DOB.slice(0, 4));
           } else {
-            logger.error(`UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`);
+            logger.error(
+              `UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`,
+            );
             stats.bump('player with no DOB');
           }
           this.l2City = l2.player.city;
           this.l2State = l2.player.province;
         }
       }
-    }
-
-    /*
-     * It's not a league, it's a tournament, so we know there should be a w2 and a l2 for
-     * doubles (i.e. non singles) events.
-     */
-    else if (!e.isSingles) {
+    } else if (!e.isSingles) {
+      /*
+       * It's not a league, it's a tournament, so we know there should be a w2 and a l2 for
+       * doubles (i.e. non singles) events.
+       */
       if (!w2) {
         stats.bump('no w2');
         return false;
@@ -207,7 +223,9 @@ export class UTRLine {
         if (w2.player.DOB) {
           this.w2YOB = Number(w2.player.DOB.slice(0, 4));
         } else {
-          logger.error(`UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`);
+          logger.error(
+            `UTR Reporter noticed player with no DOB. Id: ${w2.player.playerId}`,
+          );
           stats.bump('player with no DOB');
         }
         this.w2City = w2.player.city;
@@ -227,7 +245,9 @@ export class UTRLine {
         if (l2.player.DOB) {
           this.l2YOB = Number(l2.player.DOB.slice(0, 4));
         } else {
-          logger.error(`UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`);
+          logger.error(
+            `UTR Reporter noticed player with no DOB. Id: ${l2.player.playerId}`,
+          );
           stats.bump('player with no DOB');
         }
         this.l2City = l2.player.city;
@@ -236,7 +256,7 @@ export class UTRLine {
     }
     this.score = m.score;
     this.drawGender = e.genderId;
-    this.drawTeamType = (e.isSingles) ? 'Singles' : 'Doubles';
+    this.drawTeamType = e.isSingles ? 'Singles' : 'Doubles';
     if (e.vrRankingsCategory) {
       this.drawBracketType = e.vrRankingsCategory.vrRankingsType.typeName;
       switch (this.drawBracketType) {

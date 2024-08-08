@@ -1,4 +1,4 @@
-import {Get, Controller} from '@nestjs/common';
+import { Get, Controller } from '@nestjs/common';
 
 @Controller()
 export class AppController {
@@ -6,5 +6,4 @@ export class AppController {
   root(): string {
     return 'Tennis Canada Play Data server.';
   }
-
 }

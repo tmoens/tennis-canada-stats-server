@@ -1,10 +1,10 @@
-import {Injectable} from '@nestjs/common';
-import {getLogger} from 'log4js';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {License, LicenseDTO} from './license.entity';
-import {WorkBook, writeFile, utils, WorkSheet} from 'xlsx';
-import {TennisAssociationService} from '../../tennis_association/tennis_association.service';
+import { Injectable } from '@nestjs/common';
+import { getLogger } from 'log4js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { License, LicenseDTO } from './license.entity';
+import { WorkBook, writeFile, utils, WorkSheet } from 'xlsx';
+import { TennisAssociationService } from '../../tennis_association/tennis_association.service';
 
 const logger = getLogger('licenseService');
 
@@ -19,8 +19,12 @@ export class LicenseService {
     return await this.repository.find();
   }
 
-  async findOne(licenseName: string): Promise<License> {
-    return await this.repository.findOne(licenseName);
+  async findByName(licenseName: string): Promise<License> {
+    return await this.repository.findOne({
+      where: {
+        licenseName,
+      },
+    });
   }
 
   // When a license is initially encountered in as the organization
@@ -28,7 +32,11 @@ export class LicenseService {
   // is not known and is set to "TBD"
   // This query just fetches those licenses
   async findLicensesWithMissingProvince(): Promise<License[]> {
-    return await this.repository.find({province: 'TBD'});
+    return await this.repository.find({
+      where: {
+        province: 'TBD',
+      },
+    });
   }
 
   async setTennisAssociationForLicenses(licenses: LicenseDTO[]): Promise<any> {
@@ -37,23 +45,33 @@ export class LicenseService {
     }
   }
 
-  async setTennisAssociationForLicense(license: LicenseDTO): Promise<License | null> {
+  async setTennisAssociationForLicense(
+    license: LicenseDTO,
+  ): Promise<License | null> {
     if (!license.licenseName) {
       logger.warn(`Cant set license pta. No license name supplied.`);
       return null;
     }
     if (!license.province) {
-      logger.warn(`Cant set license pta for ${license.licenseName}. No PTA supplied.`);
+      logger.warn(
+        `Cant set license pta for ${license.licenseName}. No PTA supplied.`,
+      );
       return null;
     }
-    const validPTA = await this.tennisAssociationServeice.validRegionAbbrv(license.province);
+    const validPTA = await this.tennisAssociationServeice.validRegionAbbrv(
+      license.province,
+    );
     if (!validPTA) {
-      logger.warn(`Cant set license pta for ${license.licenseName}. Invalid PTA: ${license.province}.`);
+      logger.warn(
+        `Cant set license pta for ${license.licenseName}. Invalid PTA: ${license.province}.`,
+      );
       return null;
     }
-    const l = await this.findOne(license.licenseName);
+    const l = await this.findByName(license.licenseName);
     if (!l) {
-      logger.warn(`Cant set license pta for ${license.licenseName}. No unknown license name.`);
+      logger.warn(
+        `Cant set license pta for ${license.licenseName}. No unknown license name.`,
+      );
       return null;
     }
     l.province = license.province;
@@ -61,10 +79,17 @@ export class LicenseService {
   }
 
   async lookupOrCreate(licenseName: string): Promise<License> {
-    let l: License = await this.repository.findOne(licenseName);
+    let l: License = await this.repository.findOne({
+      where: {
+        licenseName,
+      },
+    });
     if (l == null) {
-      logger.warn('Found a new license: ' +
-        licenseName + '. Make sure you fill in the province for it.');
+      logger.warn(
+        'Found a new license: ' +
+          licenseName +
+          '. Make sure you fill in the province for it.',
+      );
       l = new License(licenseName, 'TBD');
       await this.repository.save(l);
     }
@@ -82,7 +107,7 @@ export class LicenseService {
       .addSelect('COUNT(tournament.tournamentCode)', 'tournamentCount')
       .addSelect('MAX(tournament.endDate)', 'mostRecent')
       .leftJoin('license.tournaments', 'tournament')
-      .where('license.licenseName IS NOT NULL' )
+      .where('license.licenseName IS NOT NULL')
       .groupBy('license.licenseName')
       .getRawMany();
 
@@ -93,14 +118,10 @@ export class LicenseService {
     };
     wb.SheetNames.push('Licenses');
     const ws: WorkSheet = utils.json_to_sheet(licenses);
-    ws['!cols'] = [
-      {width: 50},
-      {width: 13},
-      {width: 11},
-      {width: 14},
-    ];
+    ws['!cols'] = [{ width: 50 }, { width: 13 }, { width: 11 }, { width: 14 }];
     wb.Sheets.Licenses = ws;
-    const filename = 'Reports/VR_License_Usage_' + now.toISOString().slice(0, 10) + '.xlsx';
+    const filename =
+      'Reports/VR_License_Usage_' + now.toISOString().slice(0, 10) + '.xlsx';
 
     writeFile(wb, filename);
     return filename;

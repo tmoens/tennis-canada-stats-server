@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from './match.entity';
-import {VRAPIService} from '../../VRAPI/vrapi.service';
-import {Draw} from '../draw/draw.entity';
-import {MatchPlayerService} from '../match_player/match_player.service';
-import {JobStats} from '../../../utils/jobstats';
-import {getLogger} from 'log4js';
+import { VRAPIService } from '../../VRAPI/vrapi.service';
+import { Draw } from '../draw/draw.entity';
+import { MatchPlayerService } from '../match_player/match_player.service';
+import { JobStats } from '../../../utils/jobstats';
+import { getLogger } from 'log4js';
 
 const CREATION_COUNT = 'match_creation';
 const CREATION_FAIL_COUNT = 'match_creation_fail';
@@ -22,21 +22,25 @@ export class MatchService {
     @InjectRepository(Match)
     private readonly repo: Repository<Match>,
     private readonly matchPlayerService: MatchPlayerService,
-    private readonly vrapi: VRAPIService) {
-  }
+    private readonly vrapi: VRAPIService,
+  ) {}
 
   async findAll(): Promise<Match[]> {
     return await this.repo.find();
   }
 
   // go get all the matches for a given tournament or league from the VR API.
-  async importMatchesFromVR(draw: Draw, importStats: JobStats): Promise<boolean> {
+  async importMatchesFromVR(
+    draw: Draw,
+    importStats: JobStats,
+  ): Promise<boolean> {
     const tl_matches_json = await this.vrapi.get(
-      'Tournament/' + draw.event.tournament.tournamentCode +
-      '/Draw/' + draw.drawCode +
-      '/Match',
+      'Tournament/' +
+        draw.event.tournament.tournamentCode +
+        '/Draw/' +
+        draw.drawCode +
+        '/Match',
     );
-
 
     // When importing matches from a tournament, the above API call gives  a
     // list of "Match" objects.
@@ -65,13 +69,17 @@ export class MatchService {
     // gives a list of "TeamMatch"es. So, you have to make another
     // API call to get the "Match"es within each "TeamMatch";
     if (draw.event.tournament.isLeague()) {
-      const teamMatches: any[] = VRAPIService.arrayify(tl_matches_json.TeamMatch);
+      const teamMatches: any[] = VRAPIService.arrayify(
+        tl_matches_json.TeamMatch,
+      );
 
       logger.info(teamMatches.length + ' team matches (fixtures) found');
       for (const tm of teamMatches) {
         const matches_json = await this.vrapi.get(
-          'Tournament/' + draw.event.tournament.tournamentCode +
-          '/TeamMatch/' + tm.Code,
+          'Tournament/' +
+            draw.event.tournament.tournamentCode +
+            '/TeamMatch/' +
+            tm.Code,
         );
 
         // Now we have all the regular matches that were played in a given
@@ -89,7 +97,7 @@ export class MatchService {
         for (const match of matches) {
           const matchDetail_json = await this.vrapi.get(
             `Tournament/${draw.event.tournament.tournamentCode}/` +
-            `MatchDetail/${match.Code}`
+              `MatchDetail/${match.Code}`,
           );
           if (matchDetail_json.Match && matchDetail_json.Match.MatchTime) {
             match.MatchTime = matchDetail_json.Match.MatchTime;
@@ -128,13 +136,19 @@ export class MatchService {
       // the players are not yet determined.  These matches will be added
       // as the tournament is updated and the scores are known.
       if (match.score) {
-        await this.repo.save(match)
-          .catch(reason => {
-            logger.error('Failed to save match data. Reason: ' + reason +
-              ', Match Data: ' + JSON.stringify(match_json, null, 2));
-            importStats.bump(CREATION_FAIL_COUNT);
-          });
-        await this.matchPlayerService.importMatchPlayersFromVR(match, match_json);
+        await this.repo.save(match).catch((reason) => {
+          logger.error(
+            'Failed to save match data. Reason: ' +
+              reason +
+              ', Match Data: ' +
+              JSON.stringify(match_json, null, 2),
+          );
+          importStats.bump(CREATION_FAIL_COUNT);
+        });
+        await this.matchPlayerService.importMatchPlayersFromVR(
+          match,
+          match_json,
+        );
         importStats.bump(CREATION_COUNT);
       }
     }

@@ -1,8 +1,15 @@
-import {Controller, Get, HttpStatus, Query, Res, UseGuards} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { EventService } from './event.service';
 import { Event } from './event.entity';
-import {getLogger} from 'log4js';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { getLogger } from 'log4js';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('Event')
 export class EventController {
@@ -22,11 +29,17 @@ export class EventController {
 
   @Get('buildRatingsReport')
   @UseGuards(JwtAuthGuard)
-  async buildRatingsReport( @Query() query) {
+  async buildRatingsReport(@Query() query) {
     const logger = getLogger('eventRatingsReport');
-    logger.info('Request to generate report. Query: ' + JSON.stringify(query, null, 2));
+    logger.info(
+      'Request to generate report. Query: ' + JSON.stringify(query, null, 2),
+    );
     await this.eventService.rateEvents(
-      query.from, query.to, query.province, query.categories.split(','));
+      query.from,
+      query.to,
+      query.province,
+      query.categories.split(','),
+    );
     logger.info('Report generation complete.');
   }
 
@@ -34,7 +47,7 @@ export class EventController {
   // TODO figure out how to guard this - client is an <a>...</a>
   // which does not send auth headers. no private data so it is ok.
   // @UseGuards(JwtAuthGuard)
-  async exportRatingsReport( @Res() response, @Query() query): Promise<any> {
+  async exportRatingsReport(@Res() response, @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to download ' + query.filename);
     response.status(HttpStatus.OK);

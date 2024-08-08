@@ -1,12 +1,10 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
-import {ItfapiService} from './itfapi.service';
-import {JwtAuthGuard} from '../../guards/jwt-auth.guard';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ItfapiService } from './itfapi.service';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 
 @Controller('ITFAPI')
 export class ItfapiController {
-  constructor(
-    private readonly service: ItfapiService) {
-  }
+  constructor(private readonly service: ItfapiService) {}
 
   // This is only for testing.  In production there will be an executable
   // that gets run regularly for loading results from the ITF API

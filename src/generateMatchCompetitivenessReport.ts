@@ -2,8 +2,8 @@
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {configure} from 'log4js';
-import {MatchDataExporterService} from './modules/exporters/match-data/match-data-exporter.service';
+import { configure } from 'log4js';
+import { MatchDataExporterService } from './modules/exporters/match-data/match-data-exporter.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,7 +11,6 @@ async function bootstrap() {
 
   configure('log4js_config.json');
   await service.buildMatchCompetitivenessReport();
-
 
   await delay(60000);
 
@@ -21,5 +20,5 @@ async function bootstrap() {
 bootstrap();
 
 async function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

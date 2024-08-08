@@ -1,5 +1,11 @@
-import {Index, Entity, Column, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
-import {CalendarEvent} from './calendar-event.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { CalendarEvent } from './calendar-event.entity';
 
 @Entity('tournament')
 @Index('tournamentCode', ['tournamentCode'])
@@ -8,7 +14,6 @@ import {CalendarEvent} from './calendar-event.entity';
 @Index('name', ['name'])
 @Index('level', ['level'])
 export class CalendarTournament {
-
   @PrimaryGeneratedColumn()
   tournamentId: number;
 
@@ -44,7 +49,8 @@ export class CalendarTournament {
 
   @Column('datetime', {
     nullable: false,
-    comment: 'The time the tournament was last updated in VR (uploaded by the TD)',
+    comment:
+      'The time the tournament was last updated in VR (uploaded by the TD)',
   })
   lastUpdated: Date;
 
@@ -78,6 +84,8 @@ export class CalendarTournament {
   })
   province: string;
 
-  @OneToMany(type => CalendarEvent, events => events.tournament, { onDelete: 'CASCADE' })
+  @OneToMany(() => CalendarEvent, (events) => events.tournament, {
+    onDelete: 'CASCADE',
+  })
   events: CalendarEvent[];
 }

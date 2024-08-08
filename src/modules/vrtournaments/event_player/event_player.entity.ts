@@ -1,26 +1,32 @@
-import {Entity, Column, ManyToOne, JoinColumn, Index, PrimaryGeneratedColumn} from 'typeorm';
-import {Player} from '../../player/player.entity';
-import {Event} from '../event/event.entity';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Player } from '../../player/player.entity';
+import { Event } from '../event/event.entity';
 
 @Entity('eventplayer')
 @Index(['event', 'player'], { unique: true })
-
 export class EventPlayer {
   @PrimaryGeneratedColumn()
   eventPlayerId: number;
 
-  @ManyToOne(type => Event, eventId => eventId.players, {
+  @ManyToOne(() => Event, (eventId) => eventId.players, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({ name: 'eventId'})
+  @JoinColumn({ name: 'eventId' })
   event: Event;
 
-  @ManyToOne(type => Player, {
+  @ManyToOne(() => Player, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  @JoinColumn({ name: 'playerId'})
+  @JoinColumn({ name: 'playerId' })
   player: Player;
 
   // This "column" just give access to the player Id value

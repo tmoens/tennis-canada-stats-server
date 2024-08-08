@@ -1,4 +1,4 @@
-import {getLogger} from 'log4js';
+import { getLogger } from 'log4js';
 
 /*
  * A very small object to track the status of long-running jobs.
@@ -38,7 +38,7 @@ export class JobStats {
       this.counters[counterName] = this.counters[counterName] + amount;
     }
     if (counterName === 'done' && this.toDo > 0) {
-      this.percentComplete = Math.trunc( (this.counters.done / this.toDo) * 100);
+      this.percentComplete = Math.trunc((this.counters.done / this.toDo) * 100);
     }
     return this.counters[counterName];
   }
@@ -46,7 +46,7 @@ export class JobStats {
   setCounter(counterName: string, amount: number = 1): number {
     this.counters[counterName] = amount;
     if (counterName === 'done' && this.toDo > 0) {
-      this.percentComplete = Math.trunc( (this.counters.done / this.toDo) * 100);
+      this.percentComplete = Math.trunc((this.counters.done / this.toDo) * 100);
     }
     return this.counters[counterName];
   }
@@ -67,7 +67,9 @@ export class JobStats {
     this.status = state;
     if (JobState.DONE === state) {
       this.endTime = new Date();
-      logger.info(`Job ${this.name} complete: ` + JSON.stringify(this, null, 2));
+      logger.info(
+        `Job ${this.name} complete: ` + JSON.stringify(this, null, 2),
+      );
     }
     if (JobState.ERROR === state) {
       this.endTime = new Date();
@@ -84,7 +86,7 @@ export class JobStats {
   }
 
   addNote(note: string) {
-    this.history.push((new Date()).toISOString() + ' ' + note);
+    this.history.push(new Date().toISOString() + ' ' + note);
   }
 
   setCurrentActivity(activity: string) {

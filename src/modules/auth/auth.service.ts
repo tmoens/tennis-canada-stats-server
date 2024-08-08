@@ -1,15 +1,12 @@
-import {Injectable} from '@nestjs/common';
-import {User} from '../user/user.entity'
-import {JwtService} from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
+import { User } from '../user/user.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   private _loggedIn: { [userId: string]: string } = {};
 
-  constructor(
-    private jwtService: JwtService,
-  ) {
-  }
+  constructor(private jwtService: JwtService) {}
 
   login(user: User): string {
     return this.buildToken(user);
@@ -26,7 +23,7 @@ export class AuthService {
       sub: user.id,
       role: user.role,
       passwordChangeRequired: user.passwordChangeRequired,
-      name: user.name
+      name: user.name,
     };
     const token = this.jwtService.sign(payload);
     this._loggedIn[user.id] = token;

@@ -8,8 +8,8 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import {VRRankingsCategory} from '../category/category.entity';
-import {VRRankingsItem} from '../item/item.entity';
+import { VRRankingsCategory } from '../category/category.entity';
+import { VRRankingsItem } from '../item/item.entity';
 
 /**
  * NOTE
@@ -23,22 +23,26 @@ import {VRRankingsItem} from '../item/item.entity';
 @Entity('vrrankingspublication')
 @Index('publicationCode', ['publicationCode'])
 export class VRRankingsPublication {
-
   @PrimaryGeneratedColumn()
   publicationId: number;
 
   @Column('varchar', {
     length: 255,
-    comment: 'The code for the VR publication. Shared by all the categories in a specific VR publication.',
+    comment:
+      'The code for the VR publication. Shared by all the categories in a specific VR publication.',
   })
   publicationCode: string;
 
-  @ManyToOne(type => VRRankingsCategory, rankingsCategory => rankingsCategory.publications, {
-    nullable: false,
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  @JoinColumn({name: 'categoryCode'})
+  @ManyToOne(
+    () => VRRankingsCategory,
+    (rankingsCategory) => rankingsCategory.publications,
+    {
+      nullable: false,
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'categoryCode' })
   rankingsCategory: VRRankingsCategory;
 
   @Column()
@@ -56,7 +60,7 @@ export class VRRankingsPublication {
   @CreateDateColumn()
   tcCreatedAt: Date;
 
-  @OneToMany(type => VRRankingsItem, items => items.publication, {
+  @OneToMany(() => VRRankingsItem, (items) => items.publication, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
@@ -69,7 +73,7 @@ export class VRRankingsPublication {
     // compare the two, so we know if ours is out of date.
     const gd: Date = new Date(generatedDate);
     gd.setMilliseconds(0);
-    return (null == this.tcCreatedAt || this.tcCreatedAt < gd);
+    return null == this.tcCreatedAt || this.tcCreatedAt < gd;
   }
 
   // Given a publication object from the VR API, fill in our own fields

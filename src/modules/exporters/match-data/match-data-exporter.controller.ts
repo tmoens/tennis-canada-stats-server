@@ -1,8 +1,15 @@
-import {Controller, Get, HttpStatus, Query, Res, UseGuards} from '@nestjs/common';
-import {JobStats} from '../../../utils/jobstats';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
-import {MatchDataExporterService} from './match-data-exporter.service';
-import {getLogger} from 'log4js';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { JobStats } from '../../../utils/jobstats';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { MatchDataExporterService } from './match-data-exporter.service';
+import { getLogger } from 'log4js';
 
 @Controller('Exports')
 export class MatchDataExporterController {
@@ -29,7 +36,14 @@ export class MatchDataExporterController {
   @Get('MatchCompetitivenessReport/build')
   @UseGuards(JwtAuthGuard)
   buildMatchCompetitivenessReport() {
-    this.service.buildMatchCompetitivenessReport();
+    // This is a very long running process, so we don't wait for the promise to resolve.
+    // not waiting for the promise to return on purpose
+    this.service.buildMatchCompetitivenessReport().catch((error) => {
+      const logger = getLogger('MatchCompetitivenessReport');
+      logger.error(
+        `Problem running MatchCompetitivenessReport. Error: ${error}`,
+      );
+    });
   }
 
   @Get('MatchCompetitivenessReport/download')
@@ -37,7 +51,7 @@ export class MatchDataExporterController {
   // Like Duh? take it out of <a>...</a>
   // which does not send auth headers. no private data so it is ok.
   // @UseGuards(JwtAuthGuard)
-  async exportRatingsReport( @Res() response, @Query() query): Promise<any> {
+  async exportRatingsReport(@Res() response, @Query() query): Promise<any> {
     const logger = getLogger('eventRatingsReport');
     logger.info('Request to download ' + query.filename);
     response.status(HttpStatus.OK);
@@ -45,5 +59,4 @@ export class MatchDataExporterController {
     logger.info('Download complete');
     // TODO THis might be a good place to clean stuff up.
   }
-
 }

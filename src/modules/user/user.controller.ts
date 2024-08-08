@@ -10,21 +10,25 @@ import {
   Query,
   Request,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
-import {UserService} from './user.service';
-import {User} from './user.entity';
-import {ResetPasswordDTO, UserDTO, UserPasswordChangeDTO} from './UserDTO';
-import {JwtAuthGuard} from '../../guards/jwt-auth.guard';
-import {JwtAuthGuard2} from '../../guards/jwt-auth.guard2';
-import {Role} from '../../guards/role.decorator';
-import {ADMIN_ROLE} from '../auth/roles';
-import {RoleGuard} from '../../guards/role-guard.service';
-import {LocalAuthGuard} from '../../guards/local-auth.guard';
-import {plainToClass} from 'class-transformer';
-import {UserFilter} from './user-filter';
-import {TCMailerService} from '../mailer/mailer-service';
-import {getLogger} from 'log4js';
+import { UserService } from './user.service';
+import { User } from './user.entity';
+import { ResetPasswordDTO, UserDTO, UserPasswordChangeDTO } from './UserDTO';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { JwtAuthGuard2 } from '../../guards/jwt-auth.guard2';
+import { Role } from '../../guards/role.decorator';
+import { ADMIN_ROLE } from '../auth/roles';
+import { RoleGuard } from '../../guards/role-guard.service';
+import { LocalAuthGuard } from '../../guards/local-auth.guard';
+import { plainToInstance } from 'class-transformer';
+import { UserFilter } from './user-filter';
+import { TCMailerService } from '../mailer/mailer-service';
+import { getLogger } from 'log4js';
+import { RequestWithUser } from '../../guards/request-with-user';
+
+// Remember that the AuthGuards used here have the side effect of adding a validated User
+// object to the Request objects.
 
 const logger = getLogger('UserController');
 
@@ -34,8 +38,7 @@ export class UserController {
   constructor(
     private readonly service: UserService,
     private readonly mailerService: TCMailerService,
-  ) {
-  }
+  ) {}
 
   @Get('test')
   async test(): Promise<any> {
@@ -47,34 +50,34 @@ export class UserController {
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
-  async findFiltered(@Query() params): Promise<any[]> {
-    const filter: UserFilter = plainToClass(UserFilter, params);
+  async findFiltered(@Query() params: any): Promise<any[]> {
+    const filter: UserFilter = plainToInstance(UserFilter, params);
     return await this.service.findFiltered(filter);
   }
 
   @Get('findUsers/:userType')
-  async findUsers(@Param('userType')  userType: string): Promise<UserDTO[]> {
+  async findUsers(@Param('userType') userType: string): Promise<UserDTO[]> {
     return await this.service.findUsers(userType);
   }
 
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('isUsernameInUse/:test')
-  async doesUsernameExist(@Param('test')  test: string): Promise<boolean> {
+  async doesUsernameExist(@Param('test') test: string): Promise<boolean> {
     return await this.service.doesUsernameExist(test);
   }
 
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('isNameInUse/:test')
-  async doesNameExist(@Param('test')  test: string): Promise<boolean> {
+  async doesNameExist(@Param('test') test: string): Promise<boolean> {
     return await this.service.doesNameExist(test);
   }
 
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('isEmailInUse/:test')
-  async doesEmailExist(@Param('test')  test: string): Promise<boolean> {
+  async doesEmailExist(@Param('test') test: string): Promise<boolean> {
     return await this.service.doesEmailExist(test);
   }
 
@@ -132,28 +135,30 @@ export class UserController {
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Delete(':id')
-  async delete(@Param('id')  id: string): Promise<User> {
+  async delete(@Param('id') id: string): Promise<User> {
     return this.service.delete(id);
   }
 
   @Role(ADMIN_ROLE)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get(':id')
-  async getById(@Param('id')  id: string): Promise<User> {
-    return await this.service.findOne(id);
+  async getById(@Param('id') id: string): Promise<User> {
+    return await this.service.findById(id);
   }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req): Promise<{ access_token: string }> {
+  async login(
+    @Request() req: RequestWithUser,
+  ): Promise<{ access_token: string }> {
     // Don't forget, Ted, that the LocalAuthGuard
     // handles the Request and sticks the whole validated user in it.
-    return {access_token: await this.service.login(req.user)};
+    return { access_token: await this.service.login(req.user) };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Request() req): Promise<boolean> {
+  async logout(@Request() req: RequestWithUser): Promise<boolean> {
     // Remember, the JwtAuthGuard looks up the user based on info in the
     // token and pushes the user object into the request.
     return await this.service.logout(req.user);
@@ -163,7 +168,10 @@ export class UserController {
   // Otherwise, the user would be permanently blocked if they lost their initial start-up message.
   @UseGuards(JwtAuthGuard2)
   @Put('changePassword')
-  async changePassword(@Request() req, @Body() dto: UserPasswordChangeDTO): Promise<{ access_token: string }> {
-    return {access_token: await this.service.changePassword(req.user, dto)};
+  async changePassword(
+    @Request() req: RequestWithUser,
+    @Body() dto: UserPasswordChangeDTO,
+  ): Promise<{ access_token: string }> {
+    return { access_token: await this.service.changePassword(req.user, dto) };
   }
 }

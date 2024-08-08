@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {ItfMatchResult} from './itf-match-result.entity';
-import {ExternalEvent} from '../external-event/external-event.entity';
-import {ExternalPlayer} from '../external-player/external-player.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ItfMatchResult } from './itf-match-result.entity';
+import { ExternalEvent } from '../external-event/external-event.entity';
+import { ExternalPlayer } from '../external-player/external-player.entity';
 
 @Injectable()
 export class ItfMatchResultsService {
   constructor(
     @InjectRepository(ItfMatchResult)
     private readonly repo: Repository<ItfMatchResult>,
-  ) {
-  }
+  ) {}
 
   async findAll(): Promise<ItfMatchResult[]> {
     return await this.repo.find();
@@ -26,14 +25,23 @@ export class ItfMatchResultsService {
   async loadFromITFAPI(
     externalEvent: ExternalEvent,
     externalPlayer: ExternalPlayer,
-    matchData: any): Promise<ItfMatchResult | null> {
-    let r: ItfMatchResult = await this.repo.findOne(
-      {MatchId: matchData.MatchId, player: externalPlayer},
-      {
-        relations: ['event', 'player'],
-      });
+    matchData: any,
+  ): Promise<ItfMatchResult | null> {
+    let r: ItfMatchResult = await this.repo.findOne({
+      where: {
+        MatchId: matchData.MatchId,
+        player: externalPlayer,
+      },
+      relations: {
+        event: true,
+        player: true,
+      },
+    });
     if (!r) {
-      r = this.repo.create({MatchId: matchData.MatchId, player: externalPlayer});
+      r = this.repo.create({
+        MatchId: matchData.MatchId,
+        player: externalPlayer,
+      });
     }
     r.event = externalEvent;
     // Because the table was set up to have all exactly the same fields

@@ -1,11 +1,13 @@
-import {Controller, Get, UseGuards} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { VRRankingsCategoryService } from './category.service';
 import { VRRankingsCategory } from './category.entity';
-import {JwtAuthGuard} from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 
 @Controller('VRRankingsCategory')
 export class VRRankingsCategoryController {
-  constructor(private readonly vrrankingscategoryService: VRRankingsCategoryService) {}
+  constructor(
+    private readonly vrrankingscategoryService: VRRankingsCategoryService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)

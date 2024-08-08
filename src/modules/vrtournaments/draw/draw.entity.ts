@@ -1,57 +1,68 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
-import {Event} from '../event/event.entity';
-import {Match} from '../match/match.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  OneToMany,
+} from 'typeorm';
+import { Event } from '../event/event.entity';
+import { Match } from '../match/match.entity';
 
 @Entity()
-@Index('event',['event',])
+@Index('event', ['event'])
 export class Draw {
-
   @PrimaryGeneratedColumn()
-  drawId:number;
+  drawId: number;
 
-  @ManyToOne(type=>Event, eventId=>eventId.draws,{
-    nullable:false,
+  @ManyToOne(() => Event, (eventId) => eventId.draws, {
+    nullable: false,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
   })
-  @JoinColumn({name: 'eventId'})
-  event:Event;
+  @JoinColumn({ name: 'eventId' })
+  event: Event;
 
-  @Column('int',{
-    comment: 'VRs code for this draw.  It is unique within the tournament only.'
+  @Column('int', {
+    comment:
+      'VRs code for this draw.  It is unique within the tournament only.',
   })
-  drawCode:number;
+  drawCode: number;
 
-  @Column('varchar',{
-    length:255
+  @Column('varchar', {
+    length: 255,
   })
   name: string;
 
-  @Column('int',{
-    comment: 'VRs draw type code - see the api docs'
+  @Column('int', {
+    comment: 'VRs draw type code - see the api docs',
   })
-  typeId:number;
+  typeId: number;
 
-  @Column('int',{
-    comment: 'This is not the number of players, but the number of positions in the draw.'
+  @Column('int', {
+    comment:
+      'This is not the number of players, but the number of positions in the draw.',
   })
-  drawSize:number;
+  drawSize: number;
 
-  @Column('int',{
-    nullable:true,
-    comment: 'If the draw ends at the semis, this would be 4. Used for qualification draws.'
+  @Column('int', {
+    nullable: true,
+    comment:
+      'If the draw ends at the semis, this would be 4. Used for qualification draws.',
   })
-  endSize:number;
+  endSize: number;
 
-  @Column('tinyint',{
-    nullable:false,
+  @Column('tinyint', {
+    nullable: false,
     default: false,
-    width:1,
-    comment: 'Indicator that this draw is a qualifier as opposed to a main draw.'
+    width: 1,
+    comment:
+      'Indicator that this draw is a qualifier as opposed to a main draw.',
   })
-  isQualification:boolean;
+  isQualification: boolean;
 
-  @OneToMany(type => Match, matches => matches.draw, {
+  @OneToMany(() => Match, (matches) => matches.draw, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
@@ -66,6 +77,6 @@ export class Draw {
     if (null != apiDraw.EndSize) {
       this.endSize = parseInt(apiDraw.EndSize, 10);
     }
-    this.isQualification = ('true' === apiDraw.Qualification);
+    this.isQualification = 'true' === apiDraw.Qualification;
   }
 }

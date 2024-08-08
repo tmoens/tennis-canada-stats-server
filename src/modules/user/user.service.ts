@@ -1,20 +1,24 @@
-import {BadRequestException, Injectable, UnauthorizedException} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {User} from './user.entity';
-import {plainToClass} from 'class-transformer';
-import {JwtService} from '@nestjs/jwt';
-import {UserFilter} from './user-filter';
-import {Brackets, Repository, SelectQueryBuilder} from 'typeorm';
-import {TCMailerService} from '../mailer/mailer-service';
-import {ConfigurationService} from '../configuration/configuration.service';
-import {ADMIN_ROLE} from '../auth/roles';
-import {ResetPasswordDTO, UserDTO, UserPasswordChangeDTO} from './UserDTO';
-import {Logger, getLogger} from 'log4js';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './user.entity';
+import { plainToClass } from 'class-transformer';
+import { JwtService } from '@nestjs/jwt';
+import { UserFilter } from './user-filter';
+import { Brackets, Repository, SelectQueryBuilder } from 'typeorm';
+import { TCMailerService } from '../mailer/mailer-service';
+import { ConfigurationService } from '../configuration/configuration.service';
+import { ADMIN_ROLE } from '../auth/roles';
+import { ResetPasswordDTO, UserDTO, UserPasswordChangeDTO } from './UserDTO';
+import { Logger, getLogger } from 'log4js';
 
 const logger: Logger = getLogger('UserService');
 
 @Injectable()
-export class UserService  {
+export class UserService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
     private jwtService: JwtService,
@@ -29,12 +33,12 @@ export class UserService  {
   // The account is set up so that the user must change her password when
   // she first logs in.
   async makeSureAdminExists() {
-    if (!await this.findByUserName(this.configService.defaultAdminUserName)) {
+    if (!(await this.findByUserName(this.configService.defaultAdminUserName))) {
       const admin: User = await this.create({
         username: this.configService.defaultAdminUserName,
         name: this.configService.defaultAdminUserName,
         role: ADMIN_ROLE,
-        email: this.configService.defaultAdminUserEmail
+        email: this.configService.defaultAdminUserEmail,
       });
       admin.setPassword(this.configService.defaultAdminUserPassword);
       admin.passwordChangeRequired = true;
@@ -60,13 +64,15 @@ export class UserService  {
     const user = await this.findByUserName(username);
     if (user) {
       if (user.validatePassword(pass)) {
-        logger.info(`${username} logged in.`)
+        logger.info(`${username} logged in.`);
         // Note we return the user with encrypted password and salt. We could remove those here.
         // However, the user is ultimately returned with ClassSerializerInterceptor which applies
         // the @Exclude annotation on these fields.  So bottom line, they do not get exported.
         return user;
       } else {
-        logger.warn(`Attempt to log in as user ${username} with wrong password`);
+        logger.warn(
+          `Attempt to log in as user ${username} with wrong password`,
+        );
         return null;
       }
     } else {
@@ -76,88 +82,95 @@ export class UserService  {
   }
 
   async findByUserName(username: string): Promise<User | undefined> {
-    return await this.repo.findOne({where: {username}});
+    return await this.repo.findOne({ where: { username } });
   }
 
   // ====================== Searches =====================
   async findAll(): Promise<User[]> {
-    return this.repo.find({order: {'email': 'ASC'}});
+    return this.repo.find({
+      order: {
+        email: 'ASC',
+      },
+    });
   }
 
-  async findOne(id: string): Promise<User> {
-    const u = await this.repo.findOne(id);
+  async findById(id: string): Promise<User> {
+    const u = await this.repo.findOne({
+      where: {
+        id,
+      },
+    });
     u.isDeletable = await this.isDeletable(u);
     return u;
   }
 
-  async findByUsernameOrEmail(usernameOrEmail: string): Promise<User | undefined> {
+  async findByUsernameOrEmail(
+    usernameOrEmail: string,
+  ): Promise<User | undefined> {
     return await this.repo.findOne({
-      where: [
-        {username: usernameOrEmail},
-        {email: usernameOrEmail},
-      ],
+      where: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
     });
   }
 
   async findActiveUser(id: string): Promise<User> {
-    return this.repo.findOne({where: {id, isActive: true}});
+    return this.repo.findOne({ where: { id, isActive: true } });
   }
 
   async findFiltered(filter: UserFilter): Promise<User[]> {
-    let q: SelectQueryBuilder<User> = this.repo.createQueryBuilder('user')
+    let q: SelectQueryBuilder<User> = this.repo
+      .createQueryBuilder('user')
       .where('1');
     if (filter.activeOnly) {
-      q = q.andWhere('user.isActive = :active', {active: true});
+      q = q.andWhere('user.isActive = :active', { active: true });
     }
     if (filter.inactiveOnly) {
-      q = q.andWhere('user.isActive = :inactive', {inactive: false});
+      q = q.andWhere('user.isActive = :inactive', { inactive: false });
     }
     if (filter.piOnly) {
-      q = q.andWhere('user.isPrimaryInvestigator = :pi', {pi: true});
+      q = q.andWhere('user.isPrimaryInvestigator = :pi', { pi: true });
     }
     if (filter.researcherOnly) {
-      q = q.andWhere('user.isResearcher = :researcher', {researcher: true});
+      q = q.andWhere('user.isResearcher = :researcher', { researcher: true });
     }
     if (filter.isLoggedIn) {
-      q = q.andWhere('user.isLoggedIn = :loggedIn', {loggedIn: true});
+      q = q.andWhere('user.isLoggedIn = :loggedIn', { loggedIn: true });
     }
     if (filter.text) {
       const textFilter: string = '%' + filter.text + '%';
-      q = q.andWhere(new Brackets(qb => {
-        qb.where('user.name LIKE :f', {f: textFilter})
-          .orWhere('user.email LIKE :f', {f: textFilter})
-          .orWhere('user.role LIKE :f', {f: textFilter})
-          .orWhere('user.phone LIKE :f', {f: textFilter})
-          .orWhere('user.username LIKE :f', {f: textFilter})
-
-      }))
+      q = q.andWhere(
+        new Brackets((qb) => {
+          qb.where('user.name LIKE :f', { f: textFilter })
+            .orWhere('user.email LIKE :f', { f: textFilter })
+            .orWhere('user.role LIKE :f', { f: textFilter })
+            .orWhere('user.phone LIKE :f', { f: textFilter })
+            .orWhere('user.username LIKE :f', { f: textFilter });
+        }),
+      );
     }
     q = q.orderBy('user.email');
     return await q.getMany();
   }
 
   async findUsers(userType: string): Promise<UserDTO[]> {
-    let q: SelectQueryBuilder<User> = this.repo.createQueryBuilder('user')
+    let q: SelectQueryBuilder<User> = this.repo
+      .createQueryBuilder('user')
       .orderBy('user.name');
 
     if (userType === 'ACTIVE_PRIMARY_INVESTIGATOR') {
       // users who are designated as PIs AND who are active
-      q = q.where('user.isActive')
-        .andWhere('user.isPrimaryInvestigator');
-
+      q = q.where('user.isActive').andWhere('user.isPrimaryInvestigator');
     } else if (userType === 'ACTIVE_RESEARCHER') {
       // users who are designated as researchers AND who are active
-      q = q.where('user.isActive')
-        .andWhere('user.isResearcher');
-
+      q = q.where('user.isActive').andWhere('user.isResearcher');
     } else if (userType === 'EXTANT_RESEARCHER') {
       // users who are associated as researchers for at lest one stock
-      q = q.innerJoin('stock', 'stock', 'user.id = stock.researcherId')
+      q = q
+        .innerJoin('stock', 'stock', 'user.id = stock.researcherId')
         .groupBy('user.id');
-
     } else if (userType === 'EXTANT_PRIMARY_INVESTIGATOR') {
       // users who are associated as researchers for at lest one stock
-      q = q.innerJoin('stock', 'stock', 'user.id = stock.piId')
+      q = q
+        .innerJoin('stock', 'stock', 'user.id = stock.piId')
         .groupBy('user.id');
     } else {
       return [];
@@ -172,18 +185,18 @@ export class UserService  {
   }
 
   async doesUsernameExist(username: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {username}});
-    return !!(u);
+    const u: User = await this.repo.findOne({ where: { username } });
+    return !!u;
   }
 
   async doesNameExist(name: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {name}});
-    return !!(u);
+    const u: User = await this.repo.findOne({ where: { name } });
+    return !!u;
   }
 
   async doesEmailExist(email: string): Promise<boolean> {
-    const u: User = await this.repo.findOne({where: {email}});
-    return !!(u);
+    const u: User = await this.repo.findOne({ where: { email } });
+    return !!u;
   }
 
   // ========================== Creation ==================
@@ -193,7 +206,6 @@ export class UserService  {
     delete candidate.id;
     await this.validateForCreate(candidate);
     const newPassword = candidate.setRandomPassword();
-    console.log('Setting random password for ' + candidate.username + ': ' + newPassword);
     this.mailerService.newUser(candidate, newPassword);
     return this.repo.save(candidate);
   }
@@ -203,8 +215,7 @@ export class UserService  {
     this.ignoreAttribute(dto, 'id');
     const candidate: User = plainToClass(User, dto);
     await this.validateForCreate(candidate);
-    const newPassword = candidate.setRandomPassword();
-    console.log('Setting random password for ' + candidate.username + ': ' + newPassword);
+    candidate.setRandomPassword();
     return this.repo.save(candidate);
   }
 
@@ -246,18 +257,21 @@ export class UserService  {
       throw new UnauthorizedException('No such user.');
     }
     const rawPwd = u.setRandomPassword();
-    console.log(`Password for ${u.username} set to ${rawPwd}.`);
     this.mailerService.passwordReset(u, rawPwd);
     return this.repo.save(u);
   }
 
   // TODO Validate for Update
   async update(dto: UserDTO): Promise<User> {
-    this.convertEmptyStringToNull(dto)
+    this.convertEmptyStringToNull(dto);
     if (!dto.id) {
       this.logAndThrowException('Received a user update without a user id!');
     }
-    const u: User = await this.repo.findOneOrFail(dto.id);
+    const u: User = await this.repo.findOneOrFail({
+      where: {
+        id: dto.id,
+      },
+    });
     // we do not update passwords this way...
     Object.assign(u, dto);
     return this.repo.save(u);
@@ -265,14 +279,22 @@ export class UserService  {
 
   async activate(dto: UserDTO): Promise<User> {
     this.mustHaveAttribute(dto, 'id');
-    const u: User = await this.repo.findOneOrFail(dto.id);
+    const u: User = await this.repo.findOneOrFail({
+      where: {
+        id: dto.id,
+      },
+    });
     u.isActive = true;
     return this.repo.save(u);
   }
 
   async deactivate(dto: UserDTO): Promise<User> {
     this.mustHaveAttribute(dto, 'id');
-    const u: User = await this.repo.findOneOrFail(dto.id);
+    const u: User = await this.repo.findOneOrFail({
+      where: {
+        id: dto.id,
+      },
+    });
     u.isActive = false;
     u.isLoggedIn = false;
     return this.repo.save(u);
@@ -280,7 +302,11 @@ export class UserService  {
 
   async forceLogout(dto: UserDTO): Promise<User> {
     this.mustHaveAttribute(dto, 'id');
-    const u: User = await this.repo.findOneOrFail(dto.id);
+    const u: User = await this.repo.findOneOrFail({
+      where: {
+        id: dto.id,
+      },
+    });
     u.isLoggedIn = false;
     return this.repo.save(u);
   }
@@ -288,7 +314,10 @@ export class UserService  {
   async changePassword(u: User, dto: UserPasswordChangeDTO): Promise<string> {
     if (!u.validatePassword(dto.currentPassword)) {
       this.logAndThrowException(
-        'Attempted password change for ' + u.username + ' with incorrect current password');
+        'Attempted password change for ' +
+          u.username +
+          ' with incorrect current password',
+      );
     }
     u.setPassword(dto.newPassword);
     await this.repo.save(u);
@@ -297,10 +326,12 @@ export class UserService  {
 
   // ========================== Delete ==================
   async delete(id: string): Promise<any> {
-    const u: User = await this.findOne(id);
+    const u: User = await this.findById(id);
 
     if (!u || !(await this.isDeletable(u))) {
-      this.logAndThrowException('Tried to delete a user you shouldn\'t have been able to!');
+      this.logAndThrowException(
+        "Tried to delete a user you shouldn't have been able to!",
+      );
     }
     return await this.repo.remove(u);
   }
@@ -310,7 +341,7 @@ export class UserService  {
       username: user.username,
       sub: user.id,
       role: user.role,
-      passwordChangeRequired: user.passwordChangeRequired
+      passwordChangeRequired: user.passwordChangeRequired,
     };
     return this.jwtService.sign(payload);
   }

@@ -1,28 +1,37 @@
-import {Index, Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
-import {Event} from '../event/event.entity';
-import {Draw} from '../draw/draw.entity';
-import {MatchPlayer} from '../match_player/match_player.entity';
+import {
+  Index,
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  OneToMany,
+} from 'typeorm';
+import { Event } from '../event/event.entity';
+import { Draw } from '../draw/draw.entity';
+import { MatchPlayer } from '../match_player/match_player.entity';
 
 @Entity()
 @Index('event', ['event'])
 @Index('draw', ['draw'])
 export class Match {
-
   @PrimaryGeneratedColumn()
   matchId: number;
 
-  @ManyToOne(type => Event, eventId => eventId.matches, {
+  @ManyToOne(() => Event, (eventId) => eventId.matches, {
     nullable: false,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'eventId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'eventId' })
   event: Event;
 
-  @ManyToOne(type => Draw, drawId => drawId.matches, {
+  @ManyToOne(() => Draw, (drawId) => drawId.matches, {
     nullable: false,
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'drawId'})
+    onUpdate: 'CASCADE',
+  })
+  @JoinColumn({ name: 'drawId' })
   draw: Draw;
 
   @Column('int', {
@@ -31,12 +40,14 @@ export class Match {
   vrMatchCode: number;
 
   @Column('int', {
-    comment: 'The VR number of the draw (in the tournament) in which this match happened',
+    comment:
+      'The VR number of the draw (in the tournament) in which this match happened',
   })
   vrDrawCode: number;
 
   @Column('int', {
-    comment: 'The VR number of the event (in the tournament) in which this match happened',
+    comment:
+      'The VR number of the event (in the tournament) in which this match happened',
   })
   vrEventCode: number;
 
@@ -52,7 +63,7 @@ export class Match {
   })
   scoreStatus: number;
 
-  @OneToMany(type => MatchPlayer, matchPlayers => matchPlayers.match, {
+  @OneToMany(() => MatchPlayer, (matchPlayers) => matchPlayers.match, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
@@ -68,7 +79,6 @@ export class Match {
     name: 'date',
   })
   date: string;
-
 
   // Given a match object from the VR API, fill in our own fields
 
@@ -95,7 +105,10 @@ export class Match {
       case 0: // Normal
         if (null == apiMatch.Sets) {
           // the VR API does not report a score - so figure out what is happening
-          if (null == apiMatch.Team1.Player1 && null == apiMatch.Team2.Player1) {
+          if (
+            null == apiMatch.Team1.Player1 &&
+            null == apiMatch.Team2.Player1
+          ) {
             // neither player side is identified so the players are probably TBD
             // report the score as null
             this.score = null;
@@ -164,7 +177,6 @@ export class Match {
   }
   // Score lines are strings look like "6-7, 7-6, 10-3", but it gets pretty whacky sometimes.
   getMatchCompetitiveness(): number | string {
-
     // Break the score up in to the chunks that are separated by ", " (i.e. the set scores)
     const sets: string[] = this.score.split(', ');
 
@@ -180,7 +192,8 @@ export class Match {
       const sideScores: string[] = set.split('-');
 
       // it's a wonky score if there are not exactly two side scores in every set
-      if (sideScores.length !== 2) return `wonkySetScore ${this.score} (Should Not Happen)`;
+      if (sideScores.length !== 2)
+        return `wonkySetScore ${this.score} (Should Not Happen)`;
 
       // it's a wonky score if either side's score is not a number
       const s1score = Number(sideScores[0]);
@@ -197,7 +210,12 @@ export class Match {
     // Identify a superbreaker in the last set of a 3 set match
     if (side1Scores.length === 3) {
       // find the maximum score in the first two sets
-      const setOneAndTwoMax: number = Math.max(side1Scores[0], side1Scores[1], side2Scores[0], side2Scores[1]);
+      const setOneAndTwoMax: number = Math.max(
+        side1Scores[0],
+        side1Scores[1],
+        side2Scores[0],
+        side2Scores[1],
+      );
 
       // find the max score in thte third set
       const setThreeMax: number = Math.max(side1Scores[2], side2Scores[2]);
@@ -206,7 +224,7 @@ export class Match {
       // I figure this is a super breaker.  In that case, the first two sets are measured
       // in games but the third is measured in points.  So we normalize the third set to
       // games by dividing the points by 5. (why not?)
-      if ((setThreeMax - 1) > setOneAndTwoMax) {
+      if (setThreeMax - 1 > setOneAndTwoMax) {
         side1Scores[2] = side1Scores[2] / 5;
         side2Scores[2] = side2Scores[2] / 5;
       }
@@ -215,16 +233,16 @@ export class Match {
     let side1Total: number = 0;
     let side2Total: number = 0;
 
-    side1Scores.map((score: number) => side1Total += score);
-    side2Scores.map((score: number) => side2Total += score);
+    side1Scores.map((score: number) => (side1Total += score));
+    side2Scores.map((score: number) => (side2Total += score));
 
     // Being a little careful
     if (side1Total === 0 && side2Total === 0) return null;
 
-    if (side1Total >= side2Total ) {
-      return side2Total/side1Total;
+    if (side1Total >= side2Total) {
+      return side2Total / side1Total;
     } else {
-      return side1Total/side2Total;
+      return side1Total / side2Total;
     }
   }
 }

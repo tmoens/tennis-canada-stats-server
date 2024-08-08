@@ -10,8 +10,8 @@ export class UserDTO {
   username?: string;
 }
 
-export class ResetPasswordDTO{
-  usernameOrEmail: string
+export class ResetPasswordDTO {
+  usernameOrEmail: string;
 }
 
 export class UserPasswordChangeDTO {

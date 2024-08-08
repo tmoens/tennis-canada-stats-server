@@ -1,9 +1,9 @@
-import {Column, Entity, PrimaryGeneratedColumn} from 'typeorm';
-import {Exclude} from 'class-transformer';
-import {GUEST_ROLE} from '../auth/roles';
-import {random_password_generate} from './pasword-generator'
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import { GUEST_ROLE } from '../auth/roles';
+import { random_password_generate } from './pasword-generator';
 
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
 // const crypto = require('crypto');
 
 @Entity()
@@ -21,10 +21,10 @@ export class User {
   })
   email: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   phone: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   name: string;
 
   @Column({
@@ -36,18 +36,18 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({default: true})
+  @Column({ default: true })
   passwordChangeRequired: boolean;
 
-  @Exclude({toPlainOnly: true})
+  @Exclude({ toPlainOnly: true })
   @Column({
-    comment: ' stored encrypted'
+    comment: ' stored encrypted',
   })
   password: string;
 
   @Exclude()
   @Column({
-    comment: 'salt differs for each user.'
+    comment: 'salt differs for each user.',
   })
   salt: string;
 
@@ -73,14 +73,16 @@ export class User {
   }
 
   validatePassword(rawPassword: string): boolean {
-    return (this.password === this.encryptPassword(rawPassword));
+    return this.password === this.encryptPassword(rawPassword);
   }
 
   encryptPassword(rawPassword: string) {
     if (!this.salt) {
       this.initializeSalt();
     }
-    return crypto.scryptSync(rawPassword, this.salt, 64, {N: 1024}).toString('hex');
+    return crypto
+      .scryptSync(rawPassword, this.salt, 64, { N: 1024 })
+      .toString('hex');
   }
 
   isDeletable: boolean = false;

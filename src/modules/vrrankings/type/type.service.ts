@@ -1,12 +1,10 @@
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {getLogger} from 'log4js';
-import {VRRankingsType} from './type.entity';
-import {VRAPIService} from '../../VRAPI/vrapi.service';
-import {VRRankingsPublicationService} from '../publication/publication.service';
-import {Injectable} from '@nestjs/common';
-import {VRRankingsCategoryService} from '../category/category.service';
-import {JobState, JobStats} from '../../../utils/jobstats';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { getLogger } from 'log4js';
+import { VRRankingsType } from './type.entity';
+import { VRRankingsPublicationService } from '../publication/publication.service';
+import { Injectable } from '@nestjs/common';
+import { JobState, JobStats } from '../../../utils/jobstats';
 
 const logger = getLogger('vrrankingstypeService');
 
@@ -17,9 +15,7 @@ export class VRRankingsTypeService {
   constructor(
     @InjectRepository(VRRankingsType)
     private readonly repository: Repository<VRRankingsType>,
-    private readonly vrapi: VRAPIService,
     private readonly publicationService: VRRankingsPublicationService,
-    private readonly rankingsCategoryService: VRRankingsCategoryService,
   ) {
     this.rankingsImportStats = new JobStats(' VR Rankings Import');
   }
@@ -36,10 +32,14 @@ export class VRRankingsTypeService {
     this.rankingsImportStats.setStatus(JobState.IN_PROGRESS);
     logger.info('**** VR Ranking Import starting...');
     // go get the known rankings types
-    const rankingTypes: VRRankingsType[] = await this.repository
-      .find({relations: ['vrRankingsCategories']});
+    const rankingTypes: VRRankingsType[] = await this.repository.find({
+      relations: ['vrRankingsCategories'],
+    });
     for (const rankingType of rankingTypes) {
-      const typeStats: JobStats = await this.publicationService.importVRRankingsPublicationFromVR(rankingType);
+      const typeStats: JobStats =
+        await this.publicationService.importVRRankingsPublicationFromVR(
+          rankingType,
+        );
       this.rankingsImportStats.merge(typeStats);
     }
     this.rankingsImportStats.setStatus(JobState.DONE);
