@@ -1,6 +1,6 @@
 {
   "name": "tcserver",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Tennis Canada Stats Server",
   "license": "MIT",
   "scripts": {
