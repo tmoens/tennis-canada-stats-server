@@ -36,14 +36,16 @@ export class MatchDataExporterController {
   @Get('MatchCompetitivenessReport/build')
   @UseGuards(JwtAuthGuard)
   buildMatchCompetitivenessReport() {
-    // This is a very long running process, so we don't wait for the promise to resolve.
-    // not waiting for the promise to return on purpose
-    this.service.buildMatchCompetitivenessReport().catch((error) => {
-      const logger = getLogger('MatchCompetitivenessReport');
-      logger.error(
-        `Problem running MatchCompetitivenessReport. Error: ${error}`,
-      );
-    });
+    // This is a very long-running process, so we don't wait for the promise to resolve.
+    this.service
+      .buildMatchCompetitivenessReport()
+      .then()
+      .catch((error) => {
+        const logger = getLogger('MatchCompetitivenessReport');
+        logger.error(
+          `Problem running MatchCompetitivenessReport. Error: ${error}`,
+        );
+      });
   }
 
   @Get('MatchCompetitivenessReport/download')

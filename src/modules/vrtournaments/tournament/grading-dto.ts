@@ -20,6 +20,8 @@ export class GradingDTO {
     this.endDate = t.endDate;
     if (t.typeId === 0) {
       this.type = 'Tournament';
+    } else if (t.typeId === 10) {
+      this.type = 'Box Ladder';
     } else {
       this.type = 'League';
     }

@@ -306,10 +306,22 @@ export class TournamentService {
       .where('t.endDate >= :ed', { ed: query.since })
       .orderBy('t.endDate');
 
-    // normally the client just want s Leagues, but they might ask for tournaments too
-    if (!query.showTournaments) {
-      q = q.andWhere('t.typeId > 0');
+    // the client is looking for leagues, box ladders or tournaments
+    const selectedTournamentTypes = [];
+    switch (query.tournamentCategory) {
+      case 'boxLadders':
+        selectedTournamentTypes.push(10);
+        break;
+      case 'tournaments':
+        selectedTournamentTypes.push(0);
+        break;
+      default: //leagues are the default
+        selectedTournamentTypes.push(1);
+        selectedTournamentTypes.push(3);
     }
+    q = q.andWhere('t.typeId IN (:...selectedTournamentTypes)', {
+      selectedTournamentTypes,
+    });
 
     const tournaments: Tournament[] = await q.getMany();
     const gradings: GradingDTO[] = [];

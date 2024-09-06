@@ -34,13 +34,17 @@ export class EventController {
     logger.info(
       'Request to generate report. Query: ' + JSON.stringify(query, null, 2),
     );
-    await this.eventService.rateEvents(
-      query.from,
-      query.to,
-      query.province,
-      query.categories.split(','),
-    );
-    logger.info('Report generation complete.');
+
+    // we intentionally don't wait for the report to be complete as it could take a while.
+    // The client can call buildRatingsReport/status to get an update on progress.
+    this.eventService
+      .rateEvents(
+        query.from,
+        query.to,
+        query.province,
+        query.categories.split(','),
+      )
+      .then();
   }
 
   @Get('downloadRatingsReport')

@@ -199,7 +199,7 @@ export class MatchDataExporterService {
     this.mqReportStats = new JobStats('Build Match Competitiveness Report');
     this.mqReportStats.setStatus(JobState.IN_PROGRESS);
     this.mqReportStats.setCurrentActivity(
-      'Building "Match Competitiveness" report',
+      'Building the Match Competitiveness report',
     );
     const tournamentsWithoutMatches: {
       code: string;
@@ -216,8 +216,11 @@ export class MatchDataExporterService {
     let reportRow = 2; // 2 because Excel starts counting at 1 and there is a header row.
 
     // Initially, I wrote a query to get everything.  The Query took a very long time,
-    // and it would get longer and use more memory as time goes by.  So I broke it
-    // into two parts.
+    // and it would continue to get longer and use more memory as time goes by.
+    // Also, while the query was running, the server was blocked so not status update
+    // requests were being processed.
+
+    // So I broke it into two parts.
     // First, get the set of tournaments that are of interest.
     // Second process them one by one.
 
@@ -228,13 +231,11 @@ export class MatchDataExporterService {
       .getMany();
     this.mqReportStats.toDo = tournaments.length;
     logger.info(
-      `Building Match Competitiveness Report. ${tournaments.length} Tournaments.`,
+      `Building theMatch Competitiveness Report. ${tournaments.length} Tournaments.`,
     );
 
     // Part 2: Go get all the match data for one tournament at a time.
-    // let testingLimit = 30;
     for (const tournament of tournaments) {
-      // if (testingLimit-- === 0) { break; }
       const reportData: any[] = [];
       this.mqReportStats.setData('nowProcessing', tournament.name);
       const t: Tournament = await this.repository
@@ -299,9 +300,9 @@ export class MatchDataExporterService {
     }
 
     this.mqReportStats.setCurrentActivity(
-      'Writing Match Competitiveness Report',
+      'Writing the Match Competitiveness Report',
     );
-    logger.info('Writing MatchCompetitiveness Report.');
+    logger.info('Writing the Match Competitiveness Report.');
 
     // wait a moment before writing workbook. Just look the other way.
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -320,9 +321,9 @@ export class MatchDataExporterService {
     writeFile(wb, filename);
     this.mqReportStats.setData('filename', filename);
 
-    logger.info('Finished match competitiveness report');
+    logger.info('Finished the Match Competitiveness report');
     this.mqReportStats.setCurrentActivity(
-      'Finished Match Competitiveness Report',
+      'Finished the Match Competitiveness Report',
     );
     this.mqReportStats.setStatus(JobState.DONE);
 
