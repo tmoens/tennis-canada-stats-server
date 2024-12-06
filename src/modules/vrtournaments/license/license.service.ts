@@ -119,7 +119,7 @@ export class LicenseService {
     };
     wb.SheetNames.push('Licenses');
     const ws: WorkSheet = utils.json_to_sheet(licenses);
-    ws['!cols'] = [{ width: 50 }, { width: 13 }, { width: 11 }, { width: 14 },{ width: 14 }];
+    ws['!cols'] = [{ width: 50 }, { width: 13 }, { width: 11 }, { width: 14 },{ width: 19 }];
     wb.Sheets.Licenses = ws;
     const filename =
       'Reports/VR_License_Usage_' + now.toISOString().slice(0, 10) + '.xlsx';
