@@ -100,16 +100,24 @@ export class LicenseService {
   // and the end date of the most recent tournament that used the license.
   async getLicenseUsageReport(): Promise<string> {
     logger.info('Creating license usage report.');
-    const licenses = await this.repository
+    let query = this.repository
       .createQueryBuilder('license')
       .select('license.licenseName', 'licenseName')
       .addSelect('license.province', 'province')
       .addSelect('COUNT(tournament.tournamentCode)', 'tournamentCount')
-      .addSelect('MAX(tournament.endDate)', 'mostRecent')
+      .addSelect('MAX(tournament.endDate)', 'mostRecent');
+    const thisYear: number = new Date().getFullYear();
+    for (let year = thisYear; year >= 2013; year--) {
+      query.addSelect(
+        `SUM(CASE WHEN YEAR(tournament.endDate) = ${year} THEN 1 ELSE 0 END)`,
+        `${year} uses`,
+      );
+    }
+    query = query
       .leftJoin('license.tournaments', 'tournament')
       .where('license.licenseName IS NOT NULL')
-      .groupBy('license.licenseName')
-      .getRawMany();
+      .groupBy('license.licenseName');
+    const licenses = await query.getRawMany();
 
     const wb: WorkBook = utils.book_new();
     const now: Date = new Date();
@@ -118,7 +126,10 @@ export class LicenseService {
     };
     wb.SheetNames.push('Licenses');
     const ws: WorkSheet = utils.json_to_sheet(licenses);
-    ws['!cols'] = [{ width: 50 }, { width: 13 }, { width: 11 }, { width: 14 }];
+    ws['!cols'] = [{ width: 50 }, { width: 13 }, { width: 11 }, { width: 12 }];
+    for (let year = thisYear; year >= 2013; year--) {
+      ws['!cols'].push({ width: 12 });
+    }
     wb.Sheets.Licenses = ws;
     const filename =
       'Reports/VR_License_Usage_' + now.toISOString().slice(0, 10) + '.xlsx';
